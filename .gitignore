@@ -24,3 +24,18 @@ dist-ssr
 *.sw?
 .env
 .env.example
+
+# Claude/一時ファイル
+.claude/
+CLAUDE.md
+
+# ローカルデータ/生成物
+applicants.xlsx
+test_report.md
+
+# テスト・一時スクリプト（任意で）
+create_*.cjs
+
+# Node系
+node_modules/
+dist/
