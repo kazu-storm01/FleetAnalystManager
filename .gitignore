@@ -35,6 +35,7 @@ test_report.md
 
 # テスト・一時スクリプト（任意で）
 create_*.cjs
+create_*.js
 
 # Node系
 node_modules/
