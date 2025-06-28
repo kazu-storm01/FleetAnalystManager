@@ -863,7 +863,6 @@
   color: #e1f5fe;
   font-family: inherit;
   font-size: 0.9rem;
-  resize: vertical;
   transition: all 0.3s ease;
 }
 
@@ -1601,7 +1600,6 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  resize: vertical;
   font-family: inherit;
 }
 
@@ -1925,7 +1923,6 @@
 }
 
 .form-field textarea {
-  resize: vertical;
   min-height: 60px;
 }
 
@@ -3239,8 +3236,7 @@
 
 .fleet-data-input {
   width: 100%;
-  min-height: 160px;
-  rows: 8;
+  height: 40px;
   padding: 10px;
   border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 6px;
@@ -3248,7 +3244,6 @@
   color: white;
   font-size: 0.85rem;
   font-family: 'Courier New', monospace;
-  resize: vertical;
   line-height: 1.3;
 }
 
@@ -3517,25 +3512,53 @@
 }
 
 .stat-badge .diff {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: bold;
   margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-left: 8px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .stat-badge .diff.positive {
-  color: #4caf50;
+  color: #ffffff;
+  background: linear-gradient(45deg, #66bb6a, #4caf50);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
 }
 
 .stat-badge .diff.negative {
-  color: #f44336;
+  color: #ffffff;
+  background: linear-gradient(45deg, #ef5350, #f44336);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
 }
 
 .stat-badge .diff.neutral {
-  color: #b3e5fc;
+  color: #ffffff;
+  background: linear-gradient(45deg, #78909c, #607d8b);
+  border: 1px solid rgba(96, 125, 139, 0.3);
+  box-shadow: 0 2px 8px rgba(96, 125, 139, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .stat-badge .diff.positive {
+  background: linear-gradient(45deg, #81c784, #66bb6a);
+  border-color: rgba(129, 199, 132, 0.3);
+  box-shadow: 0 2px 8px rgba(129, 199, 132, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .stat-badge .diff.negative {
+  background: linear-gradient(45deg, #e57373, #ef5350);
+  border-color: rgba(229, 115, 115, 0.3);
+  box-shadow: 0 2px 8px rgba(229, 115, 115, 0.2);
 }
 
 .fleet-analysis-manager.abyssal .stat-badge .diff.neutral {
-  color: #d3d3d3;
+  background: linear-gradient(45deg, #90a4ae, #78909c);
+  border-color: rgba(144, 164, 174, 0.3);
+  box-shadow: 0 2px 8px rgba(144, 164, 174, 0.2);
 }
 
 /* バックアップセクション */
@@ -3618,7 +3641,7 @@
   }
   
   .fleet-data-input {
-    min-height: 120px;
+    height: 36px;
     font-size: 0.8rem;
   }
   
@@ -3664,7 +3687,7 @@
 }
 
 .compact-mode .fleet-data-input {
-  min-height: 120px;
+  height: 36px;
   padding: 8px;
   font-size: 0.8rem;
 }
@@ -4299,7 +4322,6 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  resize: vertical;
   font-family: inherit;
 }
 
@@ -4623,7 +4645,6 @@
 }
 
 .form-field textarea {
-  resize: vertical;
   min-height: 60px;
 }
 
@@ -5937,8 +5958,7 @@
 
 .fleet-data-input {
   width: 100%;
-  min-height: 160px;
-  rows: 8;
+  height: 40px;
   padding: 10px;
   border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 6px;
@@ -5946,7 +5966,6 @@
   color: white;
   font-size: 0.85rem;
   font-family: 'Courier New', monospace;
-  resize: vertical;
   line-height: 1.3;
 }
 
@@ -6215,25 +6234,53 @@
 }
 
 .stat-badge .diff {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: bold;
   margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-left: 8px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .stat-badge .diff.positive {
-  color: #4caf50;
+  color: #ffffff;
+  background: linear-gradient(45deg, #66bb6a, #4caf50);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
 }
 
 .stat-badge .diff.negative {
-  color: #f44336;
+  color: #ffffff;
+  background: linear-gradient(45deg, #ef5350, #f44336);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
 }
 
 .stat-badge .diff.neutral {
-  color: #b3e5fc;
+  color: #ffffff;
+  background: linear-gradient(45deg, #78909c, #607d8b);
+  border: 1px solid rgba(96, 125, 139, 0.3);
+  box-shadow: 0 2px 8px rgba(96, 125, 139, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .stat-badge .diff.positive {
+  background: linear-gradient(45deg, #81c784, #66bb6a);
+  border-color: rgba(129, 199, 132, 0.3);
+  box-shadow: 0 2px 8px rgba(129, 199, 132, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .stat-badge .diff.negative {
+  background: linear-gradient(45deg, #e57373, #ef5350);
+  border-color: rgba(229, 115, 115, 0.3);
+  box-shadow: 0 2px 8px rgba(229, 115, 115, 0.2);
 }
 
 .fleet-analysis-manager.abyssal .stat-badge .diff.neutral {
-  color: #d3d3d3;
+  background: linear-gradient(45deg, #90a4ae, #78909c);
+  border-color: rgba(144, 164, 174, 0.3);
+  box-shadow: 0 2px 8px rgba(144, 164, 174, 0.2);
 }
 
 /* バックアップセクション */
@@ -6273,4 +6320,737 @@
   color: white;
   border: none;
   padding: 8px 16px;
-  margin-bottom: 40px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .backup-btn,
+.fleet-analysis-manager.abyssal .import-btn {
+  background: linear-gradient(45deg, #dc2626, #991b1b);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.backup-btn:hover, .import-btn:hover {
+  background: linear-gradient(45deg, #1976d2, #1565c0);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  transform: translateY(-1px);
+}
+
+.fleet-analysis-manager.abyssal .backup-btn:hover,
+.fleet-analysis-manager.abyssal .import-btn:hover {
+  background: linear-gradient(45deg, #991b1b, #7f1d1d);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+/* バックアップトグルボタン */
+.backup-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1001;
+}
+
+.backup-toggle-button {
+  background: linear-gradient(45deg, #2196f3, #1976d2);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fleet-analysis-manager.abyssal .backup-toggle-button {
+  background: linear-gradient(45deg, #dc2626, #991b1b);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.backup-toggle-button:hover {
+  background: linear-gradient(45deg, #1976d2, #1565c0);
+  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+  transform: translateY(-2px);
+}
+
+.fleet-analysis-manager.abyssal .backup-toggle-button:hover {
+  background: linear-gradient(45deg, #991b1b, #7f1d1d);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+}
+
+/* バックアップポップアップ */
+.backup-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.backup-popup-content {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease;
+  position: relative;
+}
+
+.fleet-analysis-manager.abyssal .backup-popup-content {
+  background: linear-gradient(135deg, #2d1b1b 0%, #1a0e0e 100%);
+  border: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.backup-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .backup-popup-header {
+  border-bottom: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.backup-popup-header h2 {
+  margin: 0;
+  color: #ffd700;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.fleet-analysis-manager.abyssal .backup-popup-header h2 {
+  color: #ff6b6b;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #ffd700;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.fleet-analysis-manager.abyssal .close-button {
+  color: #ff6b6b;
+}
+
+.close-button:hover {
+  background: rgba(255, 215, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.fleet-analysis-manager.abyssal .close-button:hover {
+  background: rgba(255, 107, 107, 0.2);
+}
+
+.backup-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .backup-toggle {
+    top: 10px;
+    left: 10px;
+  }
+  
+  .backup-toggle-button {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+  }
+  
+  .backup-popup-content {
+    padding: 20px;
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .backup-popup-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .backup-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .backup-btn, .import-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .backup-toggle-button {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .backup-popup-content {
+    padding: 15px;
+    width: 98%;
+  }
+  
+  .backup-popup-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .close-button {
+    font-size: 1.5rem;
+    width: 35px;
+    height: 35px;
+  }
+}
+
+/* タスク進捗バー */
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.task-header h4 {
+  margin: 0;
+  color: #00d4ff;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.fleet-analysis-manager.abyssal .task-header h4 {
+  color: #ff6b6b;
+}
+
+.progress-bar {
+  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  height: 20px;
+  width: 120px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .progress-bar {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff, #0288d1);
+  border-radius: 10px;
+  transition: width 0.5s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.fleet-analysis-manager.abyssal .progress-fill {
+  background: linear-gradient(90deg, #ff6b6b, #e53935);
+}
+
+.progress-fill.completed {
+  background: linear-gradient(90deg, #4caf50, #2e7d32);
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+  animation: completionPulse 2s ease-in-out;
+}
+
+.fleet-analysis-manager.abyssal .progress-fill.completed {
+  background: linear-gradient(90deg, #66bb6a, #43a047);
+  box-shadow: 0 0 15px rgba(102, 187, 106, 0.6);
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  z-index: 1;
+}
+
+@keyframes completionPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.9);
+  }
+}
+
+/* タスク・URL追加セクション */
+.add-items-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.fleet-analysis-manager.abyssal .add-items-section {
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.add-items-section h4 {
+  color: #00d4ff;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.fleet-analysis-manager.abyssal .add-items-section h4 {
+  color: #ff6b6b;
+}
+
+.input-with-button {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input-with-button input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.fleet-analysis-manager.abyssal .input-with-button input {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.input-with-button input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .input-with-button input:focus {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
+}
+
+.input-with-button input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.add-button {
+  background: linear-gradient(45deg, #2196f3, #1976d2);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .add-button {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.add-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+}
+
+.fleet-analysis-manager.abyssal .add-button:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+}
+
+.add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.add-items-section .input-group {
+  margin-bottom: 20px;
+}
+
+.add-items-section .input-group:last-child {
+  margin-bottom: 0;
+}
+
+.add-items-section label {
+  display: block;
+  color: #e1f5fe;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.fleet-analysis-manager.abyssal .add-items-section label {
+  color: #d3d3d3;
+}
+
+/* Material Icons スタイル */
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.2em;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  vertical-align: middle;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+}
+
+/* アイコンサイズ調整 */
+button .material-icons {
+  font-size: 1.1em;
+  margin-right: 4px;
+}
+
+h2 .material-icons,
+h3 .material-icons,
+h4 .material-icons {
+  font-size: 1em;
+  margin-right: 6px;
+}
+
+.delete-btn .material-icons,
+.delete-task-btn .material-icons {
+  font-size: 1em;
+  margin-right: 0;
+}
+
+.url-link .material-icons {
+  font-size: 0.9em;
+  margin-right: 4px;
+}
+
+/* チャートモーダルボタン */
+.chart-section {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.chart-modal-button {
+  background: linear-gradient(45deg, #2196f3, #1976d2);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.fleet-analysis-manager.abyssal .chart-modal-button {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.chart-modal-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+}
+
+.fleet-analysis-manager.abyssal .chart-modal-button:hover {
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+/* グラフモーダル */
+.graph-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.graph-modal-content {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 16px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  color: white;
+}
+
+.fleet-analysis-manager.abyssal .graph-modal-content {
+  background: linear-gradient(135deg, #2c1810 0%, #4a2c2a 100%);
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.graph-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.graph-modal-header h2 {
+  margin: 0;
+  color: #00d4ff;
+  font-size: 1.5rem;
+}
+
+.fleet-analysis-manager.abyssal .graph-modal-header h2 {
+  color: #ff6b6b;
+}
+
+.graph-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(90vh - 100px);
+}
+
+.modal-chart-section {
+  margin-bottom: 32px;
+}
+
+.modal-chart-section h3 {
+  color: #e1f5fe;
+  margin-bottom: 16px;
+  font-size: 1.2rem;
+}
+
+.fleet-analysis-manager.abyssal .modal-chart-section h3 {
+  color: #d3d3d3;
+}
+
+.chart-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.fleet-analysis-manager.abyssal .chart-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 107, 107, 0.1);
+}
+
+.modal-chart-svg {
+  border-radius: 8px;
+}
+
+/* データテーブル */
+.modal-table-section h3 {
+  color: #e1f5fe;
+  margin-bottom: 16px;
+  font-size: 1.2rem;
+}
+
+.fleet-analysis-manager.abyssal .modal-table-section h3 {
+  color: #d3d3d3;
+}
+
+.data-table-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow-x: auto;
+}
+
+.fleet-analysis-manager.abyssal .data-table-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 107, 107, 0.1);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fleet-analysis-manager.abyssal .data-table th,
+.fleet-analysis-manager.abyssal .data-table td {
+  border-bottom-color: rgba(255, 107, 107, 0.1);
+}
+
+.data-table th {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.fleet-analysis-manager.abyssal .data-table th {
+  background: rgba(255, 107, 107, 0.1);
+  color: #ff6b6b;
+}
+
+.data-table td {
+  color: #e1f5fe;
+  font-size: 0.85rem;
+}
+
+.fleet-analysis-manager.abyssal .data-table td {
+  color: #d3d3d3;
+}
+
+.data-table .current-row {
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.fleet-analysis-manager.abyssal .data-table .current-row {
+  background: rgba(255, 107, 107, 0.05);
+}
+
+.table-diff {
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 8px;
+  display: block;
+  margin-top: 4px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.table-diff.positive {
+  color: #ffffff;
+  background: linear-gradient(45deg, #66bb6a, #4caf50);
+}
+
+.table-diff.negative {
+  color: #ffffff;
+  background: linear-gradient(45deg, #ef5350, #f44336);
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-badge.current {
+  background: linear-gradient(45deg, #66bb6a, #4caf50);
+  color: white;
+}
+
+.status-badge.past {
+  background: linear-gradient(45deg, #78909c, #607d8b);
+  color: white;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .graph-modal-content {
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .data-table {
+    font-size: 0.8rem;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px;
+  }
+  
+  .chart-container svg {
+    width: 100%;
+    height: auto;
+  }
+}

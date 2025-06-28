@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 
 // 型定義
 interface ShipData {
-  exp: number[]
-  lv: number
+  exp?: number[]
+  lv?: number
+  api_exp?: number[]
+  api_lv?: number
   [key: string]: unknown
 }
 
@@ -38,12 +40,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [tempAdmiralName, setTempAdmiralName] = useState<string>('')
   const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([])
   const [fleetData, setFleetData] = useState<string>('')
-  const [currentUrl, setCurrentUrl] = useState<string>('')
-  const [currentTasks, setCurrentTasks] = useState<string[]>([''])
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
   const [currentPage, setCurrentPage] = useState<number>(0)
   const [showWelcome, setShowWelcome] = useState<boolean>(false)
+  const [showBackup, setShowBackup] = useState<boolean>(false)
   const [previewStats, setPreviewStats] = useState<{totalExp: number, shipCount: number, marriedCount: number} | null>(null)
+  const [newTaskText, setNewTaskText] = useState<string>('')
+  const [newUrl, setNewUrl] = useState<string>('')
+  const [showGraphModal, setShowGraphModal] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
@@ -60,11 +64,23 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
       
       ships.forEach((ship: ShipData) => {
+        // 通常のexp配列形式
         if (ship.exp && Array.isArray(ship.exp)) {
           totalExpValue += (ship.exp[0] || 0)
         }
+        // kancolle API形式（api_exp配列）
+        else if (ship.api_exp && Array.isArray(ship.api_exp)) {
+          totalExpValue += (ship.api_exp[0] || 0)
+        }
+        
         shipCountValue++
+        
+        // 通常のlv形式
         if (ship.lv && ship.lv >= 100) {
+          marriedCountValue++
+        }
+        // kancolle API形式（api_lv）
+        else if (ship.api_lv && ship.api_lv >= 100) {
           marriedCountValue++
         }
       })
@@ -149,8 +165,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       setTempAdmiralName('')
       setFleetEntries([])
       setFleetData('')
-      setCurrentUrl('')
-      setCurrentTasks([''])
       setCurrentPage(0)
       setIsFirstSetup(true)
       setShowWelcome(true)
@@ -158,18 +172,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     }
   }
 
-  // タスク入力の管理
-  const updateTaskInput = (index: number, value: string) => {
-    const newTasks = [...currentTasks]
-    newTasks[index] = value
-    
-    // 最後の入力欄に文字が入ったら新しい入力欄を追加（最大50個）
-    if (index === currentTasks.length - 1 && value.trim() && currentTasks.length < 50) {
-      newTasks.push('')
-    }
-    
-    setCurrentTasks(newTasks)
-  }
 
   // 艦隊データ・タスク登録
   const registerFleetEntry = () => {
@@ -188,42 +190,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       
       // 以前のエントリーをlatestではなくする
       const updatedEntries = fleetEntries.map(entry => ({ ...entry, isLatest: false }))
-      
-      // 未完了タスクを継続
-      const continueTasks: Task[] = []
-      if (updatedEntries.length > 0) {
-        const lastEntry = updatedEntries[updatedEntries.length - 1]
-        lastEntry.tasks.forEach(task => {
-          if (!task.completed && task.text.trim()) {
-            continueTasks.push({
-              id: Date.now() + Math.random(),
-              text: task.text,
-              completed: false,
-              createdAt: new Date().toISOString(),
-              inheritedFrom: lastEntry.id,
-              originalTaskId: task.id
-            })
-          }
-        })
-      }
-
-      // 新しいタスクを追加
-      const newTasks = currentTasks
-        .filter(text => text.trim())
-        .map(text => ({
-          id: Date.now() + Math.random(),
-          text: text.trim(),
-          completed: false,
-          createdAt: new Date().toISOString()
-        }))
 
       const newEntry: FleetEntry = {
         id: Date.now(),
         totalExp: stats.totalExp,
         shipCount: stats.shipCount,
         marriedCount: stats.marriedCount,
-        tasks: [...continueTasks, ...newTasks],
-        url: currentUrl.trim() || undefined,
+        tasks: [],
+        url: undefined,
         createdAt: new Date().toISOString(),
         admiralName,
         isLatest: true
@@ -240,19 +214,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       
       // フォームリセット
       setFleetData('')
-      setCurrentUrl('')
-      setCurrentTasks([''])
       
       // 保存
       setTimeout(saveData, 100)
       
-      const continueCount = continueTasks.length
-      const newCount = newTasks.length
-      const message = continueCount > 0 
-        ? `艦隊データ登録完了！継続タスク${continueCount}件、新規タスク${newCount}件`
-        : `艦隊データ登録完了！新規タスク${newCount}件`
-      
-      showToast(message, 'success')
+      showToast('艦隊データ登録完了！', 'success')
     } catch (error) {
       showToast(`エラー: ${error}`, 'error')
     }
@@ -281,11 +247,20 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const toggleTask = (entryId: number, taskId: number) => {
     setFleetEntries(prev => prev.map(entry => {
       if (entry.id === entryId) {
+        const updatedTasks = entry.tasks.map(task => 
+          task.id === taskId ? { ...task, completed: !task.completed } : task
+        )
+        
+        // 100%達成チェック
+        const completedCount = updatedTasks.filter(t => t.completed).length
+        const totalCount = updatedTasks.length
+        if (completedCount === totalCount && totalCount > 0) {
+          showToast('すべてのタスクが完了しました！', 'success')
+        }
+        
         return {
           ...entry,
-          tasks: entry.tasks.map(task => 
-            task.id === taskId ? { ...task, completed: !task.completed } : task
-          )
+          tasks: updatedTasks
         }
       }
       return entry
@@ -305,6 +280,69 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       return entry
     }))
     setTimeout(saveData, 100)
+  }
+
+  // タスク追加（最新エントリーのみ）
+  const addTaskToLatest = () => {
+    if (!newTaskText.trim()) {
+      showToast('タスク内容を入力してください', 'error')
+      return
+    }
+
+    const latestEntry = fleetEntries.find(entry => entry.isLatest)
+    if (!latestEntry) {
+      showToast('最新エントリーが見つかりません', 'error')
+      return
+    }
+
+    const newTask: Task = {
+      id: Date.now(),
+      text: newTaskText.trim(),
+      completed: false,
+      createdAt: new Date().toISOString()
+    }
+
+    setFleetEntries(prev => prev.map(entry => 
+      entry.id === latestEntry.id 
+        ? { ...entry, tasks: [...entry.tasks, newTask] }
+        : entry
+    ))
+
+    setNewTaskText('')
+    setTimeout(saveData, 100)
+    showToast('タスクを追加しました', 'success')
+  }
+
+  // URL更新（最新エントリーのみ）
+  const updateLatestUrl = () => {
+    if (!newUrl.trim()) {
+      showToast('URLを入力してください', 'error')
+      return
+    }
+
+    // URL形式チェック（簡易）
+    try {
+      new URL(newUrl.trim())
+    } catch {
+      showToast('有効なURLを入力してください', 'error')
+      return
+    }
+
+    const latestEntry = fleetEntries.find(entry => entry.isLatest)
+    if (!latestEntry) {
+      showToast('最新エントリーが見つかりません', 'error')
+      return
+    }
+
+    setFleetEntries(prev => prev.map(entry => 
+      entry.id === latestEntry.id 
+        ? { ...entry, url: newUrl.trim() }
+        : entry
+    ))
+
+    setNewUrl('')
+    setTimeout(saveData, 100)
+    showToast('URLを更新しました', 'success')
   }
 
   // トースト通知表示
@@ -367,6 +405,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   }
 
   const graphData = generateGraphData()
+
+  // タスク進捗計算
+  const getTaskProgress = (tasks: Task[]) => {
+    if (tasks.length === 0) return { completed: 0, total: 0, percentage: 0 }
+    const completed = tasks.filter(t => t.completed).length
+    const total = tasks.length
+    const percentage = Math.round((completed / total) * 100)
+    return { completed, total, percentage }
+  }
 
   // バックアップエクスポート
   const exportBackup = () => {
@@ -437,7 +484,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
             {showWelcome && (
               <div className="welcome-message">
-                <h2>🎉 ようこそ！</h2>
+                <h2>ようこそ！</h2>
                 <div className="welcome-text">
                   <p>艦隊分析者マネージャーをご利用いただき、誠にありがとうございます</p>
                   <p>このアプリは艦隊JSONデータを解析し、経験値・艦数・ケッコン艦数の成長を追跡します</p>
@@ -445,7 +492,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
                 
                 <div className="privacy-notice">
-                  <h3>🔒 プライバシー保護について</h3>
+                  <h3><span className="material-icons">lock</span> プライバシー保護について</h3>
                   <p>このアプリはローカルストレージのみを使用し、外部へのデータ送信は一切行いません。</p>
                   <p>すべてのデータはお使いのブラウザ内にのみ保存されます。</p>
                 </div>
@@ -464,7 +511,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   maxLength={20}
                 />
                 <button onClick={setupAdmiral} className="setup-button">
-                  🚀 開始する
+                  <span className="material-icons">rocket_launch</span> 開始する
                 </button>
               </div>
               <p className="input-hint">
@@ -489,6 +536,42 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
   return (
     <div className={`fleet-analysis-manager ${theme}`}>
+      {/* バックアップボタン（左上） */}
+      <div className="backup-toggle">
+        <button onClick={() => setShowBackup(!showBackup)} className="backup-toggle-button">
+          バックアップ
+        </button>
+      </div>
+
+      {/* バックアップポップアップ */}
+      {showBackup && (
+        <div className="backup-popup">
+          <div className="backup-popup-content">
+            <div className="backup-popup-header">
+              <h3>バックアップ</h3>
+              <button onClick={() => setShowBackup(false)} className="close-button">
+                ×
+              </button>
+            </div>
+            <div className="backup-controls">
+              <button onClick={exportBackup} className="backup-btn">
+                エクスポート
+              </button>
+              <label className="backup-btn import-btn">
+                インポート
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importBackup}
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h1 className="app-logo animate-fadeInUp">
         {theme === 'shipgirl' ? (
           <>
@@ -507,7 +590,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       {fleetEntries.length > 0 && (
         <div className="stats-dashboard">
           <div className="admiral-info">
-            <h2>📊 {admiralName} 提督の分析記録</h2>
+            <h2>{admiralName} 提督の分析記録</h2>
             <div className="stats-grid">
               <div className="stat-card">
                 <span className="stat-label">総記録数</span>
@@ -539,42 +622,135 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               )}
             </div>
             <button onClick={changeAdmiral} className="change-admiral-btn">
-              ⚙️ 提督名変更
+              <span className="material-icons">settings</span> 提督名変更
             </button>
           </div>
 
-          {/* 成長グラフ */}
-          {graphData && (
-            <div className="growth-chart">
-              <h3>📈 分析推移グラフ</h3>
-              <svg width="320" height="140" className="chart-svg">
-                <path d={graphData.expPath} stroke="#4096ff" strokeWidth="2" fill="none" />
-                <path d={graphData.shipPath} stroke="#52c41a" strokeWidth="2" fill="none" />
-                <path d={graphData.marriedPath} stroke="#ff7875" strokeWidth="2" fill="none" />
-                <text x="10" y="15" fontSize="12" fill="#666">経験値</text>
-                <rect x="50" y="8" width="12" height="2" fill="#4096ff" />
-                <text x="10" y="30" fontSize="12" fill="#666">艦数</text>
-                <rect x="50" y="23" width="12" height="2" fill="#52c41a" />
-                <text x="10" y="45" fontSize="12" fill="#666">ケッコン</text>
-                <rect x="50" y="38" width="12" height="2" fill="#ff7875" />
-              </svg>
+          {/* 分析推移ボタン */}
+          {fleetEntries.length >= 2 && (
+            <div className="chart-section">
+              <button 
+                onClick={() => setShowGraphModal(true)} 
+                className="chart-modal-button"
+              >
+                <span className="material-icons">timeline</span> 分析推移表示
+              </button>
             </div>
           )}
         </div>
       )}
 
+      {/* 分析推移モーダル */}
+      {showGraphModal && (
+        <div className="graph-modal-overlay" onClick={() => setShowGraphModal(false)}>
+          <div className="graph-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="graph-modal-header">
+              <h2>分析推移データ</h2>
+              <button onClick={() => setShowGraphModal(false)} className="close-button">
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            
+            <div className="graph-modal-body">
+              {/* グラフ表示 */}
+              {graphData && (
+                <div className="modal-chart-section">
+                  <h3>推移グラフ</h3>
+                  <div className="chart-container">
+                    <svg width="600" height="300" className="modal-chart-svg">
+                      <path d={graphData.expPath} stroke="#4096ff" strokeWidth="3" fill="none" />
+                      <path d={graphData.shipPath} stroke="#52c41a" strokeWidth="3" fill="none" />
+                      <path d={graphData.marriedPath} stroke="#ff7875" strokeWidth="3" fill="none" />
+                      
+                      {/* 凡例 */}
+                      <g transform="translate(20, 20)">
+                        <text x="0" y="15" fontSize="14" fill="#e1f5fe">経験値</text>
+                        <rect x="60" y="8" width="20" height="3" fill="#4096ff" />
+                        <text x="0" y="35" fontSize="14" fill="#e1f5fe">艦数</text>
+                        <rect x="60" y="28" width="20" height="3" fill="#52c41a" />
+                        <text x="0" y="55" fontSize="14" fill="#e1f5fe">ケッコン</text>
+                        <rect x="60" y="48" width="20" height="3" fill="#ff7875" />
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+              )}
+
+              {/* データテーブル */}
+              <div className="modal-table-section">
+                <h3>データ一覧</h3>
+                <div className="data-table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>日時</th>
+                        <th>経験値</th>
+                        <th>艦数</th>
+                        <th>ケッコン</th>
+                        <th>状態</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fleetEntries.map((entry, index) => {
+                        const prevEntry = index > 0 ? fleetEntries[index - 1] : null
+                        return (
+                          <tr key={entry.id} className={entry.isLatest ? 'current-row' : ''}>
+                            <td>{new Date(entry.createdAt).toLocaleString()}</td>
+                            <td>
+                              {entry.totalExp.toLocaleString()}
+                              {prevEntry && (
+                                <span className={`table-diff ${entry.totalExp - prevEntry.totalExp >= 0 ? 'positive' : 'negative'}`}>
+                                  ({entry.totalExp - prevEntry.totalExp >= 0 ? '+' : ''}{(entry.totalExp - prevEntry.totalExp).toLocaleString()})
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.shipCount}
+                              {prevEntry && (
+                                <span className={`table-diff ${entry.shipCount - prevEntry.shipCount >= 0 ? 'positive' : 'negative'}`}>
+                                  ({entry.shipCount - prevEntry.shipCount >= 0 ? '+' : ''}{entry.shipCount - prevEntry.shipCount})
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.marriedCount}
+                              {prevEntry && (
+                                <span className={`table-diff ${entry.marriedCount - prevEntry.marriedCount >= 0 ? 'positive' : 'negative'}`}>
+                                  ({entry.marriedCount - prevEntry.marriedCount >= 0 ? '+' : ''}{entry.marriedCount - prevEntry.marriedCount})
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.isLatest ? (
+                                <span className="status-badge current">最新</span>
+                              ) : (
+                                <span className="status-badge past">過去</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* データ入力セクション */}
       <div className="data-input-section">
-        <h2>⚓ 艦隊分析データ登録</h2>
+        <h2>艦隊分析データ登録</h2>
         
         <div className="input-group">
           <label>艦隊JSONデータ:</label>
-          <textarea
+          <input
+            type="text"
             value={fleetData}
             onChange={(e) => setFleetData(e.target.value)}
             placeholder="艦隊のJSONデータをここに貼り付けてください..."
             className="fleet-data-input"
-            rows={8}
           />
           {previewStats && (
             <div className="preview-stats">
@@ -586,47 +762,20 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
           )}
         </div>
 
-        <div className="input-group">
-          <label>関連URL (任意):</label>
-          <input
-            type="url"
-            value={currentUrl}
-            onChange={(e) => setCurrentUrl(e.target.value)}
-            placeholder="https://..."
-            className="url-input"
-          />
-        </div>
-
-        <div className="input-group">
-          <label>新規タスク:</label>
-          {currentTasks.map((task, index) => (
-            <input
-              key={index}
-              type="text"
-              value={task}
-              onChange={(e) => updateTaskInput(index, e.target.value)}
-              placeholder={`タスク ${index + 1}`}
-              className="task-input"
-            />
-          ))}
-          <p className="input-hint">
-            最大50個のタスクを設定できます。前回の未完了タスクは自動で継続されます。
-          </p>
-        </div>
 
         <button 
           onClick={registerFleetEntry}
           className="register-button"
           disabled={!fleetData.trim() || !admiralName.trim()}
         >
-          📝 データ登録
+          <span className="material-icons">edit</span> データ登録
         </button>
       </div>
 
       {/* 最新エントリー */}
       {latestEntry && (
         <div className="latest-section">
-          <h2>⭐ 最新エントリー</h2>
+          <h2>最新エントリー</h2>
           <div className="entry-card latest">
             <div className="entry-header">
               <div className="entry-info">
@@ -641,27 +790,27 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                     rel="noopener noreferrer"
                     className="url-link"
                   >
-                    🔗 開く
+                    <span className="material-icons">open_in_new</span> 開く
                   </a>
                 )}
                 <button
                   onClick={() => deleteEntry(latestEntry.id)}
                   className="delete-btn"
                 >
-                  🗑️
+                  <span className="material-icons">delete</span>
                 </button>
               </div>
             </div>
 
             <div className="entry-stats">
               <div className="stat-badge">
-                <span>💰 {latestEntry.totalExp.toLocaleString()}</span>
+                <span>経験値 {latestEntry.totalExp.toLocaleString()}</span>
               </div>
               <div className="stat-badge">
-                <span>⚓ {latestEntry.shipCount}</span>
+                <span>艦数 {latestEntry.shipCount}</span>
               </div>
               <div className="stat-badge">
-                <span>💒 {latestEntry.marriedCount}</span>
+                <span>ケッコン {latestEntry.marriedCount}</span>
               </div>
             </div>
 
@@ -673,7 +822,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
             {latestEntry.tasks.length > 0 && (
               <div className="tasks-section">
-                <h4>📋 タスク ({latestEntry.tasks.filter(t => t.completed).length}/{latestEntry.tasks.length})</h4>
+                <div className="task-header">
+                  <h4>タスク ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
+                  <div className="progress-bar">
+                    <div 
+                      className={`progress-fill ${getTaskProgress(latestEntry.tasks).percentage === 100 ? 'completed' : ''}`}
+                      style={{ width: `${getTaskProgress(latestEntry.tasks).percentage}%` }}
+                    ></div>
+                    <span className="progress-text">{getTaskProgress(latestEntry.tasks).percentage}%</span>
+                  </div>
+                </div>
                 <div className="tasks-list">
                   {latestEntry.tasks.map(task => (
                     <div key={task.id} className="task-item">
@@ -689,7 +847,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         onClick={() => deleteTask(latestEntry.id, task.id)}
                         className="delete-task-btn"
                       >
-                        🗑️
+                        <span className="material-icons">delete</span>
                       </button>
                       {task.inheritedFrom && (
                         <span className="inherited-badge">継続</span>
@@ -699,6 +857,55 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
               </div>
             )}
+
+            {/* タスク・URL追加セクション（最新エントリーのみ） */}
+            <div className="add-items-section">
+              <h4>タスク・URL追加</h4>
+              
+              {/* タスク追加 */}
+              <div className="input-group">
+                <label>新しいタスク:</label>
+                <div className="input-with-button">
+                  <input
+                    type="text"
+                    value={newTaskText}
+                    onChange={(e) => setNewTaskText(e.target.value)}
+                    placeholder="タスク内容を入力してください..."
+                    className="task-input"
+                    onKeyDown={(e) => e.key === 'Enter' && addTaskToLatest()}
+                  />
+                  <button 
+                    onClick={addTaskToLatest}
+                    className="add-button"
+                    disabled={!newTaskText.trim()}
+                  >
+                    追加
+                  </button>
+                </div>
+              </div>
+
+              {/* URL追加/更新 */}
+              <div className="input-group">
+                <label>URL {latestEntry.url ? '(更新)' : '(追加)'}:</label>
+                <div className="input-with-button">
+                  <input
+                    type="text"
+                    value={newUrl}
+                    onChange={(e) => setNewUrl(e.target.value)}
+                    placeholder="URLを入力してください..."
+                    className="url-input"
+                    onKeyDown={(e) => e.key === 'Enter' && updateLatestUrl()}
+                  />
+                  <button 
+                    onClick={updateLatestUrl}
+                    className="add-button"
+                    disabled={!newUrl.trim()}
+                  >
+                    {latestEntry.url ? '更新' : '追加'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -706,7 +913,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       {/* 過去エントリー */}
       {pastEntries.length > 0 && (
         <div className="history-section">
-          <h2>📜 分析履歴</h2>
+          <h2>分析履歴</h2>
           
           {/* ページング */}
           {totalPages > 1 && (
@@ -746,33 +953,33 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         rel="noopener noreferrer"
                         className="url-link"
                       >
-                        🔗 開く
+                        <span className="material-icons">open_in_new</span> 開く
                       </a>
                     )}
                     <button
                       onClick={() => deleteEntry(entry.id)}
                       className="delete-btn"
                     >
-                      🗑️
+                      <span className="material-icons">delete</span>
                     </button>
                   </div>
                 </div>
 
                 <div className="entry-stats">
                   <div className="stat-badge">
-                    <span>💰 {entry.totalExp.toLocaleString()}</span>
+                    <span>経験値 {entry.totalExp.toLocaleString()}</span>
                     <span className={`diff ${getDifference(entry, 'totalExp') >= 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'totalExp') >= 0 ? '+' : ''}{getDifference(entry, 'totalExp').toLocaleString()})
                     </span>
                   </div>
                   <div className="stat-badge">
-                    <span>⚓ {entry.shipCount}</span>
+                    <span>艦数 {entry.shipCount}</span>
                     <span className={`diff ${getDifference(entry, 'shipCount') >= 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'shipCount') >= 0 ? '+' : ''}{getDifference(entry, 'shipCount')})
                     </span>
                   </div>
                   <div className="stat-badge">
-                    <span>💒 {entry.marriedCount}</span>
+                    <span>ケッコン {entry.marriedCount}</span>
                     <span className={`diff ${getDifference(entry, 'marriedCount') >= 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'marriedCount') >= 0 ? '+' : ''}{getDifference(entry, 'marriedCount')})
                     </span>
@@ -787,7 +994,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
                 {entry.tasks.length > 0 && (
                   <div className="tasks-section">
-                    <h4>📋 タスク ({entry.tasks.filter(t => t.completed).length}/{entry.tasks.length})</h4>
+                    <div className="task-header">
+                      <h4>タスク ({getTaskProgress(entry.tasks).completed}/{getTaskProgress(entry.tasks).total})</h4>
+                      <div className="progress-bar">
+                        <div 
+                          className={`progress-fill ${getTaskProgress(entry.tasks).percentage === 100 ? 'completed' : ''}`}
+                          style={{ width: `${getTaskProgress(entry.tasks).percentage}%` }}
+                        ></div>
+                        <span className="progress-text">{getTaskProgress(entry.tasks).percentage}%</span>
+                      </div>
+                    </div>
                     <div className="tasks-list">
                       {entry.tasks.map(task => (
                         <div key={task.id} className="task-item">
@@ -814,25 +1030,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         </div>
       )}
 
-      {/* バックアップセクション */}
-      <div className="backup-section">
-        <h2>💾 バックアップ</h2>
-        <div className="backup-controls">
-          <button onClick={exportBackup} className="backup-btn">
-            📤 エクスポート
-          </button>
-          <label className="backup-btn import-btn">
-            📥 インポート
-            <input
-              type="file"
-              accept=".json"
-              onChange={importBackup}
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-            />
-          </label>
-        </div>
-      </div>
 
       {/* トースト通知 */}
       {toast && (

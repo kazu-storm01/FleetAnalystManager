@@ -522,7 +522,7 @@ ${applicant.advice}
       {showApiSettings && (
         <div className="api-settings-section">
           <div className="api-settings-header">
-            <h2>🤖 AI機能設定</h2>
+            <h2>AI機能設定</h2>
             <button 
               onClick={() => setShowApiSettings(false)} 
               className="api-settings-toggle"
@@ -575,7 +575,7 @@ ${applicant.advice}
       )}
       
       <div className="file-upload-section">
-        <h2>📁 ファイル管理</h2>
+        <h2><span className="material-icons">folder</span> ファイル管理</h2>
         <div className="file-upload-area">
           <div className="upload-group">
             <label>提督候補リストXLSX:</label>
@@ -629,7 +629,7 @@ ${applicant.advice}
       {/* フォーム入力セクション */}
       {showForm && (
         <div className="form-section">
-          <h2>✏️ フォーム入力で応募者リスト作成</h2>
+          <h2>フォーム入力で応募者リスト作成</h2>
           <div className="form-container">
             {formApplicants.map((applicant, index) => (
               <div key={index} className="form-row">
@@ -665,7 +665,7 @@ ${applicant.advice}
                   disabled={formApplicants.length === 1}
                   className="remove-row-button"
                 >
-                  🗑️
+                  <span className="material-icons">delete</span>
                 </button>
               </div>
             ))}
@@ -678,7 +678,7 @@ ${applicant.advice}
               🔄 フォームリセット
             </button>
             <button onClick={createXLSXFromForm} className="create-xlsx-button">
-              📊 XLSXファイル作成
+              <span className="material-icons">table_chart</span> XLSXファイル作成
             </button>
           </div>
         </div>
@@ -731,10 +731,10 @@ ${applicant.advice}
               </div>
               <div className="export-buttons">
                 <button onClick={exportToXLSX} className="export-button">
-                  📊 完全エクスポート
+                  <span className="material-icons">table_chart</span> 完全エクスポート
                 </button>
                 <button onClick={exportAdviceToXLSX} className="export-button advice-export">
-                  📋 分析報告のみ
+                  <span className="material-icons">description</span> 分析報告のみ
                 </button>
               </div>
             </div>
@@ -749,7 +749,7 @@ ${applicant.advice}
                   {applicant.url && (
                     <div className="applicant-url">
                       <a href={applicant.url} target="_blank" rel="noopener noreferrer">
-                        🔗 {applicant.url}
+                        <span className="material-icons">link</span> {applicant.url}
                       </a>
                     </div>
                   )}
@@ -790,16 +790,16 @@ ${applicant.advice}
                         {applicant.isAiAnalyzing ? (
                           <>⏳ 分析中...</>
                         ) : theme === 'abyssal' ? (
-                          <>👹 深海添削</>
+                          <><span className="material-icons">psychology</span> 深海添削</>
                         ) : (
-                          <>📋 報告書添削</>
+                          <><span className="material-icons">edit_note</span> 報告書添削</>
                         )}
                       </button>
 
                       {applicant.aiSuggestion && (
                         <div className="ai-suggestion">
                           <label>
-                            {theme === 'abyssal' ? '👹 深海棲艦による敵対的添削:' : '📋 AI改善提案:'}
+                            {theme === 'abyssal' ? '深海棲艦による敵対的添削:' : 'AI改善提案:'}
                           </label>
                           <div className="ai-suggestion-text">
                             {applicant.aiSuggestion}
@@ -853,7 +853,7 @@ ${applicant.advice}
 
       {applicants.length > 0 && (
         <div className="applicants-list">
-          <h2>📋 応募者一覧</h2>
+          <h2>応募者一覧</h2>
           <div className="applicants-table">
             <table>
               <thead>
@@ -886,7 +886,7 @@ ${applicant.advice}
       )}
 
       <div className="info-section">
-        <h2>ℹ️ 使用方法</h2>
+        <h2>使用方法</h2>
         <div className="info-content">
           <ol>
             <li>提督候補リストXLSXファイルをアップロードしてください</li>
@@ -896,7 +896,7 @@ ${applicant.advice}
             <li>選出された提督が順番に表示されます</li>
             <li>分析完了チェックボックスで進捗管理</li>
             <li>分析報告欄に提督の特徴や推奨配置を記入</li>
-            <li>{theme === 'abyssal' ? '「👹 深海添削」ボタンで深海棲艦による敵対的な添削を実行' : '「📋 報告書添削」ボタンで分析報告の表現を改善'}</li>
+            <li>{theme === 'abyssal' ? '「深海添削」ボタンで深海棲艦による敵対的な添削を実行' : '「報告書添削」ボタンで分析報告の表現を改善'}</li>
             <li>「分析結果エクスポート」で結果を保存</li>
             <li>分析結果XLSXを読み込めば前回の状態から再開可能</li>
           </ol>
