@@ -2387,3 +2387,845 @@
     text-align: center;
   }
 }
+
+
+/* アニメーション */
+.animate-fadeInUp {
+  animation: fadeInUp 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* アプリ切り替え用のスタイル */
+.app-container {
+  min-height: 100vh;
+  position: relative;
+}
+
+/* 右下切り替えボタン */
+.floating-action-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 70px;
+  height: 70px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-weight: bold;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  color: white;
+}
+
+.floating-action-button.shipgirl {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+}
+
+.floating-action-button.abyssal {
+  background: linear-gradient(135deg, #d32f2f, #b71c1c);
+}
+
+.floating-action-button:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.floating-action-button:active {
+  transform: scale(1.05);
+}
+
+.fab-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.fab-label {
+  font-size: 0.65rem;
+  font-weight: bold;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+/* テーマ切り替えボタン */
+.theme-toggle-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.theme-toggle-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: white;
+  font-size: 0.9rem;
+}
+
+.app-container.abyssal .theme-toggle-button {
+  background: linear-gradient(135deg, #d32f2f, #b71c1c);
+}
+
+.theme-toggle-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .floating-action-button {
+    width: 60px;
+    height: 60px;
+    bottom: 20px;
+    right: 20px;
+  }
+  
+  .fab-icon {
+    font-size: 1.4rem;
+  }
+  
+  .fab-label {
+    font-size: 0.6rem;
+  }
+  
+  .theme-toggle-container {
+    top: 15px;
+    right: 15px;
+  }
+  
+  .theme-toggle-button {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* FleetAnalysisManager用のスタイル */
+.fleet-analysis-manager {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4facfe 100%);
+  min-height: 100vh;
+  color: white;
+}
+
+.fleet-analysis-manager.abyssal {
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+}
+
+/* 初回セットアップ画面 */
+.setup-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.welcome-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .welcome-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.welcome-message {
+  margin: 30px 0;
+  text-align: center;
+}
+
+.welcome-message h2 {
+  color: #00d4ff;
+  margin-bottom: 20px;
+}
+
+.fleet-analysis-manager.abyssal .welcome-message h2 {
+  color: #ff6b6b;
+}
+
+.welcome-text p {
+  margin: 15px 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #e1f5fe;
+}
+
+.fleet-analysis-manager.abyssal .welcome-text p {
+  color: #d3d3d3;
+}
+
+.privacy-notice {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 25px 0;
+}
+
+.fleet-analysis-manager.abyssal .privacy-notice {
+  background: rgba(255, 87, 51, 0.1);
+  border-color: rgba(255, 87, 51, 0.3);
+}
+
+.privacy-notice h3 {
+  color: #4caf50;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.fleet-analysis-manager.abyssal .privacy-notice h3 {
+  color: #ff5722;
+}
+
+.privacy-notice p {
+  margin: 8px 0;
+  font-size: 0.95rem;
+  color: #c8e6c9;
+}
+
+.fleet-analysis-manager.abyssal .privacy-notice p {
+  color: #ffccbc;
+}
+
+.admiral-setup {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.admiral-setup h3 {
+  color: #00d4ff;
+  margin-bottom: 20px;
+}
+
+.fleet-analysis-manager.abyssal .admiral-setup h3 {
+  color: #ff6b6b;
+}
+
+.input-group {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+  justify-content: center;
+}
+
+.admiral-input {
+  flex: 1;
+  max-width: 300px;
+  padding: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1rem;
+}
+
+.fleet-analysis-manager.abyssal .admiral-input {
+  border-color: rgba(255, 107, 107, 0.3);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admiral-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .admiral-input:focus {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+.setup-button {
+  background: linear-gradient(45deg, #00bcd4, #0097a7);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .setup-button {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+}
+
+.setup-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+}
+
+.input-hint {
+  color: #b3e5fc;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.fleet-analysis-manager.abyssal .input-hint {
+  color: #d3d3d3;
+}
+
+/* 提督ステータス */
+.admiral-status {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .admiral-status {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.admiral-info h2 {
+  color: #00d4ff;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.fleet-analysis-manager.abyssal .admiral-info h2 {
+  color: #ff6b6b;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.fleet-analysis-manager.abyssal .stat-card {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.stat-label {
+  display: block;
+  color: #b3e5fc;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.fleet-analysis-manager.abyssal .stat-label {
+  color: #d3d3d3;
+}
+
+.stat-value {
+  display: block;
+  color: #00d4ff;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.fleet-analysis-manager.abyssal .stat-value {
+  color: #ff6b6b;
+}
+
+.change-admiral-btn {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  display: block;
+  margin: 0 auto;
+}
+
+.change-admiral-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+}
+
+/* URL・タスク登録 */
+.url-registration {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .url-registration {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.url-registration h2 {
+  color: #00d4ff;
+  margin-bottom: 20px;
+}
+
+.fleet-analysis-manager.abyssal .url-registration h2 {
+  color: #ff6b6b;
+}
+
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.url-input-group, .tasks-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.url-input-group label, .tasks-input-group label {
+  color: #00d4ff;
+  font-weight: bold;
+}
+
+.fleet-analysis-manager.abyssal .url-input-group label,
+.fleet-analysis-manager.abyssal .tasks-input-group label {
+  color: #ff6b6b;
+}
+
+.url-input, .task-input {
+  padding: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1rem;
+}
+
+.fleet-analysis-manager.abyssal .url-input,
+.fleet-analysis-manager.abyssal .task-input {
+  border-color: rgba(255, 107, 107, 0.3);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.url-input:focus, .task-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .url-input:focus,
+.fleet-analysis-manager.abyssal .task-input:focus {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+.register-button {
+  background: linear-gradient(45deg, #4caf50, #45a049);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  align-self: center;
+}
+
+.fleet-analysis-manager.abyssal .register-button {
+  background: linear-gradient(45deg, #ff9800, #f57c00);
+}
+
+.register-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+/* エントリーカード */
+.latest-section, .history-section {
+  margin-bottom: 30px;
+}
+
+.latest-section h2, .history-section h2 {
+  color: #00d4ff;
+  margin-bottom: 20px;
+}
+
+.fleet-analysis-manager.abyssal .latest-section h2,
+.fleet-analysis-manager.abyssal .history-section h2 {
+  color: #ff6b6b;
+}
+
+.entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.entry-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.entry-card.latest {
+  border-color: #00d4ff;
+  background: rgba(0, 212, 255, 0.15);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+}
+
+.entry-card.past {
+  background: rgba(155, 155, 155, 0.1);
+  border-color: rgba(155, 155, 155, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .entry-card {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .entry-card.latest {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.15);
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .entry-card.past {
+  background: rgba(100, 100, 100, 0.1);
+  border-color: rgba(155, 155, 155, 0.2);
+}
+
+.entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.entry-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.entry-date {
+  color: #b3e5fc;
+  font-size: 0.9rem;
+}
+
+.fleet-analysis-manager.abyssal .entry-date {
+  color: #d3d3d3;
+}
+
+.latest-badge {
+  background: linear-gradient(45deg, #00d4ff, #0099cc);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.fleet-analysis-manager.abyssal .latest-badge {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+}
+
+.entry-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.url-link {
+  background: linear-gradient(45deg, #2196f3, #1976d2);
+  color: white;
+  text-decoration: none;
+  padding: 8px 15px;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.fleet-analysis-manager.abyssal .url-link {
+  background: linear-gradient(45deg, #ff9800, #f57c00);
+}
+
+.url-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.delete-btn {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+.url-display {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.url-text {
+  color: #e1f5fe;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.fleet-analysis-manager.abyssal .url-text {
+  color: #d3d3d3;
+}
+
+/* タスクセクション */
+.tasks-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+}
+
+.tasks-section h4 {
+  color: #00d4ff;
+  margin-bottom: 15px;
+  font-size: 1rem;
+}
+
+.fleet-analysis-manager.abyssal .tasks-section h4 {
+  color: #ff6b6b;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.task-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.task-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #00d4ff;
+}
+
+.fleet-analysis-manager.abyssal .task-checkbox input[type="checkbox"] {
+  accent-color: #ff6b6b;
+}
+
+.task-checkbox input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.task-checkbox span {
+  color: #e1f5fe;
+  font-size: 0.95rem;
+}
+
+.task-checkbox span.completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.fleet-analysis-manager.abyssal .task-checkbox span {
+  color: #d3d3d3;
+}
+
+.delete-task-btn {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.delete-task-btn:hover {
+  background: #d32f2f;
+}
+
+.inherited-badge {
+  background: linear-gradient(45deg, #ff9800, #f57c00);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+/* ページング */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.page-btn {
+  background: linear-gradient(45deg, #2196f3, #1976d2);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.fleet-analysis-manager.abyssal .page-btn {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.page-info {
+  color: #e1f5fe;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.fleet-analysis-manager.abyssal .page-info {
+  color: #d3d3d3;
+}
+
+/* トースト通知 */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  border-radius: 10px;
+  color: white;
+  font-weight: bold;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast.success {
+  background: linear-gradient(45deg, #4caf50, #45a049);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.toast.error {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+  border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+  .fleet-analysis-manager {
+    padding: 15px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .entry-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .entry-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+  }
+  
+  .welcome-card {
+    padding: 20px;
+  }
+}
