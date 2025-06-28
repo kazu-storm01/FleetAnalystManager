@@ -2771,7 +2771,7 @@
   background: rgba(0, 212, 255, 0.1);
   border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 10px;
-  padding: 15px 10px;
+  padding: 12px 8px;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
   min-width: 0;
@@ -5559,7 +5559,7 @@
   background: rgba(0, 212, 255, 0.1);
   border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 10px;
-  padding: 15px 10px;
+  padding: 12px 8px;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
   min-width: 0;
@@ -7679,7 +7679,7 @@ h4 .material-icons {
 
 .current-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
   margin-bottom: 15px;
 }
@@ -7745,11 +7745,11 @@ h4 .material-icons {
   }
   
   .stat-value {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
   }
   
   .stats-dashboard .stat-value {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
   
   .progress-bar {
@@ -8457,19 +8457,3 @@ h4 .material-icons {
   }
 }
 
-/* 大きな数値用の自動調整 */
-.stat-value.large-number {
-  font-size: 1.5rem !important;
-}
-
-.stat-value.xlarge-number {
-  font-size: 1.2rem !important;
-}
-
-.stats-dashboard .stat-value.large-number {
-  font-size: 1.1rem !important;
-}
-
-.stats-dashboard .stat-value.xlarge-number {
-  font-size: 1rem !important;
-}
