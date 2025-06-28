@@ -7799,6 +7799,108 @@ h4 .material-icons {
   color: rgba(255, 205, 210, 0.9);
 }
 
+/* 統合ダッシュボード用スタイル */
+.latest-entry-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fleet-analysis-manager.abyssal .latest-entry-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.latest-badge {
+  background: linear-gradient(45deg, #4caf50, #2e7d32);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* 統計概要アイコンスタイル */
+.overview-icon {
+  font-size: 2rem !important;
+  color: #00d4ff;
+  margin-right: 0 !important;
+}
+
+.fleet-analysis-manager.abyssal .overview-icon {
+  color: #ff6b6b;
+}
+
+.overview-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fleet-analysis-manager.abyssal .overview-item {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 107, 107, 0.1);
+}
+
+.overview-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.overview-label {
+  color: #b3e5fc;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.fleet-analysis-manager.abyssal .overview-label {
+  color: #d3d3d3;
+}
+
+.overview-value {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.stats-overview {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .stats-overview {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .overview-item {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  
+  .overview-icon {
+    font-size: 1.8rem !important;
+  }
+}
+
 .fleet-analysis-manager.abyssal .url-edit-input {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 107, 107, 0.3);

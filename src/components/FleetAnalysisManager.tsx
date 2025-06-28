@@ -656,81 +656,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         )}
       </h1>
 
-      {/* 提督ダッシュボード */}
-      {fleetEntries.length > 0 && (
-        <div className="admiral-dashboard">
-          <div className="admiral-info">
-            <h2>⚓ {admiralName} のダッシュボード</h2>
-            
-            {/* 統計概要 */}
-            <div className="stats-overview">
-              <div className="overview-item">
-                <span className="overview-icon">📈</span>
-                <div className="overview-text">
-                  <span className="overview-label">総記録数</span>
-                  <span className="overview-value">{getTotalEntries()}</span>
-                </div>
-              </div>
-              <div className="overview-item">
-                <span className="overview-icon">✅</span>
-                <div className="overview-text">
-                  <span className="overview-label">累計達成タスク</span>
-                  <span className="overview-value">{getTotalCompletedTasks()}</span>
-                </div>
-              </div>
-              <div className="overview-item">
-                <span className="overview-icon">📋</span>
-                <div className="overview-text">
-                  <span className="overview-label">未達成タスク</span>
-                  <span className="overview-value">{getPendingTasks()}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 現在の艦隊状況 */}
-            {latestEntry && (
-              <>
-                <h3 className="section-title">現在の艦隊状況</h3>
-                <div className="current-stats">
-                  <div className="stat-card">
-                    <span className="stat-label">現在経験値</span>
-                    <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
-                  </div>
-                  <div className="stat-card">
-                    <span className="stat-label">保有艦数</span>
-                    <span className="stat-value">{latestEntry.shipCount}</span>
-                  </div>
-                  <div className="stat-card">
-                    <span className="stat-label">ケッコン艦</span>
-                    <span className="stat-value">{latestEntry.marriedCount}</span>
-                  </div>
-                </div>
-              </>
-            )}
-            
-            {/* アクションボタン */}
-            <div className="analysis-actions">
-              <button 
-                onClick={handleAdmiralModalConfirm}
-                className="admiral-change-button"
-              >
-                <span className="material-icons">person</span> 
-                提督名変更
-              </button>
-              
-              {fleetEntries.length >= 2 && (
-                <button 
-                  onClick={() => setShowGraphModal(true)} 
-                  className="analysis-trend-button"
-                >
-                  <span className="material-icons">timeline</span> 
-                  分析推移表示
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 分析推移モーダル */}
       {showGraphModal && (
@@ -846,216 +771,272 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         </div>
       </div>
 
-      {/* 最新エントリー */}
+      {/* 統合ダッシュボード - 最新エントリー */}
       {latestEntry && (
-        <div className="latest-section">
-          <h2>最新エントリー</h2>
-          <div className="entry-card latest">
-            <div className="entry-header">
-              <div className="entry-info">
-                <span className="entry-date">{new Date(latestEntry.createdAt).toLocaleString()}</span>
-                <span className="latest-badge">最新</span>
-              </div>
-              <div className="entry-actions">
-                {latestEntry.url && (
-                  <a
-                    href={latestEntry.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="url-link"
-                  >
-                    <span className="material-icons">open_in_new</span> 開く
-                  </a>
-                )}
-                <button
-                  onClick={() => deleteEntry(latestEntry.id)}
-                  className="delete-btn"
-                >
-                  <span className="material-icons">close</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="entry-stats">
-              <div className="stat-badge">
-                <span className="stat-label">現在経験値</span>
-                <div className="stat-value-container">
-                  <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
-                  {(() => {
-                    const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
-                    if (latestIndex > 0) {
-                      const prevEntry = fleetEntries[latestIndex - 1]
-                      const diff = latestEntry.totalExp - prevEntry.totalExp
-                      return (
-                        <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff.toLocaleString()})
-                        </span>
-                      )
-                    }
-                    return null
-                  })()}
+        <div className="admiral-dashboard">
+          <div className="admiral-info">
+            <h2>⚓ {admiralName} のダッシュボード</h2>
+            
+            {/* 統計概要 */}
+            <div className="stats-overview">
+              <div className="overview-item">
+                <span className="material-icons overview-icon">trending_up</span>
+                <div className="overview-text">
+                  <span className="overview-label">総記録数</span>
+                  <span className="overview-value">{getTotalEntries()}</span>
                 </div>
               </div>
-              <div className="stat-badge">
-                <span className="stat-label">保有艦数</span>
-                <div className="stat-value-container">
-                  <span className="stat-value">{latestEntry.shipCount}</span>
-                  {(() => {
-                    const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
-                    if (latestIndex > 0) {
-                      const prevEntry = fleetEntries[latestIndex - 1]
-                      const diff = latestEntry.shipCount - prevEntry.shipCount
-                      return (
-                        <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff})
-                        </span>
-                      )
-                    }
-                    return null
-                  })()}
+              <div className="overview-item">
+                <span className="material-icons overview-icon">task_alt</span>
+                <div className="overview-text">
+                  <span className="overview-label">累計達成タスク</span>
+                  <span className="overview-value">{getTotalCompletedTasks()}</span>
                 </div>
               </div>
-              <div className="stat-badge">
-                <span className="stat-label">ケッコン艦</span>
-                <div className="stat-value-container">
-                  <span className="stat-value">{latestEntry.marriedCount}</span>
-                  {(() => {
-                    const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
-                    if (latestIndex > 0) {
-                      const prevEntry = fleetEntries[latestIndex - 1]
-                      const diff = latestEntry.marriedCount - prevEntry.marriedCount
-                      return (
-                        <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff})
-                        </span>
-                      )
-                    }
-                    return null
-                  })()}
+              <div className="overview-item">
+                <span className="material-icons overview-icon">assignment</span>
+                <div className="overview-text">
+                  <span className="overview-label">未達成タスク</span>
+                  <span className="overview-value">{getPendingTasks()}</span>
                 </div>
               </div>
             </div>
 
-            {(latestEntry.url || editingUrl) && (
-              <div className="url-display">
-                {editingUrl ? (
-                  <div className="url-edit-form">
-                    <input
-                      type="text"
-                      value={tempUrl}
-                      onChange={(e) => setTempUrl(e.target.value)}
-                      placeholder="URLを入力してください..."
-                      className="url-edit-input"
-                      autoFocus
-                    />
-                    <div className="url-edit-actions">
-                      <button onClick={saveEditUrl} className="save-btn">
-                        <span className="material-icons">check</span>
-                      </button>
-                      <button onClick={cancelEditUrl} className="cancel-btn">
-                        <span className="material-icons">close</span>
-                      </button>
-                    </div>
+            {/* 最新エントリー情報 */}
+            <div className="latest-entry-section">
+              <div className="entry-header">
+                <div className="entry-info">
+                  <h3 className="section-title">最新の艦隊状況</h3>
+                  <div className="entry-meta">
+                    <span className="entry-date">{new Date(latestEntry.createdAt).toLocaleString()}</span>
+                    <span className="latest-badge">最新</span>
                   </div>
-                ) : (
-                  <div className="url-text-container">
-                    <span className="url-text">{latestEntry.url}</span>
-                    <button 
-                      onClick={() => startEditUrl(latestEntry.url || '')}
-                      className="edit-url-btn"
-                      title="URLを編集"
+                </div>
+                <div className="entry-actions">
+                  {latestEntry.url && (
+                    <a
+                      href={latestEntry.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="url-link"
                     >
-                      <span className="material-icons">edit</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {latestEntry.tasks.length > 0 && (
-              <div className="tasks-section">
-                <div className="task-header">
-                  <h4>タスク ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
-                  <div className="progress-bar">
-                    <div 
-                      className={`progress-fill ${getTaskProgress(latestEntry.tasks).percentage === 100 ? 'completed' : ''}`}
-                      style={{ width: `${getTaskProgress(latestEntry.tasks).percentage}%` }}
-                    ></div>
-                    <span className="progress-text">{getTaskProgress(latestEntry.tasks).percentage}%</span>
-                  </div>
-                </div>
-                <div className="tasks-list">
-                  {latestEntry.tasks.map(task => (
-                    <div key={task.id} className="task-item">
-                      <label className="task-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => toggleTask(latestEntry.id, task.id)}
-                        />
-                        <span className={task.completed ? 'completed' : ''}>{task.text}</span>
-                      </label>
-                      <button 
-                        onClick={() => deleteTask(latestEntry.id, task.id)}
-                        className="delete-task-btn"
-                      >
-                        <span className="material-icons">close</span>
-                      </button>
-                      {task.inheritedFrom && (
-                        <span className="inherited-badge">継続</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* タスク・URL追加セクション（最新エントリーのみ） */}
-            <div className="add-items-section">
-              <h4>タスク・URL追加</h4>
-              
-              {/* タスク追加 */}
-              <div className="input-group">
-                <div className="input-with-button">
-                  <input
-                    type="text"
-                    value={newTaskText}
-                    onChange={(e) => setNewTaskText(e.target.value)}
-                    placeholder="タスク内容を入力してください..."
-                    className="task-input"
-                    onKeyDown={(e) => e.key === 'Enter' && addTaskToLatest()}
-                  />
-                  <button 
-                    onClick={addTaskToLatest}
-                    className="add-button"
-                    disabled={!newTaskText.trim()}
+                      <span className="material-icons">open_in_new</span> 開く
+                    </a>
+                  )}
+                  <button
+                    onClick={() => deleteEntry(latestEntry.id)}
+                    className="delete-btn"
                   >
-                    追加
+                    <span className="material-icons">close</span>
                   </button>
                 </div>
               </div>
 
-              {/* URL追加（URLが未登録の場合のみ表示） */}
-              {!latestEntry.url && (
+              {/* 現在の艦隊データ */}
+              <div className="current-stats">
+                <div className="stat-card">
+                  <span className="stat-label">現在経験値</span>
+                  <div className="stat-value-container">
+                    <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
+                    {(() => {
+                      const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                      if (latestIndex > 0) {
+                        const prevEntry = fleetEntries[latestIndex - 1]
+                        const diff = latestEntry.totalExp - prevEntry.totalExp
+                        return (
+                          <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                            ({diff >= 0 ? '+' : ''}{diff.toLocaleString()})
+                          </span>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">保有艦数</span>
+                  <div className="stat-value-container">
+                    <span className="stat-value">{latestEntry.shipCount}</span>
+                    {(() => {
+                      const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                      if (latestIndex > 0) {
+                        const prevEntry = fleetEntries[latestIndex - 1]
+                        const diff = latestEntry.shipCount - prevEntry.shipCount
+                        return (
+                          <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                            ({diff >= 0 ? '+' : ''}{diff})
+                          </span>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">ケッコン艦</span>
+                  <div className="stat-value-container">
+                    <span className="stat-value">{latestEntry.marriedCount}</span>
+                    {(() => {
+                      const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                      if (latestIndex > 0) {
+                        const prevEntry = fleetEntries[latestIndex - 1]
+                        const diff = latestEntry.marriedCount - prevEntry.marriedCount
+                        return (
+                          <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                            ({diff >= 0 ? '+' : ''}{diff})
+                          </span>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* URL表示・編集 */}
+              {(latestEntry.url || editingUrl) && (
+                <div className="url-display">
+                  {editingUrl ? (
+                    <div className="url-edit-form">
+                      <input
+                        type="text"
+                        value={tempUrl}
+                        onChange={(e) => setTempUrl(e.target.value)}
+                        placeholder="URLを入力してください..."
+                        className="url-edit-input"
+                        autoFocus
+                      />
+                      <div className="url-edit-actions">
+                        <button onClick={saveEditUrl} className="save-btn">
+                          <span className="material-icons">check</span>
+                        </button>
+                        <button onClick={cancelEditUrl} className="cancel-btn">
+                          <span className="material-icons">close</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="url-text-container">
+                      <span className="url-text">{latestEntry.url}</span>
+                      <button 
+                        onClick={() => startEditUrl(latestEntry.url || '')}
+                        className="edit-url-btn"
+                        title="URLを編集"
+                      >
+                        <span className="material-icons">edit</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* タスク進捗 */}
+              {latestEntry.tasks.length > 0 && (
+                <div className="tasks-section">
+                  <div className="task-header">
+                    <h4>タスク進捗 ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
+                    <div className="progress-bar">
+                      <div 
+                        className={`progress-fill ${getTaskProgress(latestEntry.tasks).percentage === 100 ? 'completed' : ''}`}
+                        style={{ width: `${getTaskProgress(latestEntry.tasks).percentage}%` }}
+                      ></div>
+                      <span className="progress-text">{getTaskProgress(latestEntry.tasks).percentage}%</span>
+                    </div>
+                  </div>
+                  <div className="tasks-list">
+                    {latestEntry.tasks.map(task => (
+                      <div key={task.id} className="task-item">
+                        <label className="task-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => toggleTask(latestEntry.id, task.id)}
+                          />
+                          <span className={task.completed ? 'completed' : ''}>{task.text}</span>
+                        </label>
+                        <button 
+                          onClick={() => deleteTask(latestEntry.id, task.id)}
+                          className="delete-task-btn"
+                        >
+                          <span className="material-icons">close</span>
+                        </button>
+                        {task.inheritedFrom && (
+                          <span className="inherited-badge">継続</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* タスク・URL追加セクション */}
+              <div className="add-items-section">
+                <h4>タスク・URL追加</h4>
+                
+                {/* タスク追加 */}
                 <div className="input-group">
                   <div className="input-with-button">
                     <input
                       type="text"
-                      value={newUrl}
-                      onChange={(e) => setNewUrl(e.target.value)}
-                      placeholder="URLを入力してください..."
-                      className="url-input"
-                      onKeyDown={(e) => e.key === 'Enter' && updateLatestUrl()}
+                      value={newTaskText}
+                      onChange={(e) => setNewTaskText(e.target.value)}
+                      placeholder="タスク内容を入力してください..."
+                      className="task-input"
+                      onKeyDown={(e) => e.key === 'Enter' && addTaskToLatest()}
                     />
                     <button 
-                      onClick={updateLatestUrl}
+                      onClick={addTaskToLatest}
                       className="add-button"
-                      disabled={!newUrl.trim()}
+                      disabled={!newTaskText.trim()}
                     >
                       追加
                     </button>
                   </div>
                 </div>
+
+                {/* URL追加（URLが未登録の場合のみ表示） */}
+                {!latestEntry.url && (
+                  <div className="input-group">
+                    <div className="input-with-button">
+                      <input
+                        type="text"
+                        value={newUrl}
+                        onChange={(e) => setNewUrl(e.target.value)}
+                        placeholder="URLを入力してください..."
+                        className="url-input"
+                        onKeyDown={(e) => e.key === 'Enter' && updateLatestUrl()}
+                      />
+                      <button 
+                        onClick={updateLatestUrl}
+                        className="add-button"
+                        disabled={!newUrl.trim()}
+                      >
+                        追加
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* アクションボタン */}
+            <div className="analysis-actions">
+              <button 
+                onClick={handleAdmiralModalConfirm}
+                className="admiral-change-button"
+              >
+                <span className="material-icons">person</span> 
+                提督名変更
+              </button>
+              
+              {fleetEntries.length >= 2 && (
+                <button 
+                  onClick={() => setShowGraphModal(true)} 
+                  className="analysis-trend-button"
+                >
+                  <span className="material-icons">timeline</span> 
+                  分析推移表示
+                </button>
               )}
             </div>
           </div>
