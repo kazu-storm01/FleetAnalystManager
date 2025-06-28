@@ -42,6 +42,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [showAdmiralModal, setShowAdmiralModal] = useState<boolean>(false)
   const [editingUrl, setEditingUrl] = useState<boolean>(false)
   const [tempUrl, setTempUrl] = useState<string>('')
+  const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married'>('exp')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
@@ -431,41 +432,58 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     return current[field] - previous[field]
   }
 
-  // グラフデータ生成（SVGベース）
-  const generateGraphData = () => {
+  // 個別グラフデータ生成（SVGベース）
+  const generateSingleGraphData = (type: 'exp' | 'ships' | 'married') => {
     if (fleetEntries.length < 2) return null
     
     const recentEntries = fleetEntries.slice(-10) // 最新10件
-    const maxExp = Math.max(...recentEntries.map(e => e.totalExp))
-    const maxShips = Math.max(...recentEntries.map(e => e.shipCount))
-    const maxMarried = Math.max(...recentEntries.map(e => e.marriedCount))
+    const graphHeight = 300
+    const graphWidth = 600
+    const padding = 40
     
-    const graphHeight = 120
-    const graphWidth = 300
-    const padding = 20
+    let values: number[]
+    let color: string
+    let label: string
     
-    const expPath = recentEntries.map((entry, i) => {
-      const x = padding + (i * (graphWidth - 2 * padding)) / (recentEntries.length - 1)
-      const y = graphHeight - padding - ((entry.totalExp / maxExp) * (graphHeight - 2 * padding))
+    switch (type) {
+      case 'exp':
+        values = recentEntries.map(e => e.totalExp)
+        color = '#4096ff'
+        label = '経験値'
+        break
+      case 'ships':
+        values = recentEntries.map(e => e.shipCount)
+        color = '#52c41a'
+        label = '艦数'
+        break
+      case 'married':
+        values = recentEntries.map(e => e.marriedCount)
+        color = '#ff7875'
+        label = 'ケッコン艦'
+        break
+    }
+    
+    const maxValue = Math.max(...values)
+    const minValue = Math.min(...values)
+    const valueRange = maxValue - minValue || 1
+    
+    const path = values.map((value, i) => {
+      const x = padding + (i * (graphWidth - 2 * padding)) / (values.length - 1)
+      const y = graphHeight - padding - ((value - minValue) / valueRange) * (graphHeight - 2 * padding)
       return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
     }).join(' ')
     
-    const shipPath = recentEntries.map((entry, i) => {
-      const x = padding + (i * (graphWidth - 2 * padding)) / (recentEntries.length - 1)
-      const y = graphHeight - padding - ((entry.shipCount / maxShips) * (graphHeight - 2 * padding))
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
-    }).join(' ')
+    // データポイント生成
+    const points = values.map((value, i) => {
+      const x = padding + (i * (graphWidth - 2 * padding)) / (values.length - 1)
+      const y = graphHeight - padding - ((value - minValue) / valueRange) * (graphHeight - 2 * padding)
+      return { x, y, value, entry: recentEntries[i] }
+    })
     
-    const marriedPath = recentEntries.map((entry, i) => {
-      const x = padding + (i * (graphWidth - 2 * padding)) / (recentEntries.length - 1)
-      const y = graphHeight - padding - ((entry.marriedCount / maxMarried) * (graphHeight - 2 * padding))
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
-    }).join(' ')
-    
-    return { expPath, shipPath, marriedPath, maxExp, maxShips, maxMarried }
+    return { path, points, maxValue, minValue, color, label, entries: recentEntries }
   }
 
-  const graphData = generateGraphData()
+
 
   // タスク進捗計算
   const getTaskProgress = (tasks: Task[]) => {
@@ -669,29 +687,117 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
             </div>
             
             <div className="graph-modal-body">
-              {/* グラフ表示 */}
-              {graphData && (
-                <div className="modal-chart-section">
-                  <h3>推移グラフ</h3>
-                  <div className="chart-container">
-                    <svg width="600" height="300" className="modal-chart-svg">
-                      <path d={graphData.expPath} stroke="#4096ff" strokeWidth="3" fill="none" />
-                      <path d={graphData.shipPath} stroke="#52c41a" strokeWidth="3" fill="none" />
-                      <path d={graphData.marriedPath} stroke="#ff7875" strokeWidth="3" fill="none" />
-                      
-                      {/* 凡例 */}
-                      <g transform="translate(20, 20)">
-                        <text x="0" y="15" fontSize="14" fill="#e1f5fe">経験値</text>
-                        <rect x="60" y="8" width="20" height="3" fill="#4096ff" />
-                        <text x="0" y="35" fontSize="14" fill="#e1f5fe">艦数</text>
-                        <rect x="60" y="28" width="20" height="3" fill="#52c41a" />
-                        <text x="0" y="55" fontSize="14" fill="#e1f5fe">ケッコン</text>
-                        <rect x="60" y="48" width="20" height="3" fill="#ff7875" />
-                      </g>
-                    </svg>
+              {/* タブナビゲーション */}
+              <div className="graph-tabs">
+                <button 
+                  className={`graph-tab ${activeGraphTab === 'exp' ? 'active' : ''}`}
+                  onClick={() => setActiveGraphTab('exp')}
+                >
+                  <span className="material-icons">trending_up</span>
+                  経験値
+                </button>
+                <button 
+                  className={`graph-tab ${activeGraphTab === 'ships' ? 'active' : ''}`}
+                  onClick={() => setActiveGraphTab('ships')}
+                >
+                  <span className="material-icons">directions_boat</span>
+                  艦数
+                </button>
+                <button 
+                  className={`graph-tab ${activeGraphTab === 'married' ? 'active' : ''}`}
+                  onClick={() => setActiveGraphTab('married')}
+                >
+                  <span className="material-icons">favorite</span>
+                  ケッコン艦
+                </button>
+              </div>
+
+              {/* 個別グラフ表示 */}
+              {(() => {
+                const singleGraphData = generateSingleGraphData(activeGraphTab)
+                if (!singleGraphData) return null
+                
+                return (
+                  <div className="modal-chart-section">
+                    <h3>{singleGraphData.label}の推移</h3>
+                    <div className="chart-container">
+                      <svg width="700" height="400" className="modal-chart-svg">
+                        {/* グリッドライン */}
+                        <defs>
+                          <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                            <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(225, 245, 254, 0.1)" strokeWidth="1"/>
+                          </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#grid)" />
+                        
+                        {/* メインライン */}
+                        <path 
+                          d={singleGraphData.path} 
+                          stroke={singleGraphData.color} 
+                          strokeWidth="3" 
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        
+                        {/* データポイント */}
+                        {singleGraphData.points.map((point, i) => (
+                          <g key={i}>
+                            <circle 
+                              cx={point.x} 
+                              cy={point.y} 
+                              r="6" 
+                              fill={singleGraphData.color}
+                              stroke="white"
+                              strokeWidth="2"
+                            />
+                            <text 
+                              x={point.x} 
+                              y={point.y - 12} 
+                              fontSize="12" 
+                              fill="#e1f5fe" 
+                              textAnchor="middle"
+                              fontWeight="bold"
+                            >
+                              {activeGraphTab === 'exp' ? point.value.toLocaleString() : point.value}
+                            </text>
+                          </g>
+                        ))}
+                        
+                        {/* 軸ラベル */}
+                        <text x="350" y="390" fontSize="14" fill="#e1f5fe" textAnchor="middle">
+                          記録時系列
+                        </text>
+                        <text x="20" y="30" fontSize="14" fill="#e1f5fe" textAnchor="middle">
+                          {singleGraphData.label}
+                        </text>
+                      </svg>
+                    </div>
+                    
+                    {/* 統計情報 */}
+                    <div className="graph-stats">
+                      <div className="stat-item">
+                        <span className="stat-title">最大値</span>
+                        <span className="stat-number">
+                          {activeGraphTab === 'exp' ? singleGraphData.maxValue.toLocaleString() : singleGraphData.maxValue}
+                        </span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-title">最小値</span>
+                        <span className="stat-number">
+                          {activeGraphTab === 'exp' ? singleGraphData.minValue.toLocaleString() : singleGraphData.minValue}
+                        </span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-title">変動幅</span>
+                        <span className="stat-number">
+                          {activeGraphTab === 'exp' ? (singleGraphData.maxValue - singleGraphData.minValue).toLocaleString() : (singleGraphData.maxValue - singleGraphData.minValue)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              })()}
 
               {/* データテーブル */}
               <div className="modal-table-section">
@@ -775,7 +881,30 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       {latestEntry && (
         <div className="admiral-dashboard">
           <div className="admiral-info">
-            <h2>⚓ {admiralName} のダッシュボード</h2>
+            <div className="dashboard-header">
+              <h2>⚓ {admiralName} のダッシュボード</h2>
+              
+              {/* アクションボタン（アイコンのみ） */}
+              <div className="dashboard-actions">
+                {fleetEntries.length >= 2 && (
+                  <button 
+                    onClick={() => setShowGraphModal(true)} 
+                    className="action-button chart-button"
+                    title="分析推移表示"
+                  >
+                    <span className="material-icons">analytics</span>
+                  </button>
+                )}
+                
+                <button 
+                  onClick={handleAdmiralModalConfirm}
+                  className="action-button admiral-button"
+                  title="提督名変更"
+                >
+                  <span className="material-icons">person</span>
+                </button>
+              </div>
+            </div>
             
             {/* 統計概要 */}
             <div className="stats-overview">
@@ -1017,27 +1146,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   </div>
                 )}
               </div>
-            </div>
-            
-            {/* アクションボタン */}
-            <div className="analysis-actions">
-              <button 
-                onClick={handleAdmiralModalConfirm}
-                className="admiral-change-button"
-              >
-                <span className="material-icons">person</span> 
-                提督名変更
-              </button>
-              
-              {fleetEntries.length >= 2 && (
-                <button 
-                  onClick={() => setShowGraphModal(true)} 
-                  className="analysis-trend-button"
-                >
-                  <span className="material-icons">timeline</span> 
-                  分析推移表示
-                </button>
-              )}
             </div>
           </div>
         </div>
