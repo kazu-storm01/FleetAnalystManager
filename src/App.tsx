@@ -20,7 +20,7 @@ function App() {
 
 
   const getNextViewTitle = () => {
-    return currentView === 'analysis-manager' ? '分析者管理' : 'URL管理'
+    return currentView === 'analysis-manager' ? '分析者管理' : '分析管理'
   }
 
   return (
@@ -39,7 +39,7 @@ function App() {
         title={`${getNextViewTitle()}に切り替え`}
       >
         <span className="fab-icon">
-          {currentView === 'analysis-manager' ? '👥' : '🔗'}
+          {currentView === 'analysis-manager' ? '👥' : '📊'}
         </span>
         <span className="fab-label">
           {getNextViewTitle()}

@@ -504,7 +504,7 @@ ${applicant.advice}
         </button>
       </div>
 
-      <h1 className="app-logo">
+      <div className="app-logo animate-fadeInUp">
         {theme === 'shipgirl' ? (
           <>
             <span className="logo-main">艦隊分析者マネージャー</span>
@@ -516,7 +516,7 @@ ${applicant.advice}
             <span className="logo-sub">-Abyssal Fleet Analysis HQ-</span>
           </>
         )}
-      </h1>
+      </div>
 
       {/* API設定セクション */}
       {showApiSettings && (
