@@ -507,7 +507,7 @@ ${applicant.advice}
       <div className="app-logo animate-fadeInUp">
         {theme === 'shipgirl' ? (
           <>
-            <span className="logo-main">艦隊分析者マネージャー</span>
+            <span className="logo-main">艦隊分析マネージャー</span>
             <span className="logo-sub">-Fleet Analyst Manager-</span>
           </>
         ) : (

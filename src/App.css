@@ -8224,3 +8224,31 @@ h4 .material-icons {
     box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
   }
 }
+
+/* 海色モード（shipgirl）でのmaterial-iconsと艦隊状況数字を白色にする */
+.fleet-analysis-manager.shipgirl .material-icons {
+  color: white !important;
+}
+
+/* 海色モードでの艦隊状況の数字を白色にする */
+.fleet-analysis-manager.shipgirl .stat-value,
+.fleet-analysis-manager.shipgirl .overview-value,
+.fleet-analysis-manager.shipgirl .preview-value,
+.fleet-analysis-manager.shipgirl .chart-svg .axis-text {
+  color: white !important;
+}
+
+/* 海色モードでのチェックボックスの色を白色にする */
+.fleet-analysis-manager.shipgirl input[type="checkbox"] {
+  accent-color: white !important;
+}
+
+/* 最新艦隊状況カードのホバー効果 */
+.current-stats .stat-card:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+.current-stats .stat-card {
+  transition: transform 0.3s ease;
+}

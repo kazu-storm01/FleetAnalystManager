@@ -200,6 +200,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     localStorage.setItem('fleetAnalysisAdmiralName', name)
     setIsFirstSetup(false)
     setShowWelcome(false)
+    setShowBackup(false) // 確実にバックアップモーダルを閉じる
     showToast(`提督「${name}」として登録完了！`, 'success')
   }
 
@@ -576,14 +577,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               <div className="welcome-message">
                 <h2>ようこそ！</h2>
                 <div className="welcome-text">
-                  <p>艦隊分析者マネージャーをご利用いただき、誠にありがとうございます</p>
-                  <p>このアプリは艦隊JSONデータを解析し、経験値・艦数・ケッコン艦数の成長を追跡します</p>
+                  <p>このアプリは艦隊データから艦隊の成長を管理します</p>
                   <p>より良い艦これライフを！</p>
                 </div>
                 
                 <div className="privacy-notice">
                   <h3><span className="material-icons">lock</span> プライバシー保護について</h3>
-                  <p>このアプリはローカルストレージのみを使用し、外部へのデータ送信は一切行いません。</p>
+                  <p>このアプリはローカルストレージのみを使用し、外部へのデータ送信は行いません。</p>
                   <p>すべてのデータはお使いのブラウザ内にのみ保存されます。</p>
                 </div>
               </div>
@@ -675,7 +675,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       <h1 className="app-logo animate-fadeInUp">
         {theme === 'shipgirl' ? (
           <>
-            <span className="logo-main">艦隊分析者マネージャー</span>
+            <span className="logo-main">艦隊分析マネージャー</span>
             <span className="logo-sub">-Fleet Analyst Manager-</span>
           </>
         ) : (
@@ -822,12 +822,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         <th>経験値</th>
                         <th>艦数</th>
                         <th>ケッコン</th>
+                        <th>URL</th>
                         <th>状態</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {fleetEntries.map((entry, index) => {
-                        const prevEntry = index > 0 ? fleetEntries[index - 1] : null
+                      {[...fleetEntries].reverse().map((entry, index) => {
+                        const actualIndex = fleetEntries.length - 1 - index
+                        const prevEntry = actualIndex > 0 ? fleetEntries[actualIndex - 1] : null
                         return (
                           <tr key={entry.id} className={entry.isLatest ? 'current-row' : ''}>
                             <td>{new Date(entry.createdAt).toLocaleString()}</td>
@@ -853,6 +855,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                                 <span className={`table-diff ${entry.marriedCount - prevEntry.marriedCount >= 0 ? 'positive' : 'negative'}`}>
                                   ({entry.marriedCount - prevEntry.marriedCount >= 0 ? '+' : ''}{entry.marriedCount - prevEntry.marriedCount})
                                 </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.url ? (
+                                <a
+                                  href={entry.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="url-link"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <span className="material-icons">link</span>
+                                </a>
+                              ) : (
+                                <span>-</span>
                               )}
                             </td>
                             <td>
