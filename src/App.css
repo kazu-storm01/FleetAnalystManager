@@ -6627,11 +6627,12 @@
 .progress-bar {
   position: relative;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  height: 20px;
-  width: 120px;
+  border-radius: 15px;
+  height: 30px;
+  width: 300px;
   overflow: hidden;
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .fleet-analysis-manager.abyssal .progress-bar {
@@ -6640,25 +6641,26 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #00d4ff, #0288d1);
-  border-radius: 10px;
-  transition: width 0.5s ease, box-shadow 0.3s ease;
+  background: linear-gradient(90deg, #00d4ff, #0288d1, #01579b);
+  border-radius: 15px;
+  transition: width 0.8s ease, box-shadow 0.3s ease, transform 0.3s ease;
   position: relative;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
 }
 
 .fleet-analysis-manager.abyssal .progress-fill {
-  background: linear-gradient(90deg, #ff6b6b, #e53935);
+  background: linear-gradient(90deg, #ff6b6b, #e53935, #b71c1c);
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.4);
 }
 
 .progress-fill.completed {
-  background: linear-gradient(90deg, #4caf50, #2e7d32);
-  box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
-  animation: completionPulse 2s ease-in-out;
+  background: linear-gradient(90deg, #4caf50, #2e7d32, #1b5e20);
+  box-shadow: 0 0 25px rgba(76, 175, 80, 0.8), 0 0 40px rgba(76, 175, 80, 0.6);
 }
 
 .fleet-analysis-manager.abyssal .progress-fill.completed {
-  background: linear-gradient(90deg, #66bb6a, #43a047);
-  box-shadow: 0 0 15px rgba(102, 187, 106, 0.6);
+  background: linear-gradient(90deg, #66bb6a, #43a047, #2e7d32);
+  box-shadow: 0 0 25px rgba(102, 187, 106, 0.8), 0 0 40px rgba(102, 187, 106, 0.6);
 }
 
 .progress-text {
@@ -6667,20 +6669,14 @@
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: bold;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-  z-index: 1;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  z-index: 2;
 }
 
-@keyframes completionPulse {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
-  }
-  50% {
-    box-shadow: 0 0 25px rgba(76, 175, 80, 0.9);
-  }
-}
+
+
 
 /* タスク・URL追加セクション */
 .add-items-section {
@@ -7676,6 +7672,16 @@ h4 .material-icons {
   
   .current-stats {
     grid-template-columns: 1fr;
+  }
+  
+  .progress-bar {
+    width: 100%;
+    max-width: 250px;
+    height: 25px;
+  }
+  
+  .progress-text {
+    font-size: 0.9rem;
   }
   
   .overview-icon {

@@ -660,7 +660,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       {fleetEntries.length > 0 && (
         <div className="admiral-dashboard">
           <div className="admiral-info">
-            <h2>⚓ {admiralName} 提督の分析ダッシュボード</h2>
+            <h2>⚓ {admiralName} のダッシュボード</h2>
             
             {/* 統計概要 */}
             <div className="stats-overview">
