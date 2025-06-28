@@ -15,6 +15,9 @@ interface FleetEntry {
   totalExp: number        // 自動算出: 全艦経験値合計
   shipCount: number       // 自動算出: 艦船数
   marriedCount: number    // 自動算出: ケッコン艦数
+  luckModTotal: number    // 自動算出: 運改修合計値
+  hpModTotal: number      // 自動算出: 耐久改修合計値
+  aswModTotal: number     // 自動算出: 対潜改修合計値
   tasks: Task[]
   url?: string           // 任意: 関連URLリンク
   createdAt: string
@@ -42,10 +45,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [showAdmiralModal, setShowAdmiralModal] = useState<boolean>(false)
   const [editingUrl, setEditingUrl] = useState<boolean>(false)
   const [tempUrl, setTempUrl] = useState<string>('')
-  const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married'>('exp')
+  const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married' | 'luck' | 'hp' | 'asw'>('exp')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
+
+  // 数値サイズに応じたクラス名を取得
+  const getNumberSizeClass = (value: number): string => {
+    const str = value.toLocaleString()
+    if (str.length >= 15) return 'xlarge-number'  // 超大きな数値（1兆以上）
+    if (str.length >= 12) return 'large-number'   // 大きな数値（10億以上）
+    return ''
+  }
 
   // JSON艦隊データ解析エンジン（最適化版）
   const calculateFleetStats = (jsonData: string) => {
@@ -54,6 +65,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       let totalExpValue = 0
       let shipCountValue = 0
       let marriedCountValue = 0
+      let luckModTotalValue = 0
+      let hpModTotalValue = 0
+      let aswModTotalValue = 0
 
       // 配列の場合の処理（複数の形式に対応）
       const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
@@ -72,10 +86,25 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
           marriedCountValue++
         }
         
+        // 改修値の取得（api_kyouka配列）
+        const luckMod = ship.api_kyouka?.[4] || 0  // 運改修
+        const hpMod = ship.api_kyouka?.[5] || 0    // 耐久改修
+        const aswMod = ship.api_kyouka?.[6] || 0   // 対潜改修
+        luckModTotalValue += luckMod
+        hpModTotalValue += hpMod
+        aswModTotalValue += aswMod
+        
         shipCountValue++
       }
 
-      return { totalExp: totalExpValue, shipCount: shipCountValue, marriedCount: marriedCountValue }
+      return { 
+        totalExp: totalExpValue, 
+        shipCount: shipCountValue, 
+        marriedCount: marriedCountValue, 
+        luckModTotal: luckModTotalValue,
+        hpModTotal: hpModTotalValue,
+        aswModTotal: aswModTotalValue
+      }
     } catch {
       throw new Error('JSON解析に失敗しました')
     }
@@ -118,6 +147,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
             totalExp: stats.totalExp,
             shipCount: stats.shipCount,
             marriedCount: stats.marriedCount,
+            luckModTotal: stats.luckModTotal,
+            hpModTotal: stats.hpModTotal,
+            aswModTotal: stats.aswModTotal,
             tasks: inheritedTasks,
             url: undefined,
             createdAt: new Date().toISOString(),
@@ -173,7 +205,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setFleetEntries(parsed)
+        // 後方互換性のため、改修合計値が未定義の場合は0に設定
+        const updatedEntries = parsed.map((entry: any) => ({
+          ...entry,
+          luckModTotal: entry.luckModTotal ?? 0,
+          hpModTotal: entry.hpModTotal ?? 0,
+          aswModTotal: entry.aswModTotal ?? 0
+        }))
+        setFleetEntries(updatedEntries)
       } catch (error) {
         console.error('Failed to load fleet entries:', error)
         setFleetEntries([])
@@ -325,39 +364,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     showToast('タスクを追加しました', 'success')
   }
 
-  // URL更新（最新エントリーのみ）
-  const updateLatestUrl = () => {
-    if (!newUrl.trim()) {
-      showToast('URLを入力してください', 'error')
-      return
-    }
-
-    // URL形式チェック（簡易）
-    try {
-      new URL(newUrl.trim())
-    } catch {
-      showToast('有効なURLを入力してください', 'error')
-      return
-    }
-
-    const latestEntry = fleetEntries.find(entry => entry.isLatest)
-    if (!latestEntry) {
-      showToast('最新エントリーが見つかりません', 'error')
-      return
-    }
-
-    const updatedEntries = fleetEntries.map(entry => 
-      entry.id === latestEntry.id 
-        ? { ...entry, url: newUrl.trim() }
-        : entry
-    )
-    
-    setFleetEntries(updatedEntries)
-    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
-    
-    setNewUrl('')
-    showToast('URLを更新しました', 'success')
-  }
 
   // URL編集開始
   const startEditUrl = (currentUrl: string) => {
@@ -427,16 +433,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   }
 
   // 差分計算
-  const getDifference = (current: FleetEntry, field: keyof Pick<FleetEntry, 'totalExp' | 'shipCount' | 'marriedCount'>) => {
+  const getDifference = (current: FleetEntry, field: keyof Pick<FleetEntry, 'totalExp' | 'shipCount' | 'marriedCount' | 'luckModTotal' | 'hpModTotal' | 'aswModTotal'>) => {
     const currentIndex = fleetEntries.findIndex(e => e.id === current.id)
     if (currentIndex <= 0) return 0
     
     const previous = fleetEntries[currentIndex - 1]
-    return current[field] - previous[field]
+    return (current[field] || 0) - (previous[field] || 0)
   }
 
   // 個別グラフデータ生成（SVGベース）
-  const generateSingleGraphData = (type: 'exp' | 'ships' | 'married') => {
+  const generateSingleGraphData = (type: 'exp' | 'ships' | 'married' | 'luck' | 'hp' | 'asw') => {
     if (fleetEntries.length < 2) return null
     
     const recentEntries = fleetEntries.slice(-10) // 最新10件
@@ -463,6 +469,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         values = recentEntries.map(e => e.marriedCount)
         color = '#ff7875'
         label = 'ケッコン艦'
+        break
+      case 'luck':
+        values = recentEntries.map(e => e.luckModTotal || 0)
+        color = '#faad14'
+        label = '運改修合計'
+        break
+      case 'hp':
+        values = recentEntries.map(e => e.hpModTotal || 0)
+        color = '#f759ab'
+        label = '耐久改修合計'
+        break
+      case 'asw':
+        values = recentEntries.map(e => e.aswModTotal || 0)
+        color = '#13c2c2'
+        label = '対潜改修合計'
         break
     }
     
@@ -626,12 +647,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
   return (
     <div className={`fleet-analysis-manager ${theme}`}>
-      {/* バックアップボタン（左上） */}
-      <div className="backup-toggle">
-        <button onClick={() => setShowBackup(!showBackup)} className="backup-toggle-button">
-          バックアップ
-        </button>
-      </div>
 
       {/* バックアップポップアップ */}
       {showBackup && (
@@ -721,6 +736,27 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 >
                   <span className="material-icons">favorite</span>
                   ケッコン艦
+                </button>
+                <button 
+                  className={`graph-tab ${activeGraphTab === 'luck' ? 'active' : ''}`}
+                  onClick={() => setActiveGraphTab('luck')}
+                >
+                  <span className="material-icons">stars</span>
+                  運改修
+                </button>
+                <button 
+                  className={`graph-tab ${activeGraphTab === 'hp' ? 'active' : ''}`}
+                  onClick={() => setActiveGraphTab('hp')}
+                >
+                  <span className="material-icons">health_and_safety</span>
+                  耐久改修
+                </button>
+                <button 
+                  className={`graph-tab ${activeGraphTab === 'asw' ? 'active' : ''}`}
+                  onClick={() => setActiveGraphTab('asw')}
+                >
+                  <span className="material-icons">radar</span>
+                  対潜改修
                 </button>
               </div>
 
@@ -822,6 +858,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         <th>経験値</th>
                         <th>艦数</th>
                         <th>ケッコン</th>
+                        <th>運改修</th>
+                        <th>耐久改修</th>
+                        <th>対潜改修</th>
                         <th>URL</th>
                         <th>状態</th>
                       </tr>
@@ -842,7 +881,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                             <td>
                               {entry.totalExp.toLocaleString()}
                               {prevEntry && (
-                                <span className={`table-diff ${entry.totalExp - prevEntry.totalExp >= 0 ? 'positive' : 'negative'}`}>
+                                <span className={`table-diff ${entry.totalExp - prevEntry.totalExp === 0 ? 'neutral' : entry.totalExp - prevEntry.totalExp > 0 ? 'positive' : 'negative'}`}>
                                   ({entry.totalExp - prevEntry.totalExp >= 0 ? '+' : ''}{(entry.totalExp - prevEntry.totalExp).toLocaleString()})
                                 </span>
                               )}
@@ -850,7 +889,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                             <td>
                               {entry.shipCount}
                               {prevEntry && (
-                                <span className={`table-diff ${entry.shipCount - prevEntry.shipCount >= 0 ? 'positive' : 'negative'}`}>
+                                <span className={`table-diff ${entry.shipCount - prevEntry.shipCount === 0 ? 'neutral' : entry.shipCount - prevEntry.shipCount > 0 ? 'positive' : 'negative'}`}>
                                   ({entry.shipCount - prevEntry.shipCount >= 0 ? '+' : ''}{entry.shipCount - prevEntry.shipCount})
                                 </span>
                               )}
@@ -858,8 +897,32 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                             <td>
                               {entry.marriedCount}
                               {prevEntry && (
-                                <span className={`table-diff ${entry.marriedCount - prevEntry.marriedCount >= 0 ? 'positive' : 'negative'}`}>
+                                <span className={`table-diff ${entry.marriedCount - prevEntry.marriedCount === 0 ? 'neutral' : entry.marriedCount - prevEntry.marriedCount > 0 ? 'positive' : 'negative'}`}>
                                   ({entry.marriedCount - prevEntry.marriedCount >= 0 ? '+' : ''}{entry.marriedCount - prevEntry.marriedCount})
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.luckModTotal || 0}
+                              {prevEntry && (
+                                <span className={`table-diff ${(entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0) === 0 ? 'neutral' : (entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0) > 0 ? 'positive' : 'negative'}`}>
+                                  ({(entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0) >= 0 ? '+' : ''}{(entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0)})
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.hpModTotal || 0}
+                              {prevEntry && (
+                                <span className={`table-diff ${(entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0) === 0 ? 'neutral' : (entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0) > 0 ? 'positive' : 'negative'}`}>
+                                  ({(entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0) >= 0 ? '+' : ''}{(entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0)})
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.aswModTotal || 0}
+                              {prevEntry && (
+                                <span className={`table-diff ${(entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) === 0 ? 'neutral' : (entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) > 0 ? 'positive' : 'negative'}`}>
+                                  ({(entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) >= 0 ? '+' : ''}{(entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0)})
                                 </span>
                               )}
                             </td>
@@ -919,6 +982,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
           
           {/* アクションボタン */}
           <div className="dashboard-actions">
+            <button 
+              onClick={() => setShowBackup(!showBackup)} 
+              className="action-button backup-button"
+              title="バックアップ"
+            >
+              <span className="material-icons">settings</span>
+            </button>
             {fleetEntries.length >= 2 && (
               <button 
                 onClick={() => setShowGraphModal(true)} 
@@ -1047,14 +1117,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <div className="stat-card">
                   <span className="stat-label">現在経験値</span>
                   <div className="stat-value-container">
-                    <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
+                    <span className={`stat-value ${getNumberSizeClass(latestEntry.totalExp)}`}>{latestEntry.totalExp.toLocaleString()}</span>
                     {(() => {
                       const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
                       if (latestIndex > 0) {
                         const prevEntry = fleetEntries[latestIndex - 1]
                         const diff = latestEntry.totalExp - prevEntry.totalExp
                         return (
-                          <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                          <span className={`stat-diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
                             ({diff >= 0 ? '+' : ''}{diff.toLocaleString()})
                           </span>
                         )
@@ -1073,7 +1143,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         const prevEntry = fleetEntries[latestIndex - 1]
                         const diff = latestEntry.shipCount - prevEntry.shipCount
                         return (
-                          <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                          <span className={`stat-diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
                             ({diff >= 0 ? '+' : ''}{diff})
                           </span>
                         )
@@ -1092,7 +1162,64 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         const prevEntry = fleetEntries[latestIndex - 1]
                         const diff = latestEntry.marriedCount - prevEntry.marriedCount
                         return (
-                          <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                          <span className={`stat-diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
+                            ({diff >= 0 ? '+' : ''}{diff})
+                          </span>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">運改修合計</span>
+                  <div className="stat-value-container">
+                    <span className="stat-value">{latestEntry.luckModTotal}</span>
+                    {(() => {
+                      const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                      if (latestIndex > 0) {
+                        const prevEntry = fleetEntries[latestIndex - 1]
+                        const diff = latestEntry.luckModTotal - (prevEntry.luckModTotal || 0)
+                        return (
+                          <span className={`stat-diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
+                            ({diff >= 0 ? '+' : ''}{diff})
+                          </span>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">耐久改修合計</span>
+                  <div className="stat-value-container">
+                    <span className="stat-value">{latestEntry.hpModTotal}</span>
+                    {(() => {
+                      const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                      if (latestIndex > 0) {
+                        const prevEntry = fleetEntries[latestIndex - 1]
+                        const diff = latestEntry.hpModTotal - (prevEntry.hpModTotal || 0)
+                        return (
+                          <span className={`stat-diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
+                            ({diff >= 0 ? '+' : ''}{diff})
+                          </span>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">対潜改修合計</span>
+                  <div className="stat-value-container">
+                    <span className="stat-value">{latestEntry.aswModTotal}</span>
+                    {(() => {
+                      const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                      if (latestIndex > 0) {
+                        const prevEntry = fleetEntries[latestIndex - 1]
+                        const diff = latestEntry.aswModTotal - (prevEntry.aswModTotal || 0)
+                        return (
+                          <span className={`stat-diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
                             ({diff >= 0 ? '+' : ''}{diff})
                           </span>
                         )
@@ -1279,23 +1406,44 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <div className="entry-stats">
                   <div className="stat-badge">
                     <span className="stat-label">現在経験値</span>
-                    <span className="stat-value">{entry.totalExp.toLocaleString()}</span>
-                    <span className={`diff ${getDifference(entry, 'totalExp') >= 0 ? 'positive' : 'negative'}`}>
+                    <span className={`stat-value ${getNumberSizeClass(entry.totalExp)}`}>{entry.totalExp.toLocaleString()}</span>
+                    <span className={`diff ${getDifference(entry, 'totalExp') === 0 ? 'neutral' : getDifference(entry, 'totalExp') > 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'totalExp') >= 0 ? '+' : ''}{getDifference(entry, 'totalExp').toLocaleString()})
                     </span>
                   </div>
                   <div className="stat-badge">
                     <span className="stat-label">保有艦数</span>
                     <span className="stat-value">{entry.shipCount}</span>
-                    <span className={`diff ${getDifference(entry, 'shipCount') >= 0 ? 'positive' : 'negative'}`}>
+                    <span className={`diff ${getDifference(entry, 'shipCount') === 0 ? 'neutral' : getDifference(entry, 'shipCount') > 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'shipCount') >= 0 ? '+' : ''}{getDifference(entry, 'shipCount')})
                     </span>
                   </div>
                   <div className="stat-badge">
                     <span className="stat-label">ケッコン艦</span>
                     <span className="stat-value">{entry.marriedCount}</span>
-                    <span className={`diff ${getDifference(entry, 'marriedCount') >= 0 ? 'positive' : 'negative'}`}>
+                    <span className={`diff ${getDifference(entry, 'marriedCount') === 0 ? 'neutral' : getDifference(entry, 'marriedCount') > 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'marriedCount') >= 0 ? '+' : ''}{getDifference(entry, 'marriedCount')})
+                    </span>
+                  </div>
+                  <div className="stat-badge">
+                    <span className="stat-label">運改修合計</span>
+                    <span className="stat-value">{entry.luckModTotal || 0}</span>
+                    <span className={`diff ${getDifference(entry, 'luckModTotal') === 0 ? 'neutral' : getDifference(entry, 'luckModTotal') > 0 ? 'positive' : 'negative'}`}>
+                      ({getDifference(entry, 'luckModTotal') >= 0 ? '+' : ''}{getDifference(entry, 'luckModTotal')})
+                    </span>
+                  </div>
+                  <div className="stat-badge">
+                    <span className="stat-label">耐久改修合計</span>
+                    <span className="stat-value">{entry.hpModTotal || 0}</span>
+                    <span className={`diff ${getDifference(entry, 'hpModTotal') === 0 ? 'neutral' : getDifference(entry, 'hpModTotal') > 0 ? 'positive' : 'negative'}`}>
+                      ({getDifference(entry, 'hpModTotal') >= 0 ? '+' : ''}{getDifference(entry, 'hpModTotal')})
+                    </span>
+                  </div>
+                  <div className="stat-badge">
+                    <span className="stat-label">対潜改修合計</span>
+                    <span className="stat-value">{entry.aswModTotal || 0}</span>
+                    <span className={`diff ${getDifference(entry, 'aswModTotal') === 0 ? 'neutral' : getDifference(entry, 'aswModTotal') > 0 ? 'positive' : 'negative'}`}>
+                      ({getDifference(entry, 'aswModTotal') >= 0 ? '+' : ''}{getDifference(entry, 'aswModTotal')})
                     </span>
                   </div>
                 </div>
