@@ -832,7 +832,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         const prevEntry = actualIndex > 0 ? fleetEntries[actualIndex - 1] : null
                         return (
                           <tr key={entry.id} className={entry.isLatest ? 'current-row' : ''}>
-                            <td>{new Date(entry.createdAt).toLocaleString()}</td>
+                            <td>{new Date(entry.createdAt).toLocaleString('ja-JP', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}</td>
                             <td>
                               {entry.totalExp.toLocaleString()}
                               {prevEntry && (
@@ -960,7 +966,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <div className="entry-info">
                   <h3 className="section-title">最新の艦隊状況</h3>
                   <div className="entry-meta">
-                    <span className="entry-date">{new Date(latestEntry.createdAt).toLocaleString()}</span>
+                    <span className="entry-date">{new Date(latestEntry.createdAt).toLocaleString('ja-JP', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</span>
                     <span className="latest-badge">最新</span>
                     {!latestEntry.url && (
                       <input
@@ -1236,7 +1248,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               <div key={entry.id} className="entry-card past">
                 <div className="entry-header">
                   <div className="entry-info">
-                    <span className="entry-date">{new Date(entry.createdAt).toLocaleString()}</span>
+                    <h3 className="entry-title">{new Date(entry.createdAt).toLocaleString('ja-JP', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</h3>
                   </div>
                   <div className="entry-actions">
                     {entry.url && (
