@@ -48,7 +48,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [newUrl, setNewUrl] = useState<string>('')
   const [showGraphModal, setShowGraphModal] = useState<boolean>(false)
   const [showAdmiralModal, setShowAdmiralModal] = useState<boolean>(false)
-  const [tempAdmiralNameChange, setTempAdmiralNameChange] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
@@ -218,7 +217,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       localStorage.removeItem('fleetAnalysisAdmiralName')
       setAdmiralName('')
       setTempAdmiralName('')
-      setTempAdmiralNameChange('')
       setFleetEntries([])
       setFleetData('')
       setCurrentPage(0)
@@ -231,7 +229,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
   // 提督名変更モーダル処理
   const handleAdmiralModalConfirm = () => {
-    setTempAdmiralNameChange(admiralName)
     setShowAdmiralModal(true)
   }
 
@@ -616,26 +613,42 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         )}
       </h1>
 
-      {/* 統計ダッシュボード */}
+      {/* 提督ダッシュボード */}
       {fleetEntries.length > 0 && (
-        <div className="stats-dashboard">
+        <div className="admiral-dashboard">
           <div className="admiral-info">
-            <h2>{admiralName} 提督の分析記録</h2>
-            <div className="stats-grid">
-              <div className="stat-card">
-                <span className="stat-label">総記録数</span>
-                <span className="stat-value">{getTotalEntries()}</span>
+            <h2>⚓ {admiralName} 提督の分析ダッシュボード</h2>
+            
+            {/* 統計概要 */}
+            <div className="stats-overview">
+              <div className="overview-item">
+                <span className="overview-icon">📈</span>
+                <div className="overview-text">
+                  <span className="overview-label">総記録数</span>
+                  <span className="overview-value">{getTotalEntries()}</span>
+                </div>
               </div>
-              <div className="stat-card">
-                <span className="stat-label">累計達成タスク</span>
-                <span className="stat-value">{getTotalCompletedTasks()}</span>
+              <div className="overview-item">
+                <span className="overview-icon">✅</span>
+                <div className="overview-text">
+                  <span className="overview-label">累計達成タスク</span>
+                  <span className="overview-value">{getTotalCompletedTasks()}</span>
+                </div>
               </div>
-              <div className="stat-card">
-                <span className="stat-label">未達成タスク</span>
-                <span className="stat-value">{getPendingTasks()}</span>
+              <div className="overview-item">
+                <span className="overview-icon">📋</span>
+                <div className="overview-text">
+                  <span className="overview-label">未達成タスク</span>
+                  <span className="overview-value">{getPendingTasks()}</span>
+                </div>
               </div>
-              {latestEntry && (
-                <>
+            </div>
+
+            {/* 現在の艦隊状況 */}
+            {latestEntry && (
+              <>
+                <h3 className="section-title">現在の艦隊状況</h3>
+                <div className="current-stats">
                   <div className="stat-card">
                     <span className="stat-label">現在経験値</span>
                     <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
@@ -648,13 +661,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                     <span className="stat-label">ケッコン艦</span>
                     <span className="stat-value">{latestEntry.marriedCount}</span>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
             
-            {/* 分析推移表示ボタン */}
-            {fleetEntries.length >= 2 && (
-              <div className="analysis-actions">
+            {/* アクションボタン */}
+            <div className="analysis-actions">
+              <button 
+                onClick={handleAdmiralModalConfirm}
+                className="admiral-change-button"
+              >
+                <span className="material-icons">person</span> 
+                提督名変更
+              </button>
+              
+              {fleetEntries.length >= 2 && (
                 <button 
                   onClick={() => setShowGraphModal(true)} 
                   className="analysis-trend-button"
@@ -662,10 +683,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   <span className="material-icons">timeline</span> 
                   分析推移表示
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-
         </div>
       )}
 
@@ -1045,19 +1065,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       )}
 
 
-      {/* 画面外フローティングボタン */}
-      <div className="floating-buttons">
-        {/* 提督名変更ボタン */}
-        <button 
-          onClick={handleAdmiralModalConfirm}
-          className="floating-button admiral-button"
-          title="提督名変更"
-        >
-          <span className="material-icons">person</span>
-        </button>
-      </div>
 
-      {/* 提督名変更モーダル */}
+      {/* 提督名変更確認モーダル */}
       {showAdmiralModal && (
         <div className="modal-overlay" onClick={() => setShowAdmiralModal(false)}>
           <div className="modal-content admiral-modal" onClick={(e) => e.stopPropagation()}>
@@ -1079,16 +1088,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <span className="current-name">{admiralName}</span>
               </div>
               
-              <div className="input-group">
-                <label>新しい提督名:</label>
-                <input
-                  type="text"
-                  value={tempAdmiralNameChange}
-                  onChange={(e) => setTempAdmiralNameChange(e.target.value)}
-                  placeholder="新しい提督名を入力"
-                  maxLength={20}
-                  className="admiral-name-input"
-                />
+              <div className="instruction-message">
+                <span className="material-icons">info</span>
+                <p>新しい提督名は、データ削除後の初期セットアップ画面で設定できます。</p>
               </div>
               
               <div className="modal-actions">
@@ -1101,9 +1103,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <button 
                   onClick={changeAdmiral}
                   className="confirm-button danger"
-                  disabled={!tempAdmiralNameChange.trim() || tempAdmiralNameChange.trim().length < 2}
                 >
-                  変更して削除
+                  データを削除して変更
                 </button>
               </div>
             </div>

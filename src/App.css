@@ -2562,7 +2562,7 @@
 .fleet-analysis-manager {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 15px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4facfe 100%);
   min-height: 100vh;
@@ -3498,21 +3498,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
 
 .stat-badge .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #81d4fa;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .fleet-analysis-manager.abyssal .stat-badge .stat-label {
@@ -3526,11 +3526,11 @@
 }
 
 .stat-badge .stat-value {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: bold;
   color: #ffffff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .stat-badge .diff {
@@ -5306,7 +5306,7 @@
 .fleet-analysis-manager {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 15px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4facfe 100%);
   min-height: 100vh;
@@ -6242,21 +6242,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
 
 .stat-badge .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #81d4fa;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .fleet-analysis-manager.abyssal .stat-badge .stat-label {
@@ -6270,11 +6270,11 @@
 }
 
 .stat-badge .stat-value {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: bold;
   color: #ffffff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .stat-badge .diff {
@@ -7261,6 +7261,39 @@ h4 .material-icons {
   line-height: 1.4;
 }
 
+.instruction-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(33, 150, 243, 0.2);
+  border: 1px solid rgba(33, 150, 243, 0.4);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+  color: #e3f2fd;
+}
+
+.fleet-analysis-manager.abyssal .instruction-message {
+  background: rgba(79, 172, 254, 0.2);
+  border: 1px solid rgba(79, 172, 254, 0.4);
+  color: #e1f5fe;
+}
+
+.instruction-message .material-icons {
+  color: #2196f3;
+  font-size: 20px;
+}
+
+.fleet-analysis-manager.abyssal .instruction-message .material-icons {
+  color: #4facfe;
+}
+
+.instruction-message p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .current-admiral {
   margin-bottom: 20px;
 }
@@ -7418,30 +7451,57 @@ h4 .material-icons {
 
 /* 分析アクションボタン */
 .analysis-actions {
-  margin-top: 20px;
+  margin-top: 12px;
   display: flex;
   justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
+.admiral-change-button,
 .analysis-trend-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  gap: 6px;
+  padding: 8px 16px;
   color: white;
   border: none;
-  border-radius: 10px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+}
+
+.admiral-change-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.admiral-change-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.analysis-trend-button {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
 }
 
 .analysis-trend-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+/* 深海モード */
+.fleet-analysis-manager.abyssal .admiral-change-button {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: #333;
+  box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .admiral-change-button:hover {
+  box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
 }
 
 .fleet-analysis-manager.abyssal .analysis-trend-button {
@@ -7451,4 +7511,153 @@ h4 .material-icons {
 
 .fleet-analysis-manager.abyssal .analysis-trend-button:hover {
   box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+/* 統合された統計概要（提督ダッシュボード内） */
+.stats-overview {
+  display: flex;
+  justify-content: space-around;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.overview-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  justify-content: center;
+}
+
+.overview-icon {
+  font-size: 1.8rem;
+  min-width: 40px;
+  text-align: center;
+}
+
+.overview-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.overview-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  text-align: center;
+}
+
+.overview-value {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.section-title {
+  font-size: 1rem;
+  color: #b3e5fc;
+  margin: 15px 0 10px 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* 提督ダッシュボード */
+.admiral-dashboard {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.admiral-dashboard h2 {
+  text-align: center;
+  margin-bottom: 12px;
+  color: #e1f5fe;
+  font-size: 1.2rem;
+}
+
+.current-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+/* 深海モード */
+.fleet-analysis-manager.abyssal .admiral-dashboard {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .admiral-dashboard h2 {
+  color: #ffcdd2;
+}
+
+.fleet-analysis-manager.abyssal .stats-overview {
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .overview-label {
+  color: rgba(255, 205, 210, 0.9);
+}
+
+.fleet-analysis-manager.abyssal .overview-value {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(255, 107, 107, 0.4);
+}
+
+.fleet-analysis-manager.abyssal .section-title {
+  color: #ffcdd2;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .analysis-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .admiral-change-button,
+  .analysis-trend-button {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .stats-overview {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .overview-item {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  
+  .overview-text {
+    align-items: flex-start;
+  }
+  
+  .current-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .overview-icon {
+    font-size: 1.4rem;
+    min-width: 35px;
+  }
+  
+  .overview-value {
+    font-size: 1.2rem;
+  }
 }
