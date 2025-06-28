@@ -7077,6 +7077,32 @@ h4 .material-icons {
   color: white;
 }
 
+/* 最新エントリーの統計差分表示 */
+.stat-value-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-diff {
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 8px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.stat-diff.positive {
+  color: #ffffff;
+  background: linear-gradient(45deg, #66bb6a, #4caf50);
+}
+
+.stat-diff.negative {
+  color: #ffffff;
+  background: linear-gradient(45deg, #ef5350, #f44336);
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   .graph-modal-content {
@@ -7660,4 +7686,119 @@ h4 .material-icons {
   .overview-value {
     font-size: 1.2rem;
   }
+}
+
+/* URL編集機能 */
+.url-text-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.edit-url-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-url-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.edit-url-btn .material-icons {
+  font-size: 16px;
+}
+
+.url-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.url-edit-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.url-edit-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.url-edit-input:focus {
+  outline: none;
+  border-color: #4facfe;
+  box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
+}
+
+.url-edit-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.save-btn,
+.cancel-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-btn {
+  color: #4caf50;
+}
+
+.save-btn:hover {
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.cancel-btn {
+  color: #f44336;
+}
+
+.cancel-btn:hover {
+  background: rgba(244, 67, 54, 0.2);
+}
+
+.save-btn .material-icons,
+.cancel-btn .material-icons {
+  font-size: 18px;
+}
+
+/* 深海モード */
+.fleet-analysis-manager.abyssal .edit-url-btn {
+  color: rgba(255, 205, 210, 0.6);
+}
+
+.fleet-analysis-manager.abyssal .edit-url-btn:hover {
+  background: rgba(255, 107, 107, 0.1);
+  color: rgba(255, 205, 210, 0.9);
+}
+
+.fleet-analysis-manager.abyssal .url-edit-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .url-edit-input:focus {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.3);
 }

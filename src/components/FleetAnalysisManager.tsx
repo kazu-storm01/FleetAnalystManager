@@ -1,14 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
 // 型定義
-interface ShipData {
-  exp?: number[]
-  lv?: number
-  api_exp?: number[]
-  api_lv?: number
-  [key: string]: unknown
-}
-
 interface Task {
   id: number
   text: string
@@ -48,6 +40,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [newUrl, setNewUrl] = useState<string>('')
   const [showGraphModal, setShowGraphModal] = useState<boolean>(false)
   const [showAdmiralModal, setShowAdmiralModal] = useState<boolean>(false)
+  const [editingUrl, setEditingUrl] = useState<boolean>(false)
+  const [tempUrl, setTempUrl] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
@@ -361,6 +355,55 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     
     setNewUrl('')
     showToast('URLを更新しました', 'success')
+  }
+
+  // URL編集開始
+  const startEditUrl = (currentUrl: string) => {
+    setTempUrl(currentUrl || '')
+    setEditingUrl(true)
+  }
+
+  // URL編集保存
+  const saveEditUrl = () => {
+    // URL形式チェック（簡易）
+    if (tempUrl.trim()) {
+      try {
+        new URL(tempUrl.trim())
+      } catch {
+        showToast('有効なURLを入力してください', 'error')
+        return
+      }
+    }
+
+    const latestEntry = fleetEntries.find(entry => entry.isLatest)
+    if (!latestEntry) {
+      showToast('最新エントリーが見つかりません', 'error')
+      return
+    }
+
+    const updatedEntries = fleetEntries.map(entry => 
+      entry.id === latestEntry.id 
+        ? { ...entry, url: tempUrl.trim() || undefined }
+        : entry
+    )
+    
+    setFleetEntries(updatedEntries)
+    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
+    
+    setEditingUrl(false)
+    setTempUrl('')
+    
+    if (tempUrl.trim()) {
+      showToast('URLを更新しました', 'success')
+    } else {
+      showToast('URLを削除しました', 'success')
+    }
+  }
+
+  // URL編集キャンセル
+  const cancelEditUrl = () => {
+    setEditingUrl(false)
+    setTempUrl('')
   }
 
   // トースト通知表示
@@ -790,6 +833,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
       {/* データ入力セクション */}
       <div className="data-input-section">
+        <h3>最新の艦隊を反映する</h3>
         <div className="input-group">
           <input
             type="text"
@@ -827,7 +871,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   onClick={() => deleteEntry(latestEntry.id)}
                   className="delete-btn"
                 >
-                  <span className="material-icons">delete</span>
+                  <span className="material-icons">close</span>
                 </button>
               </div>
             </div>
@@ -835,21 +879,96 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
             <div className="entry-stats">
               <div className="stat-badge">
                 <span className="stat-label">現在経験値</span>
-                <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
+                <div className="stat-value-container">
+                  <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
+                  {(() => {
+                    const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                    if (latestIndex > 0) {
+                      const prevEntry = fleetEntries[latestIndex - 1]
+                      const diff = latestEntry.totalExp - prevEntry.totalExp
+                      return (
+                        <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                          ({diff >= 0 ? '+' : ''}{diff.toLocaleString()})
+                        </span>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
               </div>
               <div className="stat-badge">
                 <span className="stat-label">保有艦数</span>
-                <span className="stat-value">{latestEntry.shipCount}</span>
+                <div className="stat-value-container">
+                  <span className="stat-value">{latestEntry.shipCount}</span>
+                  {(() => {
+                    const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                    if (latestIndex > 0) {
+                      const prevEntry = fleetEntries[latestIndex - 1]
+                      const diff = latestEntry.shipCount - prevEntry.shipCount
+                      return (
+                        <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                          ({diff >= 0 ? '+' : ''}{diff})
+                        </span>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
               </div>
               <div className="stat-badge">
                 <span className="stat-label">ケッコン艦</span>
-                <span className="stat-value">{latestEntry.marriedCount}</span>
+                <div className="stat-value-container">
+                  <span className="stat-value">{latestEntry.marriedCount}</span>
+                  {(() => {
+                    const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
+                    if (latestIndex > 0) {
+                      const prevEntry = fleetEntries[latestIndex - 1]
+                      const diff = latestEntry.marriedCount - prevEntry.marriedCount
+                      return (
+                        <span className={`stat-diff ${diff >= 0 ? 'positive' : 'negative'}`}>
+                          ({diff >= 0 ? '+' : ''}{diff})
+                        </span>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
               </div>
             </div>
 
-            {latestEntry.url && (
+            {(latestEntry.url || editingUrl) && (
               <div className="url-display">
-                <span className="url-text">{latestEntry.url}</span>
+                {editingUrl ? (
+                  <div className="url-edit-form">
+                    <input
+                      type="text"
+                      value={tempUrl}
+                      onChange={(e) => setTempUrl(e.target.value)}
+                      placeholder="URLを入力してください..."
+                      className="url-edit-input"
+                      autoFocus
+                    />
+                    <div className="url-edit-actions">
+                      <button onClick={saveEditUrl} className="save-btn">
+                        <span className="material-icons">check</span>
+                      </button>
+                      <button onClick={cancelEditUrl} className="cancel-btn">
+                        <span className="material-icons">close</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="url-text-container">
+                    <span className="url-text">{latestEntry.url}</span>
+                    <button 
+                      onClick={() => startEditUrl(latestEntry.url || '')}
+                      className="edit-url-btn"
+                      title="URLを編集"
+                    >
+                      <span className="material-icons">edit</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -880,7 +999,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         onClick={() => deleteTask(latestEntry.id, task.id)}
                         className="delete-task-btn"
                       >
-                        <span className="material-icons">delete</span>
+                        <span className="material-icons">close</span>
                       </button>
                       {task.inheritedFrom && (
                         <span className="inherited-badge">継続</span>
@@ -916,26 +1035,28 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
               </div>
 
-              {/* URL追加/更新 */}
-              <div className="input-group">
-                <div className="input-with-button">
-                  <input
-                    type="text"
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    placeholder="URLを入力してください..."
-                    className="url-input"
-                    onKeyDown={(e) => e.key === 'Enter' && updateLatestUrl()}
-                  />
-                  <button 
-                    onClick={updateLatestUrl}
-                    className="add-button"
-                    disabled={!newUrl.trim()}
-                  >
-                    {latestEntry.url ? '更新' : '追加'}
-                  </button>
+              {/* URL追加（URLが未登録の場合のみ表示） */}
+              {!latestEntry.url && (
+                <div className="input-group">
+                  <div className="input-with-button">
+                    <input
+                      type="text"
+                      value={newUrl}
+                      onChange={(e) => setNewUrl(e.target.value)}
+                      placeholder="URLを入力してください..."
+                      className="url-input"
+                      onKeyDown={(e) => e.key === 'Enter' && updateLatestUrl()}
+                    />
+                    <button 
+                      onClick={updateLatestUrl}
+                      className="add-button"
+                      disabled={!newUrl.trim()}
+                    >
+                      追加
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -991,7 +1112,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       onClick={() => deleteEntry(entry.id)}
                       className="delete-btn"
                     >
-                      <span className="material-icons">delete</span>
+                      <span className="material-icons">close</span>
                     </button>
                   </div>
                 </div>
