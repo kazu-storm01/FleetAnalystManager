@@ -2773,6 +2773,7 @@
   border-radius: 10px;
   padding: 20px;
   text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .stat-card {
@@ -2947,12 +2948,13 @@
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .entry-card.latest {
   border-color: #00d4ff;
   background: rgba(0, 212, 255, 0.15);
-  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 6px 25px rgba(0, 212, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 .entry-card.past {
@@ -3220,6 +3222,7 @@
   padding: 16px;
   margin-bottom: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .data-input-section {
@@ -3375,6 +3378,7 @@
   padding: 16px;
   margin-bottom: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .growth-chart {
@@ -3591,6 +3595,7 @@
   padding: 16px;
   margin-bottom: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .backup-section {
@@ -5546,6 +5551,7 @@
   border-radius: 10px;
   padding: 20px;
   text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .stat-card {
@@ -5720,12 +5726,13 @@
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .entry-card.latest {
   border-color: #00d4ff;
   background: rgba(0, 212, 255, 0.15);
-  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 6px 25px rgba(0, 212, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 .entry-card.past {
@@ -5993,6 +6000,7 @@
   padding: 16px;
   margin-bottom: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .data-input-section {
@@ -6148,6 +6156,7 @@
   padding: 16px;
   margin-bottom: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .growth-chart {
@@ -6364,6 +6373,7 @@
   padding: 16px;
   margin-bottom: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .backup-section {

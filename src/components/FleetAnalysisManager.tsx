@@ -410,7 +410,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   // トースト通知表示
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type })
-    setTimeout(() => setToast(null), 3000)
+    // タスク完了メッセージは長めに表示
+    const duration = message.includes('タスクが完了') ? 5000 : 3000
+    setTimeout(() => setToast(null), duration)
   }
 
   // 統計情報計算
