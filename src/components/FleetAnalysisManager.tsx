@@ -132,12 +132,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     }
   }
 
-  // データ保存
-  const saveData = () => {
-    if (admiralName) {
-      localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(fleetEntries))
-    }
-  }
+  // データ保存（現在は各更新処理で直接保存しているため未使用）
+  // const saveData = () => {
+  //   if (admiralName) {
+  //     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(fleetEntries))
+  //   }
+  // }
 
   // 提督名設定（初回セットアップ）
   const setupAdmiral = () => {
@@ -215,8 +215,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       // フォームリセット
       setFleetData('')
       
-      // 保存
-      setTimeout(saveData, 100)
+      // 即座にローカルストレージに保存
+      localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
       
       showToast('艦隊データ登録完了！', 'success')
     } catch (error) {
@@ -238,14 +238,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       }
       
       setFleetEntries(filtered)
-      setTimeout(saveData, 100)
+      localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(filtered))
       showToast('エントリーを削除しました', 'success')
     }
   }
 
   // タスクの完了状態を切り替え
   const toggleTask = (entryId: number, taskId: number) => {
-    setFleetEntries(prev => prev.map(entry => {
+    const updatedEntries = fleetEntries.map(entry => {
       if (entry.id === entryId) {
         const updatedTasks = entry.tasks.map(task => 
           task.id === taskId ? { ...task, completed: !task.completed } : task
@@ -264,13 +264,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         }
       }
       return entry
-    }))
-    setTimeout(saveData, 100)
+    })
+    
+    setFleetEntries(updatedEntries)
+    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
   }
 
   // タスクの削除
   const deleteTask = (entryId: number, taskId: number) => {
-    setFleetEntries(prev => prev.map(entry => {
+    const updatedEntries = fleetEntries.map(entry => {
       if (entry.id === entryId) {
         return {
           ...entry,
@@ -278,8 +280,10 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         }
       }
       return entry
-    }))
-    setTimeout(saveData, 100)
+    })
+    
+    setFleetEntries(updatedEntries)
+    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
   }
 
   // タスク追加（最新エントリーのみ）
@@ -302,14 +306,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       createdAt: new Date().toISOString()
     }
 
-    setFleetEntries(prev => prev.map(entry => 
+    const updatedEntries = fleetEntries.map(entry => 
       entry.id === latestEntry.id 
         ? { ...entry, tasks: [...entry.tasks, newTask] }
         : entry
-    ))
-
+    )
+    
+    setFleetEntries(updatedEntries)
+    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
+    
     setNewTaskText('')
-    setTimeout(saveData, 100)
     showToast('タスクを追加しました', 'success')
   }
 
@@ -334,14 +340,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       return
     }
 
-    setFleetEntries(prev => prev.map(entry => 
+    const updatedEntries = fleetEntries.map(entry => 
       entry.id === latestEntry.id 
         ? { ...entry, url: newUrl.trim() }
         : entry
-    ))
-
+    )
+    
+    setFleetEntries(updatedEntries)
+    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
+    
     setNewUrl('')
-    setTimeout(saveData, 100)
     showToast('URLを更新しました', 'success')
   }
 
@@ -443,9 +451,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
           }
         }
         
-        setFleetEntries(backup.fleetEntries || [])
-        setAdmiralName(backup.admiralName || '')
-        setTimeout(saveData, 100)
+        const entries = backup.fleetEntries || []
+        const admiral = backup.admiralName || ''
+        
+        setFleetEntries(entries)
+        setAdmiralName(admiral)
+        
+        // 即座に保存
+        if (admiral) {
+          localStorage.setItem('fleetAnalysisAdmiralName', admiral)
+          localStorage.setItem(`${admiral}_fleetEntries`, JSON.stringify(entries))
+        }
+        
         showToast('バックアップをインポートしました', 'success')
       } catch {
         showToast('バックアップファイルの読み込みに失敗しました', 'error')
