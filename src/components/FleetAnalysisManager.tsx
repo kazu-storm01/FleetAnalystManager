@@ -656,6 +656,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 />
               </label>
             </div>
+            <div className="backup-separator"></div>
+            <div className="backup-controls">
+              <button 
+                onClick={handleAdmiralModalConfirm}
+                className="backup-btn admiral-change-btn"
+              >
+                <span className="material-icons">person</span>
+                提督変更
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -895,14 +905,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                     <span className="material-icons">analytics</span>
                   </button>
                 )}
-                
-                <button 
-                  onClick={handleAdmiralModalConfirm}
-                  className="action-button admiral-button"
-                  title="提督名変更"
-                >
-                  <span className="material-icons">person</span>
-                </button>
               </div>
             </div>
             
@@ -1276,12 +1278,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
 
 
-      {/* 提督名変更確認モーダル */}
+      {/* 提督変更確認モーダル */}
       {showAdmiralModal && (
         <div className="modal-overlay" onClick={() => setShowAdmiralModal(false)}>
           <div className="modal-content admiral-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>提督名変更</h2>
+              <h2>提督変更</h2>
               <button onClick={() => setShowAdmiralModal(false)} className="close-button">
                 <span className="material-icons">close</span>
               </button>
@@ -1290,7 +1292,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
             <div className="modal-body">
               <div className="warning-message">
                 <span className="material-icons">warning</span>
-                <p>提督名を変更すると、すべての分析データが削除されます。</p>
+                <p>提督を変更すると、すべての分析データが削除されます。</p>
               </div>
               
               <div className="current-admiral">
