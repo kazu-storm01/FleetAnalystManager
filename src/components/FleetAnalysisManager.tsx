@@ -43,7 +43,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [editingUrl, setEditingUrl] = useState<boolean>(false)
   const [tempUrl, setTempUrl] = useState<string>('')
   const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married'>('exp')
-  const [showAddModal, setShowAddModal] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
@@ -323,7 +322,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
     
     setNewTaskText('')
-    setShowAddModal(false)
     showToast('タスクを追加しました', 'success')
   }
 
@@ -358,7 +356,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
     
     setNewUrl('')
-    setShowAddModal(false)
     showToast('URLを更新しました', 'success')
   }
 
@@ -925,13 +922,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <span className="material-icons">analytics</span>
               </button>
             )}
-            <button 
-              onClick={() => setShowAddModal(true)} 
-              className="action-button add-button"
-              title="タスク・URL追加"
-            >
-              <span className="material-icons">add_circle</span>
-            </button>
           </div>
         </div>
       )}
@@ -972,6 +962,52 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   <div className="entry-meta">
                     <span className="entry-date">{new Date(latestEntry.createdAt).toLocaleString()}</span>
                     <span className="latest-badge">最新</span>
+                    {!latestEntry.url && (
+                      <input
+                        type="text"
+                        value={newUrl}
+                        onChange={(e) => setNewUrl(e.target.value)}
+                        onPaste={(e) => {
+                          // ペーストされたデータを取得
+                          const pastedData = e.clipboardData.getData('text')
+                          
+                          // 少し遅延してから処理（ペーストデータがstateに反映されるのを待つ）
+                          setTimeout(() => {
+                            if (pastedData.trim()) {
+                              // URL形式チェック（簡易）
+                              try {
+                                new URL(pastedData.trim())
+                                // 有効なURLの場合、自動登録
+                                const latestEntry = fleetEntries.find(entry => entry.isLatest)
+                                if (latestEntry) {
+                                  const updatedEntries = fleetEntries.map(entry => 
+                                    entry.id === latestEntry.id 
+                                      ? { ...entry, url: pastedData.trim() }
+                                      : entry
+                                  )
+                                  setFleetEntries(updatedEntries)
+                                  localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
+                                  setNewUrl('')
+                                  showToast('URLを登録しました', 'success')
+                                }
+                              } catch {
+                                // 無効なURLの場合は何もしない（通常の入力として扱う）
+                              }
+                            }
+                          }, 100)
+                        }}
+                        placeholder="URL貼り付け"
+                        className="url-input-compact"
+                        style={{
+                          marginLeft: '0.5rem',
+                          padding: '0.25rem 0.5rem',
+                          fontSize: '0.875rem',
+                          borderRadius: '4px',
+                          border: '1px solid #ddd',
+                          width: '400px'
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="entry-actions">
@@ -982,7 +1018,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       rel="noopener noreferrer"
                       className="url-link"
                     >
-                      <span className="material-icons">open_in_new</span> 開く
+                      <span className="material-icons">link</span> 開く
                     </a>
                   )}
                   <button
@@ -1056,7 +1092,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               </div>
 
               {/* URL表示・編集 */}
-              {(latestEntry.url || editingUrl) && (
+              {latestEntry.url && (
                 <div className="url-display">
                   {editingUrl ? (
                     <div className="url-edit-form">
@@ -1134,10 +1170,43 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         </div>
       )}
 
+      {/* アクションエリア */}
+      {latestEntry && (
+        <div className="action-area" style={{marginTop: '1.5rem'}}>
+          <div className="input-section">
+            {/* <h4 style={{marginBottom: '1rem'}}>タスク・URL追加</h4> */}
+            
+            {/* タスク追加 */}
+            <div className="input-group" style={{marginBottom: '1rem'}}>
+              <div className="input-with-button" style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                <input
+                  type="text"
+                  value={newTaskText}
+                  onChange={(e) => setNewTaskText(e.target.value)}
+                  placeholder="タスク内容を入力してください..."
+                  className="task-input"
+                  onKeyDown={(e) => e.key === 'Enter' && addTaskToLatest()}
+                  style={{flex: '1', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd'}}
+                />
+                <button 
+                  onClick={addTaskToLatest}
+                  className="add-button"
+                  disabled={!newTaskText.trim()}
+                  style={{padding: '0.5rem 1rem', borderRadius: '4px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer'}}
+                >
+                  追加
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* 過去エントリー */}
       {pastEntries.length > 0 && (
-        <div className="history-section">
+        <div className="history-section" style={{marginTop: '5rem'}}>
+          <h2 style={{textAlign: 'left'}}>分析履歴</h2>
           
           {/* ページング */}
           {totalPages > 1 && (
@@ -1177,7 +1246,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         rel="noopener noreferrer"
                         className="url-link"
                       >
-                        <span className="material-icons">open_in_new</span> 開く
+                        <span className="material-icons">link</span> 開く
                       </a>
                     )}
                     <button
@@ -1259,67 +1328,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
 
 
-      {/* タスク・URL追加モーダル */}
-      {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content add-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>タスク・URL追加</h2>
-              <button onClick={() => setShowAddModal(false)} className="close-button">
-                <span className="material-icons">close</span>
-              </button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="input-group">
-                <label>タスク内容</label>
-                <input
-                  type="text"
-                  value={newTaskText}
-                  onChange={(e) => setNewTaskText(e.target.value)}
-                  placeholder="タスク内容を入力してください..."
-                  className="task-input"
-                  onKeyDown={(e) => e.key === 'Enter' && addTaskToLatest()}
-                />
-              </div>
-              
-              {!latestEntry?.url && (
-                <div className="input-group">
-                  <label>URL（任意）</label>
-                  <input
-                    type="text"
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    placeholder="URLを入力してください..."
-                    className="url-input"
-                    onKeyDown={(e) => e.key === 'Enter' && updateLatestUrl()}
-                  />
-                </div>
-              )}
-              
-              <div className="modal-actions">
-                <button 
-                  onClick={() => setShowAddModal(false)}
-                  className="cancel-button"
-                >
-                  キャンセル
-                </button>
-                <button 
-                  onClick={() => {
-                    if (newTaskText.trim()) addTaskToLatest()
-                    if (newUrl.trim() && !latestEntry?.url) updateLatestUrl()
-                    setShowAddModal(false)
-                  }}
-                  className="confirm-button"
-                  disabled={!newTaskText.trim()}
-                >
-                  追加
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 提督変更確認モーダル */}
       {showAdmiralModal && (
