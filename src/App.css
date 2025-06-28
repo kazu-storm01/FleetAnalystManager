@@ -2897,14 +2897,18 @@
   background: linear-gradient(45deg, #4caf50, #45a049);
   color: white;
   border: none;
-  padding: 15px 30px;
-  border-radius: 25px;
-  font-size: 1.2rem;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
   align-self: center;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .fleet-analysis-manager.abyssal .register-button {
@@ -3270,24 +3274,29 @@
 
 .preview-stats {
   display: flex;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 15px;
+  margin-top: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .preview-value {
   color: #b3e5fc;
-  font-size: 0.8rem;
-  padding: 2px 6px;
-  background: rgba(0, 212, 255, 0.1);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 8px 12px;
+  background: rgba(0, 212, 255, 0.15);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .fleet-analysis-manager.abyssal .preview-value {
-  color: #d3d3d3;
-  background: rgba(255, 107, 107, 0.1);
-  border-color: rgba(255, 107, 107, 0.2);
+  color: #ffcdd2;
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.1);
 }
 
 /* ステータスダッシュボード */
@@ -3489,26 +3498,39 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
-.stat-badge .label {
-  font-size: 0.7rem;
-  color: #b3e5fc;
-  margin-bottom: 2px;
+.stat-badge .stat-label {
+  font-size: 0.75rem;
+  color: #81d4fa;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.fleet-analysis-manager.abyssal .stat-badge .label {
-  color: #d3d3d3;
+.fleet-analysis-manager.abyssal .stat-badge .stat-label {
+  color: #ffcdd2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.stat-badge .value {
-  font-size: 0.8rem;
+.fleet-analysis-manager.abyssal .stat-badge .stat-value {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(255, 107, 107, 0.4);
+}
+
+.stat-badge .stat-value {
+  font-size: 1.1rem;
   font-weight: bold;
-  color: white;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  margin-bottom: 2px;
 }
 
 .stat-badge .diff {
@@ -5619,14 +5641,18 @@
   background: linear-gradient(45deg, #4caf50, #45a049);
   color: white;
   border: none;
-  padding: 15px 30px;
-  border-radius: 25px;
-  font-size: 1.2rem;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
   align-self: center;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .fleet-analysis-manager.abyssal .register-button {
@@ -5992,24 +6018,29 @@
 
 .preview-stats {
   display: flex;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 15px;
+  margin-top: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .preview-value {
   color: #b3e5fc;
-  font-size: 0.8rem;
-  padding: 2px 6px;
-  background: rgba(0, 212, 255, 0.1);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 8px 12px;
+  background: rgba(0, 212, 255, 0.15);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .fleet-analysis-manager.abyssal .preview-value {
-  color: #d3d3d3;
-  background: rgba(255, 107, 107, 0.1);
-  border-color: rgba(255, 107, 107, 0.2);
+  color: #ffcdd2;
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.1);
 }
 
 /* ステータスダッシュボード */
@@ -6211,26 +6242,39 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
-.stat-badge .label {
-  font-size: 0.7rem;
-  color: #b3e5fc;
-  margin-bottom: 2px;
+.stat-badge .stat-label {
+  font-size: 0.75rem;
+  color: #81d4fa;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.fleet-analysis-manager.abyssal .stat-badge .label {
-  color: #d3d3d3;
+.fleet-analysis-manager.abyssal .stat-badge .stat-label {
+  color: #ffcdd2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.stat-badge .value {
-  font-size: 0.8rem;
+.fleet-analysis-manager.abyssal .stat-badge .stat-value {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(255, 107, 107, 0.4);
+}
+
+.stat-badge .stat-value {
+  font-size: 1.1rem;
   font-weight: bold;
-  color: white;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  margin-bottom: 2px;
 }
 
 .stat-badge .diff {
@@ -7053,4 +7097,358 @@ h4 .material-icons {
     width: 100%;
     height: auto;
   }
+}
+
+/* フローティングボタン */
+.floating-buttons {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 1000;
+}
+
+.floating-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.floating-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.floating-button.admiral-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.floating-button.chart-button {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #333;
+}
+
+.floating-button .material-icons {
+  font-size: 24px;
+}
+
+/* 深海テーマでのフローティングボタン */
+.fleet-analysis-manager.abyssal .floating-button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+
+.fleet-analysis-manager.abyssal .floating-button.admiral-button {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: #333;
+}
+
+.fleet-analysis-manager.abyssal .floating-button.chart-button {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+}
+
+/* 提督名変更モーダル */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .modal-content {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fleet-analysis-manager.abyssal .modal-header {
+  border-bottom: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 1.4rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 24px;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.modal-body {
+  padding: 25px;
+}
+
+.warning-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+  color: #fff3cd;
+}
+
+.fleet-analysis-manager.abyssal .warning-message {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: #ffebee;
+}
+
+.warning-message .material-icons {
+  color: #ffc107;
+  font-size: 20px;
+}
+
+.fleet-analysis-manager.abyssal .warning-message .material-icons {
+  color: #ff6b6b;
+}
+
+.warning-message p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.current-admiral {
+  margin-bottom: 20px;
+}
+
+.current-admiral label {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.current-name {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.input-group {
+  margin-bottom: 25px;
+}
+
+.input-group label {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.admiral-name-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.admiral-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admiral-name-input:focus {
+  outline: none;
+  border-color: #4facfe;
+  box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .admiral-name-input:focus {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.3);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+}
+
+.cancel-button,
+.confirm-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.confirm-button {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.confirm-button.danger {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+
+.confirm-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.confirm-button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .floating-buttons {
+    right: 15px;
+    bottom: 15px;
+    gap: 12px;
+  }
+  
+  .floating-button {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .floating-button .material-icons {
+    font-size: 20px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 10px;
+  }
+  
+  .modal-header,
+  .modal-body {
+    padding: 20px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .cancel-button,
+  .confirm-button {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
+/* 海色モード時のh要素を白色にする */
+.fleet-analysis-manager:not(.abyssal) h1,
+.fleet-analysis-manager:not(.abyssal) h2,
+.fleet-analysis-manager:not(.abyssal) h3,
+.fleet-analysis-manager:not(.abyssal) h4,
+.fleet-analysis-manager:not(.abyssal) h5,
+.fleet-analysis-manager:not(.abyssal) h6 {
+  color: white !important;
+}
+
+/* 分析アクションボタン */
+.analysis-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.analysis-trend-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.analysis-trend-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+.fleet-analysis-manager.abyssal .analysis-trend-button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .analysis-trend-button:hover {
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }

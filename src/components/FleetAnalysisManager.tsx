@@ -44,15 +44,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [currentPage, setCurrentPage] = useState<number>(0)
   const [showWelcome, setShowWelcome] = useState<boolean>(false)
   const [showBackup, setShowBackup] = useState<boolean>(false)
-  const [previewStats, setPreviewStats] = useState<{totalExp: number, shipCount: number, marriedCount: number} | null>(null)
   const [newTaskText, setNewTaskText] = useState<string>('')
   const [newUrl, setNewUrl] = useState<string>('')
   const [showGraphModal, setShowGraphModal] = useState<boolean>(false)
+  const [showAdmiralModal, setShowAdmiralModal] = useState<boolean>(false)
+  const [tempAdmiralNameChange, setTempAdmiralNameChange] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
 
-  // JSON艦隊データ解析エンジン
+  // JSON艦隊データ解析エンジン（最適化版）
   const calculateFleetStats = (jsonData: string) => {
     try {
       const data = JSON.parse(jsonData)
@@ -63,27 +64,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       // 配列の場合の処理（複数の形式に対応）
       const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
       
-      ships.forEach((ship: ShipData) => {
-        // 通常のexp配列形式
-        if (ship.exp && Array.isArray(ship.exp)) {
-          totalExpValue += (ship.exp[0] || 0)
-        }
-        // kancolle API形式（api_exp配列）
-        else if (ship.api_exp && Array.isArray(ship.api_exp)) {
-          totalExpValue += (ship.api_exp[0] || 0)
+      // 効率化：forEach の代わりに for ループを使用
+      for (let i = 0; i < ships.length; i++) {
+        const ship = ships[i]
+        
+        // 経験値の取得（優先順位付き）
+        const exp = ship.exp?.[0] || ship.api_exp?.[0] || 0
+        totalExpValue += exp
+        
+        // レベルの取得とケッコン判定
+        const level = ship.lv || ship.api_lv || 0
+        if (level >= 100) {
+          marriedCountValue++
         }
         
         shipCountValue++
-        
-        // 通常のlv形式
-        if (ship.lv && ship.lv >= 100) {
-          marriedCountValue++
-        }
-        // kancolle API形式（api_lv）
-        else if (ship.api_lv && ship.api_lv >= 100) {
-          marriedCountValue++
-        }
-      })
+      }
 
       return { totalExp: totalExpValue, shipCount: shipCountValue, marriedCount: marriedCountValue }
     } catch {
@@ -91,19 +87,78 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     }
   }
 
-  // プレビュー更新（リアルタイム解析）
-  useEffect(() => {
-    if (fleetData.trim()) {
-      try {
-        const stats = calculateFleetStats(fleetData)
-        setPreviewStats(stats)
-      } catch {
-        setPreviewStats(null)
+  // ペースト時の自動登録処理
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    // ペーストされたデータを取得
+    const pastedData = e.clipboardData.getData('text')
+    
+    // 少し遅延してから処理（ペーストデータがstateに反映されるのを待つ）
+    setTimeout(() => {
+      if (pastedData.trim() && admiralName.trim()) {
+        try {
+          const stats = calculateFleetStats(pastedData)
+          
+          // 以前のエントリーをlatestではなくする
+          const updatedEntries = fleetEntries.map(entry => ({ ...entry, isLatest: false }))
+
+          // 前回の未達成タスクを取得
+          const previousLatestEntry = fleetEntries.find(entry => entry.isLatest)
+          const inheritedTasks: Task[] = []
+          
+          if (previousLatestEntry) {
+            const incompleteTasks = previousLatestEntry.tasks.filter(task => !task.completed)
+            incompleteTasks.forEach(task => {
+              inheritedTasks.push({
+                id: Date.now() + Math.random(),
+                text: task.text,
+                completed: false,
+                createdAt: new Date().toISOString(),
+                inheritedFrom: previousLatestEntry.id,
+                originalTaskId: task.originalTaskId || task.id
+              })
+            })
+          }
+
+          const newEntry: FleetEntry = {
+            id: Date.now(),
+            totalExp: stats.totalExp,
+            shipCount: stats.shipCount,
+            marriedCount: stats.marriedCount,
+            tasks: inheritedTasks,
+            url: undefined,
+            createdAt: new Date().toISOString(),
+            admiralName,
+            isLatest: true
+          }
+
+          const newEntries = [...updatedEntries, newEntry]
+          
+          // 100件制限
+          if (newEntries.length > 100) {
+            newEntries.splice(0, newEntries.length - 100)
+          }
+
+          setFleetEntries(newEntries)
+          
+          // フォームリセット
+          setFleetData('')
+          
+          // 即座にローカルストレージに保存
+          localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
+          
+          if (inheritedTasks.length > 0) {
+            showToast(`艦隊データ登録完了！未達成タスク${inheritedTasks.length}件を引き継ぎました`, 'success')
+          } else {
+            showToast('艦隊データ登録完了！', 'success')
+          }
+        } catch (error) {
+          showToast(`エラー: ${error}`, 'error')
+        }
+      } else if (!admiralName.trim()) {
+        showToast('提督名を設定してください', 'error')
       }
-    } else {
-      setPreviewStats(null)
-    }
-  }, [fleetData])
+    }, 100)
+  }
 
   // 初期化処理
   useEffect(() => {
@@ -163,66 +218,24 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       localStorage.removeItem('fleetAnalysisAdmiralName')
       setAdmiralName('')
       setTempAdmiralName('')
+      setTempAdmiralNameChange('')
       setFleetEntries([])
       setFleetData('')
       setCurrentPage(0)
       setIsFirstSetup(true)
       setShowWelcome(true)
+      setShowAdmiralModal(false)
       showToast('すべてのデータが削除されました', 'success')
     }
   }
 
-
-  // 艦隊データ・タスク登録
-  const registerFleetEntry = () => {
-    if (!fleetData.trim()) {
-      showToast('艦隊JSONデータを入力してください', 'error')
-      return
-    }
-
-    if (!admiralName.trim()) {
-      showToast('提督名を設定してください', 'error')
-      return
-    }
-
-    try {
-      const stats = calculateFleetStats(fleetData)
-      
-      // 以前のエントリーをlatestではなくする
-      const updatedEntries = fleetEntries.map(entry => ({ ...entry, isLatest: false }))
-
-      const newEntry: FleetEntry = {
-        id: Date.now(),
-        totalExp: stats.totalExp,
-        shipCount: stats.shipCount,
-        marriedCount: stats.marriedCount,
-        tasks: [],
-        url: undefined,
-        createdAt: new Date().toISOString(),
-        admiralName,
-        isLatest: true
-      }
-
-      const newEntries = [...updatedEntries, newEntry]
-      
-      // 100件制限
-      if (newEntries.length > 100) {
-        newEntries.splice(0, newEntries.length - 100)
-      }
-
-      setFleetEntries(newEntries)
-      
-      // フォームリセット
-      setFleetData('')
-      
-      // 即座にローカルストレージに保存
-      localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
-      
-      showToast('艦隊データ登録完了！', 'success')
-    } catch (error) {
-      showToast(`エラー: ${error}`, 'error')
-    }
+  // 提督名変更モーダル処理
+  const handleAdmiralModalConfirm = () => {
+    setTempAdmiralNameChange(admiralName)
+    setShowAdmiralModal(true)
   }
+
+
 
   // エントリー削除
   const deleteEntry = (entryId: number) => {
@@ -638,22 +651,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </>
               )}
             </div>
-            <button onClick={changeAdmiral} className="change-admiral-btn">
-              <span className="material-icons">settings</span> 提督名変更
-            </button>
+            
+            {/* 分析推移表示ボタン */}
+            {fleetEntries.length >= 2 && (
+              <div className="analysis-actions">
+                <button 
+                  onClick={() => setShowGraphModal(true)} 
+                  className="analysis-trend-button"
+                >
+                  <span className="material-icons">timeline</span> 
+                  分析推移表示
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* 分析推移ボタン */}
-          {fleetEntries.length >= 2 && (
-            <div className="chart-section">
-              <button 
-                onClick={() => setShowGraphModal(true)} 
-                className="chart-modal-button"
-              >
-                <span className="material-icons">timeline</span> 分析推移表示
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -758,35 +770,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
       {/* データ入力セクション */}
       <div className="data-input-section">
-        <h2>艦隊分析データ登録</h2>
-        
         <div className="input-group">
-          <label>艦隊JSONデータ:</label>
           <input
             type="text"
             value={fleetData}
             onChange={(e) => setFleetData(e.target.value)}
+            onPaste={handlePaste}
             placeholder="艦隊のJSONデータをここに貼り付けてください..."
             className="fleet-data-input"
           />
-          {previewStats && (
-            <div className="preview-stats">
-              <span>プレビュー: </span>
-              <span className="preview-value">経験値 {previewStats.totalExp.toLocaleString()}</span>
-              <span className="preview-value">艦数 {previewStats.shipCount}</span>
-              <span className="preview-value">ケッコン {previewStats.marriedCount}</span>
-            </div>
-          )}
         </div>
-
-
-        <button 
-          onClick={registerFleetEntry}
-          className="register-button"
-          disabled={!fleetData.trim() || !admiralName.trim()}
-        >
-          <span className="material-icons">edit</span> データ登録
-        </button>
       </div>
 
       {/* 最新エントリー */}
@@ -821,13 +814,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
             <div className="entry-stats">
               <div className="stat-badge">
-                <span>経験値 {latestEntry.totalExp.toLocaleString()}</span>
+                <span className="stat-label">現在経験値</span>
+                <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
               </div>
               <div className="stat-badge">
-                <span>艦数 {latestEntry.shipCount}</span>
+                <span className="stat-label">保有艦数</span>
+                <span className="stat-value">{latestEntry.shipCount}</span>
               </div>
               <div className="stat-badge">
-                <span>ケッコン {latestEntry.marriedCount}</span>
+                <span className="stat-label">ケッコン艦</span>
+                <span className="stat-value">{latestEntry.marriedCount}</span>
               </div>
             </div>
 
@@ -881,7 +877,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               
               {/* タスク追加 */}
               <div className="input-group">
-                <label>新しいタスク:</label>
                 <div className="input-with-button">
                   <input
                     type="text"
@@ -903,7 +898,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
               {/* URL追加/更新 */}
               <div className="input-group">
-                <label>URL {latestEntry.url ? '(更新)' : '(追加)'}:</label>
                 <div className="input-with-button">
                   <input
                     type="text"
@@ -984,19 +978,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
                 <div className="entry-stats">
                   <div className="stat-badge">
-                    <span>経験値 {entry.totalExp.toLocaleString()}</span>
+                    <span className="stat-label">現在経験値</span>
+                    <span className="stat-value">{entry.totalExp.toLocaleString()}</span>
                     <span className={`diff ${getDifference(entry, 'totalExp') >= 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'totalExp') >= 0 ? '+' : ''}{getDifference(entry, 'totalExp').toLocaleString()})
                     </span>
                   </div>
                   <div className="stat-badge">
-                    <span>艦数 {entry.shipCount}</span>
+                    <span className="stat-label">保有艦数</span>
+                    <span className="stat-value">{entry.shipCount}</span>
                     <span className={`diff ${getDifference(entry, 'shipCount') >= 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'shipCount') >= 0 ? '+' : ''}{getDifference(entry, 'shipCount')})
                     </span>
                   </div>
                   <div className="stat-badge">
-                    <span>ケッコン {entry.marriedCount}</span>
+                    <span className="stat-label">ケッコン艦</span>
+                    <span className="stat-value">{entry.marriedCount}</span>
                     <span className={`diff ${getDifference(entry, 'marriedCount') >= 0 ? 'positive' : 'negative'}`}>
                       ({getDifference(entry, 'marriedCount') >= 0 ? '+' : ''}{getDifference(entry, 'marriedCount')})
                     </span>
@@ -1047,6 +1044,72 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         </div>
       )}
 
+
+      {/* 画面外フローティングボタン */}
+      <div className="floating-buttons">
+        {/* 提督名変更ボタン */}
+        <button 
+          onClick={handleAdmiralModalConfirm}
+          className="floating-button admiral-button"
+          title="提督名変更"
+        >
+          <span className="material-icons">person</span>
+        </button>
+      </div>
+
+      {/* 提督名変更モーダル */}
+      {showAdmiralModal && (
+        <div className="modal-overlay" onClick={() => setShowAdmiralModal(false)}>
+          <div className="modal-content admiral-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>提督名変更</h2>
+              <button onClick={() => setShowAdmiralModal(false)} className="close-button">
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="warning-message">
+                <span className="material-icons">warning</span>
+                <p>提督名を変更すると、すべての分析データが削除されます。</p>
+              </div>
+              
+              <div className="current-admiral">
+                <label>現在の提督名:</label>
+                <span className="current-name">{admiralName}</span>
+              </div>
+              
+              <div className="input-group">
+                <label>新しい提督名:</label>
+                <input
+                  type="text"
+                  value={tempAdmiralNameChange}
+                  onChange={(e) => setTempAdmiralNameChange(e.target.value)}
+                  placeholder="新しい提督名を入力"
+                  maxLength={20}
+                  className="admiral-name-input"
+                />
+              </div>
+              
+              <div className="modal-actions">
+                <button 
+                  onClick={() => setShowAdmiralModal(false)}
+                  className="cancel-button"
+                >
+                  キャンセル
+                </button>
+                <button 
+                  onClick={changeAdmiral}
+                  className="confirm-button danger"
+                  disabled={!tempAdmiralNameChange.trim() || tempAdmiralNameChange.trim().length < 2}
+                >
+                  変更して削除
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* トースト通知 */}
       {toast && (
