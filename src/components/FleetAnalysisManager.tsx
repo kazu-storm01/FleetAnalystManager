@@ -167,15 +167,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
           localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
           
           if (inheritedTasks.length > 0) {
-            showToast(`艦隊データ登録完了！未達成タスク${inheritedTasks.length}件を引き継ぎました`, 'success')
+            showToast(theme === 'shipgirl' ? `艦隊データ登録完了！未達成タスク${inheritedTasks.length}件を引き継ぎました` : `艦隊データ登録完了！未達成任務${inheritedTasks.length}件ヲ引キ継ギタ`, 'success')
           } else {
-            showToast('艦隊データ登録完了！', 'success')
+            showToast(theme === 'shipgirl' ? '艦隊データ登録完了！' : '艦隊データ登録完了！', 'success')
           }
         } catch (error) {
           showToast(`エラー: ${error}`, 'error')
         }
       } else if (!admiralName.trim()) {
-        showToast('提督名を設定してください', 'error')
+        showToast(theme === 'shipgirl' ? '提督名を設定してください' : '司令官名ヲ設定シテクダサイ', 'error')
       }
     }, 100)
   }
@@ -225,7 +225,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const setupAdmiral = () => {
     const name = tempAdmiralName.trim()
     if (name.length < 2 || name.length > 20) {
-      showToast('提督名は2文字以上20文字以下で入力してください', 'error')
+      showToast(theme === 'shipgirl' ? '提督名は2文字以上20文字以下で入力してください' : '司令官名ハ二文字以上二十文字以下デ入力シテクダサイ', 'error')
       return
     }
 
@@ -234,7 +234,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     setIsFirstSetup(false)
     setShowWelcome(false)
     setShowBackup(false) // 確実にバックアップモーダルを閉じる
-    showToast(`提督「${name}」として登録完了！`, 'success')
+    showToast(theme === 'shipgirl' ? `提督「${name}」として登録完了！` : `司令官「${name}」トシテ登録完了！`, 'success')
   }
 
   // 提督名変更（全データ削除）
@@ -252,7 +252,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       setIsFirstSetup(true)
       setShowWelcome(true)
       setShowAdmiralModal(false)
-      showToast('すべてのデータが削除されました', 'success')
+      showToast(theme === 'shipgirl' ? 'すべてのデータが削除されました' : '全テノデータガ削除サレマシタ', 'success')
     }
   }
 
@@ -265,7 +265,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
   // エントリー削除
   const deleteEntry = (entryId: number) => {
-    if (confirm('このエントリーを削除しますか？')) {
+    if (confirm(theme === 'shipgirl' ? 'このエントリーを削除しますか？' : 'コノエントリーヲ削除シマスカスカ？')) {
       const filtered = fleetEntries.filter(entry => entry.id !== entryId)
       
       // 最新エントリーが削除された場合、前のエントリーを最新にする
@@ -278,7 +278,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       
       setFleetEntries(filtered)
       localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(filtered))
-      showToast('エントリーを削除しました', 'success')
+      showToast(theme === 'shipgirl' ? 'エントリーを削除しました' : 'エントリーヲ削除シマシタ', 'success')
     }
   }
 
@@ -294,7 +294,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         const completedCount = updatedTasks.filter(t => t.completed).length
         const totalCount = updatedTasks.length
         if (completedCount === totalCount && totalCount > 0) {
-          showToast('すべてのタスクが完了しました！', 'success')
+          showToast(theme === 'shipgirl' ? 'すべてのタスクが完了しました！' : '全テノ任務が完了シタ！', 'success')
         }
         
         return {
@@ -328,13 +328,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   // タスク追加（最新エントリーのみ）
   const addTaskToLatest = () => {
     if (!newTaskText.trim()) {
-      showToast('タスク内容を入力してください', 'error')
+      showToast(theme === 'shipgirl' ? 'タスク内容を入力してください' : '任務内容ヲ入力シテクダサイ', 'error')
       return
     }
 
     const latestEntry = fleetEntries.find(entry => entry.isLatest)
     if (!latestEntry) {
-      showToast('最新エントリーが見つかりません', 'error')
+      showToast(theme === 'shipgirl' ? '最新エントリーが見つかりません' : '最新エントリーが見つからない', 'error')
       return
     }
 
@@ -355,7 +355,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
     
     setNewTaskText('')
-    showToast('タスクを追加しました', 'success')
+    showToast(theme === 'shipgirl' ? 'タスクを追加しました' : '任務ヲ追加シマシタ', 'success')
   }
 
 
@@ -372,14 +372,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       try {
         new URL(tempUrl.trim())
       } catch {
-        showToast('有効なURLを入力してください', 'error')
+        showToast(theme === 'shipgirl' ? '有効なURLを入力してください' : '有効なURLヲ入力シテクダサイ', 'error')
         return
       }
     }
 
     const latestEntry = fleetEntries.find(entry => entry.isLatest)
     if (!latestEntry) {
-      showToast('最新エントリーが見つかりません', 'error')
+      showToast(theme === 'shipgirl' ? '最新エントリーが見つかりません' : '最新エントリーが見つからない', 'error')
       return
     }
 
@@ -396,9 +396,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     setTempUrl('')
     
     if (tempUrl.trim()) {
-      showToast('URLを更新しました', 'success')
+      showToast(theme === 'shipgirl' ? 'URLを更新しました' : 'URLヲ更新シマシタ', 'success')
     } else {
-      showToast('URLを削除しました', 'success')
+      showToast(theme === 'shipgirl' ? 'URLを削除しました' : 'URLヲ削除シマシタ', 'success')
     }
   }
 
@@ -552,9 +552,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
           localStorage.setItem(`${admiral}_fleetEntries`, JSON.stringify(entries))
         }
         
-        showToast('バックアップをインポートしました', 'success')
+        showToast(theme === 'shipgirl' ? 'バックアップをインポートしました' : 'データを収集シマシタ', 'success')
       } catch {
-        showToast('バックアップファイルの読み込みに失敗しました', 'error')
+        showToast(theme === 'shipgirl' ? 'バックアップファイルの読み込みに失敗しました' : 'データファイルの読み込みに失敗シマシタ', 'error')
       }
     }
     reader.readAsText(file)
@@ -590,37 +590,37 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
             {showWelcome && (
               <div className="welcome-message">
-                <h2>ようこそ！</h2>
+                <h2>{theme === 'shipgirl' ? 'ようこそ！' : '深海侵入許可！'}</h2>
                 <div className="welcome-text">
-                  <p>このアプリは艦隊データから艦隊の成長を管理します</p>
-                  <p>より良い艦これライフを！</p>
+                  <p>{theme === 'shipgirl' ? 'このアプリは艦隊データから艦隊の成長を管理します' : 'コノシステムハ艦隊データカラ戦力増強ヲ管理シマス'}</p>
+                  <p>{theme === 'shipgirl' ? 'より良い艦これライフを！' : 'サラナル戦略的勝利ヲ！'}</p>
                 </div>
                 
                 <div className="privacy-notice">
-                  <h3><span className="material-icons">lock</span> プライバシー保護について</h3>
-                  <p>このアプリはローカルストレージのみを使用し、外部へのデータ送信は行いません。</p>
-                  <p>すべてのデータはお使いのブラウザ内にのみ保存されます。</p>
+                  <h3><span className="material-icons">lock</span> {theme === 'shipgirl' ? 'プライバシー保護について' : '機密保護規定ニツイテ'}</h3>
+                  <p>{theme === 'shipgirl' ? 'このアプリはローカルストレージのみを使用し、外部へのデータ送信は行いません。' : 'コノシステムハローカル領域ノミヲ使用シ、外部ヘノ情報送信ハ行ワナイ。'}</p>
+                  <p>{theme === 'shipgirl' ? 'すべてのデータはお使いのブラウザ内にのみ保存されます。' : '全テノ情報ハ使用者ノブラウザ内ニノミ保存サレマス。'}</p>
                 </div>
               </div>
             )}
 
             <div className="admiral-setup">
-              <h3>提督名を設定してください</h3>
+              <h3>{theme === 'shipgirl' ? '提督名を設定してください' : '司令官名ヲ設定シテクダサイ'}</h3>
               <div className="input-group">
                 <input
                   type="text"
                   value={tempAdmiralName}
                   onChange={(e) => setTempAdmiralName(e.target.value)}
-                  placeholder="提督名を入力（2-20文字）"
+                  placeholder={theme === 'shipgirl' ? '提督名を入力（2-20文字）' : '司令官名ヲ入力（二文字以上二十文字以下）'}
                   className="admiral-input"
                   maxLength={20}
                 />
                 <button onClick={setupAdmiral} className="setup-button">
-                  <span className="material-icons">rocket_launch</span> 開始する
+                  <span className="material-icons">rocket_launch</span> {theme === 'shipgirl' ? '開始する' : '開始スルスル'}
                 </button>
               </div>
               <p className="input-hint">
-                提督名は2文字以上20文字以下で入力してください
+                {theme === 'shipgirl' ? '提督名は2文字以上20文字以下で入力してください' : '司令官名ハ二文字以上二十文字以下デ入力シテクダサイ'}
               </p>
             </div>
           </div>
@@ -647,17 +647,17 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         <div className="backup-popup">
           <div className="backup-popup-content">
             <div className="backup-popup-header">
-              <h3>バックアップ</h3>
+              <h3>{theme === 'shipgirl' ? 'バックアップ' : 'バックアップ'}</h3>
               <button onClick={() => setShowBackup(false)} className="close-button">
                 ×
               </button>
             </div>
             <div className="backup-controls">
               <button onClick={exportBackup} className="backup-btn">
-                エクスポート
+                {theme === 'shipgirl' ? 'エクスポート' : 'エクスポート'}
               </button>
               <label className="backup-btn import-btn">
-                インポート
+                {theme === 'shipgirl' ? 'インポート' : 'インポート'}
                 <input
                   type="file"
                   accept=".json"
@@ -674,7 +674,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 className="backup-btn admiral-change-btn"
               >
                 <span className="material-icons">person</span>
-                提督変更
+                {theme === 'shipgirl' ? '提督変更' : '提督変更'}
               </button>
             </div>
           </div>
@@ -701,7 +701,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         <div className="graph-modal-overlay" onClick={() => setShowGraphModal(false)}>
           <div className="graph-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="graph-modal-header">
-              <h2>分析推移データ</h2>
+              <h2>{theme === 'shipgirl' ? '分析推移データ' : '分析推移データ'}</h2>
               <button onClick={() => setShowGraphModal(false)} className="close-button">
                 <span className="material-icons">close</span>
               </button>
@@ -715,42 +715,42 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   onClick={() => setActiveGraphTab('exp')}
                 >
                   <span className="material-icons">trending_up</span>
-                  経験値
+                  {theme === 'shipgirl' ? '経験値' : '経験値'}
                 </button>
                 <button 
                   className={`graph-tab ${activeGraphTab === 'ships' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('ships')}
                 >
                   <span className="material-icons">directions_boat</span>
-                  艦数
+                  {theme === 'shipgirl' ? '艦数' : '艦数'}
                 </button>
                 <button 
                   className={`graph-tab ${activeGraphTab === 'married' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('married')}
                 >
                   <span className="material-icons">favorite</span>
-                  ケッコン艦
+                  {theme === 'shipgirl' ? 'ケッコン艦' : '最大強化艦'}
                 </button>
                 <button 
                   className={`graph-tab ${activeGraphTab === 'luck' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('luck')}
                 >
                   <span className="material-icons">stars</span>
-                  運改修
+                  {theme === 'shipgirl' ? '運改修' : '運改修'}
                 </button>
                 <button 
                   className={`graph-tab ${activeGraphTab === 'hp' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('hp')}
                 >
                   <span className="material-icons">health_and_safety</span>
-                  耐久改修
+                  {theme === 'shipgirl' ? '耐久改修' : '耐久改修'}
                 </button>
                 <button 
                   className={`graph-tab ${activeGraphTab === 'asw' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('asw')}
                 >
                   <span className="material-icons">radar</span>
-                  対潜改修
+                  {theme === 'shipgirl' ? '対潜改修' : '対潜改修'}
                 </button>
               </div>
 
@@ -761,7 +761,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 
                 return (
                   <div className="modal-chart-section">
-                    <h3>{singleGraphData.label}の推移</h3>
+                    <h3>{singleGraphData.label}{theme === 'shipgirl' ? 'の推移' : 'ノ推移'}</h3>
                     <div className="chart-container">
                       <svg width="700" height="400" className="modal-chart-svg">
                         {/* グリッドライン */}
@@ -808,7 +808,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         
                         {/* 軸ラベル */}
                         <text x="350" y="390" fontSize="14" fill="#e1f5fe" textAnchor="middle">
-                          記録時系列
+                          {theme === 'shipgirl' ? '記録時系列' : '記録時系列'}
                         </text>
                         <text x="20" y="30" fontSize="14" fill="#e1f5fe" textAnchor="middle">
                           {singleGraphData.label}
@@ -819,19 +819,19 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                     {/* 統計情報 */}
                     <div className="graph-stats">
                       <div className="stat-item">
-                        <span className="stat-title">最大値</span>
+                        <span className="stat-title">{theme === 'shipgirl' ? '最大値' : '最大値'}</span>
                         <span className="stat-number">
                           {activeGraphTab === 'exp' ? singleGraphData.maxValue.toLocaleString() : singleGraphData.maxValue}
                         </span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-title">最小値</span>
+                        <span className="stat-title">{theme === 'shipgirl' ? '最小値' : '最小値'}</span>
                         <span className="stat-number">
                           {activeGraphTab === 'exp' ? singleGraphData.minValue.toLocaleString() : singleGraphData.minValue}
                         </span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-title">変動幅</span>
+                        <span className="stat-title">{theme === 'shipgirl' ? '変動幅' : '変動幅'}</span>
                         <span className="stat-number">
                           {activeGraphTab === 'exp' ? (singleGraphData.maxValue - singleGraphData.minValue).toLocaleString() : (singleGraphData.maxValue - singleGraphData.minValue)}
                         </span>
@@ -843,7 +843,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
               {/* データテーブル */}
               <div className="modal-table-section">
-                <h3>データ一覧</h3>
+                <h3>{theme === 'shipgirl' ? 'データ一覧' : '情報一覧'}</h3>
                 <div className="data-table-container">
                   <table className="data-table">
                     <thead>
@@ -856,7 +856,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         <th>耐久改修</th>
                         <th>対潜改修</th>
                         <th>URL</th>
-                        <th>状態</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -935,13 +934,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                                 <span>-</span>
                               )}
                             </td>
-                            <td>
-                              {entry.isLatest ? (
-                                <span className="status-badge current">最新</span>
-                              ) : (
-                                <span className="status-badge past">過去</span>
-                              )}
-                            </td>
                           </tr>
                         )
                       })}
@@ -956,14 +948,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
 
       {/* データ入力セクション */}
       <div className="data-input-section">
-        <h3>最新の艦隊を反映する</h3>
+        <h3>{theme === 'shipgirl' ? '最新の艦隊を反映する' : '最新ノ艦隊ヲ反映シテクダサイ'}</h3>
         <div className="input-group">
           <input
             type="text"
             value={fleetData}
             onChange={(e) => setFleetData(e.target.value)}
             onPaste={handlePaste}
-            placeholder="艦隊のJSONデータをここに貼り付けてください..."
+            placeholder={theme === 'shipgirl' ? '艦隊のJSONデータをここに貼り付けてください...' : '艦隊ノJSONデータヲココニ貼り付ケテクダサイ...'}
             className="fleet-data-input"
           />
         </div>
@@ -979,7 +971,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
             <button 
               onClick={() => setShowBackup(!showBackup)} 
               className="action-button backup-button"
-              title="バックアップ"
+              title={theme === 'shipgirl' ? 'バックアップ' : 'バックアップ'}
             >
               <span className="material-icons">settings</span>
             </button>
@@ -987,7 +979,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               <button 
                 onClick={() => setShowGraphModal(true)} 
                 className="action-button chart-button"
-                title="分析推移表示"
+                title={theme === 'shipgirl' ? '分析推移表示' : '分析推移表示'}
               >
                 <span className="material-icons">analytics</span>
               </button>
@@ -1002,21 +994,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               <div className="overview-item">
                 <span className="material-icons overview-icon">trending_up</span>
                 <div className="overview-text">
-                  <span className="overview-label">総記録数</span>
+                  <span className="overview-label">{theme === 'shipgirl' ? '総記録数' : '総記録数'}</span>
                   <span className="overview-value">{getTotalEntries()}</span>
                 </div>
               </div>
               <div className="overview-item">
                 <span className="material-icons overview-icon">task_alt</span>
                 <div className="overview-text">
-                  <span className="overview-label">累計達成タスク</span>
+                  <span className="overview-label">{theme === 'shipgirl' ? '累計達成タスク' : '累計達成タスク'}</span>
                   <span className="overview-value">{getTotalCompletedTasks()}</span>
                 </div>
               </div>
               <div className="overview-item">
                 <span className="material-icons overview-icon">assignment</span>
                 <div className="overview-text">
-                  <span className="overview-label">未達成タスク</span>
+                  <span className="overview-label">{theme === 'shipgirl' ? '未達成タスク' : '未達成タスク'}</span>
                   <span className="overview-value">{getPendingTasks()}</span>
                 </div>
               </div>
@@ -1028,7 +1020,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         <div className="latest-entry-section">
               <div className="entry-header">
                 <div className="entry-info">
-                  <h3 className="section-title">最新の艦隊状況</h3>
+                  <h3 className="section-title">{theme === 'shipgirl' ? '最新の艦隊状況' : '最新ノ艦隊状況'}</h3>
                   <div className="entry-meta">
                     <span className="entry-date">{new Date(latestEntry.createdAt).toLocaleString('ja-JP', {
                       year: 'numeric',
@@ -1037,7 +1029,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       hour: '2-digit',
                       minute: '2-digit'
                     })}</span>
-                    <span className="latest-badge">最新</span>
+                    <span className="latest-badge">{theme === 'shipgirl' ? '最新' : '最新'}</span>
                     {!latestEntry.url && (
                       <input
                         type="text"
@@ -1064,7 +1056,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                                   setFleetEntries(updatedEntries)
                                   localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
                                   setNewUrl('')
-                                  showToast('URLを登録しました', 'success')
+                                  showToast(theme === 'shipgirl' ? 'URLを登録しました' : 'URLヲ登録シマシタ', 'success')
                                 }
                               } catch {
                                 // 無効なURLの場合は何もしない（通常の入力として扱う）
@@ -1072,7 +1064,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                             }
                           }, 100)
                         }}
-                        placeholder="URL貼り付け"
+                        placeholder={theme === 'shipgirl' ? 'URL貼り付け' : 'URL貼り付ケ'}
                         className="url-input-compact"
                         style={{
                           marginLeft: '0.5rem',
@@ -1094,7 +1086,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       rel="noopener noreferrer"
                       className="url-link"
                     >
-                      <span className="material-icons">link</span> 開く
+                      <span className="material-icons">link</span> {theme === 'shipgirl' ? '開く' : '開ク'}
                     </a>
                   )}
                   <button
@@ -1221,7 +1213,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         type="text"
                         value={tempUrl}
                         onChange={(e) => setTempUrl(e.target.value)}
-                        placeholder="URLを入力してください..."
+                        placeholder={theme === 'shipgirl' ? 'URLを入力してください...' : 'URLヲ入力シテクダサイ...'}
                         className="url-edit-input"
                         autoFocus
                       />
@@ -1240,7 +1232,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       <button 
                         onClick={() => startEditUrl(latestEntry.url || '')}
                         className="edit-url-btn"
-                        title="URLを編集"
+                        title={theme === 'shipgirl' ? 'URLを編集' : 'URLヲ編集'}
                       >
                         <span className="material-icons">edit</span>
                       </button>
@@ -1256,7 +1248,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       {latestEntry && latestEntry.tasks.length > 0 && (
         <div className="tasks-section">
                   <div className="task-header">
-                    <h4>タスク進捗 ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
+                    <h4>{theme === 'shipgirl' ? 'タスク進捗' : '任務進捗'} ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
                     <div className="progress-bar">
                       <div 
                         className={`progress-fill ${getTaskProgress(latestEntry.tasks).percentage === 100 ? 'completed' : ''}`}
@@ -1283,7 +1275,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                           <span className="material-icons">close</span>
                         </button>
                         {task.inheritedFrom && (
-                          <span className="inherited-badge">継続</span>
+                          <span className="inherited-badge">{theme === 'shipgirl' ? '継続' : '継続'}</span>
                         )}
                       </div>
                     ))}
@@ -1304,7 +1296,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   type="text"
                   value={newTaskText}
                   onChange={(e) => setNewTaskText(e.target.value)}
-                  placeholder="タスク内容を入力してください..."
+                  placeholder={theme === 'shipgirl' ? 'タスク内容を入力してください...' : '任務内容ヲ入力シテクダサイ...'}
                   className="task-input"
                   onKeyDown={(e) => e.key === 'Enter' && addTaskToLatest()}
                   style={{flex: '1', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd'}}
@@ -1315,7 +1307,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   disabled={!newTaskText.trim()}
                   style={{padding: '0.5rem 1rem', borderRadius: '4px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer'}}
                 >
-                  追加
+                  {theme === 'shipgirl' ? '追加' : '追加'}
                 </button>
               </div>
             </div>
@@ -1327,7 +1319,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       {/* 過去エントリー */}
       {pastEntries.length > 0 && (
         <div className="history-section" style={{marginTop: '5rem'}}>
-          <h2 style={{textAlign: 'left'}}>分析履歴</h2>
+          <h2 style={{textAlign: 'left'}}>{theme === 'shipgirl' ? '分析履歴' : '分析履歴'}</h2>
           
           {/* ページング */}
           {totalPages > 1 && (
@@ -1337,7 +1329,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 disabled={currentPage === 0}
                 className="page-btn"
               >
-                ← 前
+                {theme === 'shipgirl' ? '← 前' : '← 前'}
               </button>
               <span className="page-info">
                 {currentPage + 1} / {totalPages}
@@ -1347,7 +1339,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 disabled={currentPage === totalPages - 1}
                 className="page-btn"
               >
-                次 →
+                {theme === 'shipgirl' ? '次 →' : '次 →'}
               </button>
             </div>
           )}
@@ -1373,7 +1365,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         rel="noopener noreferrer"
                         className="url-link"
                       >
-                        <span className="material-icons">link</span> 開く
+                        <span className="material-icons">link</span> {theme === 'shipgirl' ? '開く' : '開ク'}
                       </a>
                     )}
                     <button
@@ -1461,7 +1453,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                             <span className={task.completed ? 'completed' : ''}>{task.text}</span>
                           </label>
                           {task.inheritedFrom && (
-                            <span className="inherited-badge">継続</span>
+                            <span className="inherited-badge">{theme === 'shipgirl' ? '継続' : '継続'}</span>
                           )}
                         </div>
                       ))}
@@ -1482,7 +1474,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
         <div className="modal-overlay" onClick={() => setShowAdmiralModal(false)}>
           <div className="modal-content admiral-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>提督変更</h2>
+              <h2>{theme === 'shipgirl' ? '提督変更' : '司令官変更'}</h2>
               <button onClick={() => setShowAdmiralModal(false)} className="close-button">
                 <span className="material-icons">close</span>
               </button>
@@ -1491,17 +1483,17 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
             <div className="modal-body">
               <div className="warning-message">
                 <span className="material-icons">warning</span>
-                <p>提督を変更すると、すべての分析データが削除されます。</p>
+                <p>{theme === 'shipgirl' ? '提督を変更すると、すべての分析データが削除されます。' : '司令官ヲ変更スルト、全テノ分析データガ削除サレル。'}</p>
               </div>
               
               <div className="current-admiral">
-                <label>現在の提督名:</label>
+                <label>{theme === 'shipgirl' ? '現在の提督名:' : '現在ノ司令官名:'}</label>
                 <span className="current-name">{admiralName}</span>
               </div>
               
               <div className="instruction-message">
                 <span className="material-icons">info</span>
-                <p>新しい提督名は、データ削除後の初期セットアップ画面で設定できます。</p>
+                <p>{theme === 'shipgirl' ? '新しい提督名は、データ削除後の初期セットアップ画面で設定できます。' : '新シイ司令官名ハ、データ削除後ノ初期設定画面デ設定デキル。'}</p>
               </div>
               
               <div className="modal-actions">
@@ -1509,13 +1501,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                   onClick={() => setShowAdmiralModal(false)}
                   className="cancel-button"
                 >
-                  キャンセル
+                  {theme === 'shipgirl' ? 'キャンセル' : 'キャンセル'}
                 </button>
                 <button 
                   onClick={changeAdmiral}
                   className="confirm-button danger"
                 >
-                  データを削除して変更
+                  {theme === 'shipgirl' ? 'データを削除して変更' : 'データヲ削除シテ変更'}
                 </button>
               </div>
             </div>

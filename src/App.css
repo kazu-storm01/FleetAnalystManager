@@ -8160,13 +8160,13 @@ h4 .material-icons {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+  box-shadow: 0 4px 16px rgba(79, 172, 254, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
   position: relative;
 }
 
 .action-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+  box-shadow: 0 8px 24px rgba(79, 172, 254, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .action-button:active {
@@ -8181,43 +8181,64 @@ h4 .material-icons {
 /* 個別ボタンカラー */
 .action-button.admiral-button {
   background: linear-gradient(45deg, #f44336, #d32f2f);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-button.admiral-button:hover {
-  box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+  box-shadow: 0 8px 24px rgba(244, 67, 54, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .action-button.chart-button {
   background: linear-gradient(45deg, #4caf50, #2e7d32);
   color: white;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-  animation: chartButtonPulse 2s ease-in-out infinite;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  /* animation: chartButtonPulse 2s ease-in-out infinite; */
 }
 
 .action-button.chart-button:hover {
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Backup/Settings button - black gradient */
+.action-button.backup-button {
+  background: linear-gradient(45deg, #424242, #212121);
+  color: white;
+  box-shadow: 0 4px 16px rgba(66, 66, 66, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.action-button.backup-button:hover {
+  box-shadow: 0 8px 24px rgba(66, 66, 66, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* 深海テーマでのアクションボタン */
 .fleet-analysis-manager.abyssal .action-button.admiral-button {
   background: linear-gradient(45deg, #f44336, #d32f2f);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .fleet-analysis-manager.abyssal .action-button.admiral-button:hover {
-  box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+  box-shadow: 0 8px 24px rgba(244, 67, 54, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .fleet-analysis-manager.abyssal .action-button.chart-button {
   background: linear-gradient(45deg, #4caf50, #2e7d32);
   color: white;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-  animation: chartButtonPulse 2s ease-in-out infinite;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  /* animation: chartButtonPulse 2s ease-in-out infinite; */
 }
 
 .fleet-analysis-manager.abyssal .action-button.chart-button:hover {
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .action-button.backup-button {
+  background: linear-gradient(45deg, #424242, #212121);
+  color: white;
+  box-shadow: 0 4px 16px rgba(66, 66, 66, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .action-button.backup-button:hover {
+  box-shadow: 0 8px 24px rgba(66, 66, 66, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* レスポンシブ対応 */
