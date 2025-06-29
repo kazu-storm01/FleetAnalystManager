@@ -218,7 +218,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       try {
         const parsed = JSON.parse(saved)
         // 後方互換性のため、改修合計値が未定義の場合は0に設定
-        const updatedEntries = parsed.map((entry: any) => ({
+        const updatedEntries = parsed.map((entry: FleetEntry) => ({
           ...entry,
           luckModTotal: entry.luckModTotal ?? 0,
           hpModTotal: entry.hpModTotal ?? 0,
