@@ -3044,20 +3044,26 @@
 }
 
 .delete-btn {
-  background: linear-gradient(45deg, #f44336, #d32f2f);
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 15px;
+  background: transparent;
+  color: #999;
+  border: 1px solid transparent;
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: bold;
-  transition: all 0.3s ease;
+  font-size: 0.75rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .delete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border-color: rgba(244, 67, 54, 0.3);
 }
 
 .url-display {
@@ -3150,27 +3156,37 @@
 }
 
 .delete-task-btn {
-  background: #757575;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
+  background: transparent;
+  color: #999;
+  border: 1px solid transparent;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
+  font-size: 0.7rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .delete-task-btn:hover {
-  background: #616161;
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border-color: rgba(244, 67, 54, 0.3);
 }
 
 .inherited-badge {
-  background: linear-gradient(45deg, #ff9800, #f57c00);
+  background: rgba(0, 0, 0, 0.4);
   color: white;
-  padding: 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 3px 7px;
   border-radius: 10px;
   font-size: 0.7rem;
-  font-weight: bold;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* ページング */
@@ -5832,20 +5848,26 @@
 }
 
 .delete-btn {
-  background: linear-gradient(45deg, #f44336, #d32f2f);
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 15px;
+  background: transparent;
+  color: #999;
+  border: 1px solid transparent;
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: bold;
-  transition: all 0.3s ease;
+  font-size: 0.75rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .delete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border-color: rgba(244, 67, 54, 0.3);
 }
 
 .url-display {
@@ -5938,27 +5960,37 @@
 }
 
 .delete-task-btn {
-  background: #757575;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
+  background: transparent;
+  color: #999;
+  border: 1px solid transparent;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
+  font-size: 0.7rem;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .delete-task-btn:hover {
-  background: #616161;
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border-color: rgba(244, 67, 54, 0.3);
 }
 
 .inherited-badge {
-  background: linear-gradient(45deg, #ff9800, #f57c00);
+  background: rgba(0, 0, 0, 0.4);
   color: white;
-  padding: 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 3px 7px;
   border-radius: 10px;
   font-size: 0.7rem;
-  font-weight: bold;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* ページング */
@@ -8210,6 +8242,26 @@ h4 .material-icons {
   box-shadow: 0 8px 24px rgba(66, 66, 66, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Privacy button - purple gradient */
+.action-button.privacy-button {
+  background: linear-gradient(45deg, #9c27b0, #673ab7);
+  color: white;
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button.privacy-button:hover {
+  box-shadow: 0 8px 24px rgba(156, 39, 176, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action-button.privacy-button.active {
+  background: linear-gradient(45deg, #e91e63, #ad1457);
+  box-shadow: 0 4px 16px rgba(233, 30, 99, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button.privacy-button.active:hover {
+  box-shadow: 0 8px 24px rgba(233, 30, 99, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 /* 深海テーマでのアクションボタン */
 .fleet-analysis-manager.abyssal .action-button.admiral-button {
   background: linear-gradient(45deg, #f44336, #d32f2f);
@@ -8240,6 +8292,26 @@ h4 .material-icons {
 .fleet-analysis-manager.abyssal .action-button.backup-button:hover {
   box-shadow: 0 8px 24px rgba(66, 66, 66, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+
+.fleet-analysis-manager.abyssal .action-button.privacy-button {
+  background: linear-gradient(45deg, #9c27b0, #673ab7);
+  color: white;
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .action-button.privacy-button:hover {
+  box-shadow: 0 8px 24px rgba(156, 39, 176, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .action-button.privacy-button.active {
+  background: linear-gradient(45deg, #e91e63, #ad1457);
+  box-shadow: 0 4px 16px rgba(233, 30, 99, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.fleet-analysis-manager.abyssal .action-button.privacy-button.active:hover {
+  box-shadow: 0 8px 24px rgba(233, 30, 99, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
@@ -8298,9 +8370,42 @@ h4 .material-icons {
   color: white !important;
 }
 
-/* 海色モードでのチェックボックスの色を白色にする */
+/* 海色モードでのチェックボックスの色を緑色にする */
 .fleet-analysis-manager.shipgirl input[type="checkbox"] {
-  accent-color: white !important;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: 2px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.fleet-analysis-manager.shipgirl input[type="checkbox"]:checked {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.fleet-analysis-manager.shipgirl input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.fleet-analysis-manager.shipgirl input[type="checkbox"]:hover:not(:checked) {
+  border-color: #999;
+}
+
+.fleet-analysis-manager.shipgirl input[type="checkbox"]:checked:hover {
+  background: #45a049;
+  border-color: #45a049;
 }
 
 /* 最新艦隊状況カードのホバー効果 */

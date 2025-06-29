@@ -46,6 +46,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   const [editingUrl, setEditingUrl] = useState<boolean>(false)
   const [tempUrl, setTempUrl] = useState<string>('')
   const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married' | 'luck' | 'hp' | 'asw'>('exp')
+  const [privacyMode, setPrivacyMode] = useState<boolean | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ITEMS_PER_PAGE = 10
@@ -183,6 +184,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
   // 初期化処理
   useEffect(() => {
     const savedAdmiralName = localStorage.getItem('fleetAnalysisAdmiralName')
+    const savedPrivacyMode = localStorage.getItem('fleetAnalysisPrivacyMode')
+    
+    // プライバシーモードの復元
+    if (savedPrivacyMode !== null) {
+      const isPrivacy = savedPrivacyMode === 'true'
+      setPrivacyMode(isPrivacy)
+    } else {
+      setPrivacyMode(false) // デフォルト値
+    }
+    
     if (savedAdmiralName) {
       setAdmiralName(savedAdmiralName)
       setIsFirstSetup(false)
@@ -192,6 +203,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
       setShowWelcome(true)
     }
   }, [])
+
+  // プライバシーモードの永続化
+  useEffect(() => {
+    if (privacyMode !== null) {
+      localStorage.setItem('fleetAnalysisPrivacyMode', privacyMode.toString())
+    }
+  }, [privacyMode])
 
   // 艦隊エントリーの読み込み
   const loadFleetEntries = (admiral: string) => {
@@ -433,6 +451,19 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
     
     const previous = fleetEntries[currentIndex - 1]
     return (current[field] || 0) - (previous[field] || 0)
+  }
+
+  // プライバシーモード用の値マスク関数
+  const maskValue = (value: number) => {
+    if (privacyMode !== true) return value.toLocaleString()
+    return '*'.repeat(Math.min(value.toString().length, 8))
+  }
+
+  // プライバシーモード用の差分マスク関数
+  const maskDiffValue = (value: number) => {
+    if (privacyMode !== true) return value.toLocaleString()
+    const sign = value >= 0 ? '+' : ''
+    return sign + '*'.repeat(Math.min(Math.abs(value).toString().length, 6))
   }
 
   // 個別グラフデータ生成（SVGベース）
@@ -801,7 +832,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                               textAnchor="middle"
                               fontWeight="bold"
                             >
-                              {activeGraphTab === 'exp' ? point.value.toLocaleString() : point.value}
+                              {privacyMode === true ? '*'.repeat(4) : (activeGraphTab === 'exp' ? point.value.toLocaleString() : point.value)}
                             </text>
                           </g>
                         ))}
@@ -821,19 +852,19 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       <div className="stat-item">
                         <span className="stat-title">{theme === 'shipgirl' ? '最大値' : '最大値'}</span>
                         <span className="stat-number">
-                          {activeGraphTab === 'exp' ? singleGraphData.maxValue.toLocaleString() : singleGraphData.maxValue}
+                          {privacyMode === true ? maskValue(singleGraphData.maxValue) : (activeGraphTab === 'exp' ? singleGraphData.maxValue.toLocaleString() : singleGraphData.maxValue)}
                         </span>
                       </div>
                       <div className="stat-item">
                         <span className="stat-title">{theme === 'shipgirl' ? '最小値' : '最小値'}</span>
                         <span className="stat-number">
-                          {activeGraphTab === 'exp' ? singleGraphData.minValue.toLocaleString() : singleGraphData.minValue}
+                          {privacyMode === true ? maskValue(singleGraphData.minValue) : (activeGraphTab === 'exp' ? singleGraphData.minValue.toLocaleString() : singleGraphData.minValue)}
                         </span>
                       </div>
                       <div className="stat-item">
                         <span className="stat-title">{theme === 'shipgirl' ? '変動幅' : '変動幅'}</span>
                         <span className="stat-number">
-                          {activeGraphTab === 'exp' ? (singleGraphData.maxValue - singleGraphData.minValue).toLocaleString() : (singleGraphData.maxValue - singleGraphData.minValue)}
+                          {privacyMode === true ? maskValue(singleGraphData.maxValue - singleGraphData.minValue) : (activeGraphTab === 'exp' ? (singleGraphData.maxValue - singleGraphData.minValue).toLocaleString() : (singleGraphData.maxValue - singleGraphData.minValue))}
                         </span>
                       </div>
                     </div>
@@ -872,50 +903,50 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                               minute: '2-digit'
                             })}</td>
                             <td>
-                              {entry.totalExp.toLocaleString()}
+                              {maskValue(entry.totalExp)}
                               {prevEntry && (
                                 <span className={`table-diff ${entry.totalExp - prevEntry.totalExp === 0 ? 'neutral' : entry.totalExp - prevEntry.totalExp > 0 ? 'positive' : 'negative'}`}>
-                                  ({entry.totalExp - prevEntry.totalExp >= 0 ? '+' : ''}{(entry.totalExp - prevEntry.totalExp).toLocaleString()})
+                                  {maskDiffValue(entry.totalExp - prevEntry.totalExp)}
                                 </span>
                               )}
                             </td>
                             <td>
-                              {entry.shipCount}
+                              {maskValue(entry.shipCount)}
                               {prevEntry && (
                                 <span className={`table-diff ${entry.shipCount - prevEntry.shipCount === 0 ? 'neutral' : entry.shipCount - prevEntry.shipCount > 0 ? 'positive' : 'negative'}`}>
-                                  ({entry.shipCount - prevEntry.shipCount >= 0 ? '+' : ''}{entry.shipCount - prevEntry.shipCount})
+                                  {maskDiffValue(entry.shipCount - prevEntry.shipCount)}
                                 </span>
                               )}
                             </td>
                             <td>
-                              {entry.marriedCount}
+                              {maskValue(entry.marriedCount)}
                               {prevEntry && (
                                 <span className={`table-diff ${entry.marriedCount - prevEntry.marriedCount === 0 ? 'neutral' : entry.marriedCount - prevEntry.marriedCount > 0 ? 'positive' : 'negative'}`}>
-                                  ({entry.marriedCount - prevEntry.marriedCount >= 0 ? '+' : ''}{entry.marriedCount - prevEntry.marriedCount})
+                                  {maskDiffValue(entry.marriedCount - prevEntry.marriedCount)}
                                 </span>
                               )}
                             </td>
                             <td>
-                              {entry.luckModTotal || 0}
+                              {maskValue(entry.luckModTotal || 0)}
                               {prevEntry && (
                                 <span className={`table-diff ${(entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0) === 0 ? 'neutral' : (entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0) > 0 ? 'positive' : 'negative'}`}>
-                                  ({(entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0) >= 0 ? '+' : ''}{(entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0)})
+                                  {maskDiffValue((entry.luckModTotal || 0) - (prevEntry.luckModTotal || 0))}
                                 </span>
                               )}
                             </td>
                             <td>
-                              {entry.hpModTotal || 0}
+                              {maskValue(entry.hpModTotal || 0)}
                               {prevEntry && (
                                 <span className={`table-diff ${(entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0) === 0 ? 'neutral' : (entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0) > 0 ? 'positive' : 'negative'}`}>
-                                  ({(entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0) >= 0 ? '+' : ''}{(entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0)})
+                                  {maskDiffValue((entry.hpModTotal || 0) - (prevEntry.hpModTotal || 0))}
                                 </span>
                               )}
                             </td>
                             <td>
-                              {entry.aswModTotal || 0}
+                              {maskValue(entry.aswModTotal || 0)}
                               {prevEntry && (
                                 <span className={`table-diff ${(entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) === 0 ? 'neutral' : (entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) > 0 ? 'positive' : 'negative'}`}>
-                                  ({(entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) >= 0 ? '+' : ''}{(entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0)})
+                                  {maskDiffValue((entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0))}
                                 </span>
                               )}
                             </td>
@@ -969,11 +1000,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
           {/* アクションボタン */}
           <div className="dashboard-actions">
             <button 
-              onClick={() => setShowBackup(!showBackup)} 
-              className="action-button backup-button"
-              title={theme === 'shipgirl' ? 'バックアップ' : 'バックアップ'}
+              onClick={() => setPrivacyMode(!privacyMode)} 
+              className={`action-button privacy-button ${privacyMode === true ? 'active' : ''}`}
+              title={theme === 'shipgirl' ? (privacyMode === true ? 'プライバシーモード解除' : 'プライバシーモード') : (privacyMode === true ? 'プライバシーモード解除' : 'プライバシーモード')}
             >
-              <span className="material-icons">settings</span>
+              <span className="material-icons">{privacyMode === true ? 'visibility' : 'visibility_off'}</span>
             </button>
             {fleetEntries.length >= 2 && (
               <button 
@@ -984,6 +1015,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <span className="material-icons">analytics</span>
               </button>
             )}
+            <button 
+              onClick={() => setShowBackup(!showBackup)} 
+              className="action-button backup-button"
+              title={theme === 'shipgirl' ? 'バックアップ' : 'バックアップ'}
+            >
+              <span className="material-icons">settings</span>
+            </button>
           </div>
         </div>
       )}
@@ -995,21 +1033,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <span className="material-icons overview-icon">trending_up</span>
                 <div className="overview-text">
                   <span className="overview-label">{theme === 'shipgirl' ? '総記録数' : '総記録数'}</span>
-                  <span className="overview-value">{getTotalEntries()}</span>
+                  <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalEntries().toString().length) : getTotalEntries()}</span>
                 </div>
               </div>
               <div className="overview-item">
                 <span className="material-icons overview-icon">task_alt</span>
                 <div className="overview-text">
                   <span className="overview-label">{theme === 'shipgirl' ? '累計達成タスク' : '累計達成タスク'}</span>
-                  <span className="overview-value">{getTotalCompletedTasks()}</span>
+                  <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalCompletedTasks().toString().length) : getTotalCompletedTasks()}</span>
                 </div>
               </div>
               <div className="overview-item">
                 <span className="material-icons overview-icon">assignment</span>
                 <div className="overview-text">
                   <span className="overview-label">{theme === 'shipgirl' ? '未達成タスク' : '未達成タスク'}</span>
-                  <span className="overview-value">{getPendingTasks()}</span>
+                  <span className="overview-value">{privacyMode === true ? '*'.repeat(getPendingTasks().toString().length) : getPendingTasks()}</span>
                 </div>
               </div>
         </div>
@@ -1102,7 +1140,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
               <div className="entry-stats">
                 <div className="stat-badge">
                   <span className="stat-label">現在経験値</span>
-                  <span className="stat-value">{latestEntry.totalExp.toLocaleString()}</span>
+                  <span className="stat-value">{maskValue(latestEntry.totalExp)}</span>
                   {(() => {
                     const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
                     if (latestIndex > 0) {
@@ -1110,7 +1148,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       const diff = latestEntry.totalExp - prevEntry.totalExp
                       return (
                         <span className={`diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff.toLocaleString()})
+                          ({maskDiffValue(diff)})
                         </span>
                       )
                     }
@@ -1119,7 +1157,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
                 <div className="stat-badge">
                   <span className="stat-label">保有艦数</span>
-                  <span className="stat-value">{latestEntry.shipCount}</span>
+                  <span className="stat-value">{maskValue(latestEntry.shipCount)}</span>
                   {(() => {
                     const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
                     if (latestIndex > 0) {
@@ -1127,7 +1165,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       const diff = latestEntry.shipCount - prevEntry.shipCount
                       return (
                         <span className={`diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff})
+                          ({maskDiffValue(diff)})
                         </span>
                       )
                     }
@@ -1136,7 +1174,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
                 <div className="stat-badge">
                   <span className="stat-label">ケッコン艦</span>
-                  <span className="stat-value">{latestEntry.marriedCount}</span>
+                  <span className="stat-value">{maskValue(latestEntry.marriedCount)}</span>
                   {(() => {
                     const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
                     if (latestIndex > 0) {
@@ -1144,7 +1182,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       const diff = latestEntry.marriedCount - prevEntry.marriedCount
                       return (
                         <span className={`diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff})
+                          ({maskDiffValue(diff)})
                         </span>
                       )
                     }
@@ -1153,7 +1191,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
                 <div className="stat-badge">
                   <span className="stat-label">運改修合計</span>
-                  <span className="stat-value">{latestEntry.luckModTotal}</span>
+                  <span className="stat-value">{maskValue(latestEntry.luckModTotal)}</span>
                   {(() => {
                     const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
                     if (latestIndex > 0) {
@@ -1161,7 +1199,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       const diff = latestEntry.luckModTotal - (prevEntry.luckModTotal || 0)
                       return (
                         <span className={`diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff})
+                          ({maskDiffValue(diff)})
                         </span>
                       )
                     }
@@ -1170,7 +1208,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
                 <div className="stat-badge">
                   <span className="stat-label">耐久改修合計</span>
-                  <span className="stat-value">{latestEntry.hpModTotal}</span>
+                  <span className="stat-value">{maskValue(latestEntry.hpModTotal)}</span>
                   {(() => {
                     const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
                     if (latestIndex > 0) {
@@ -1178,7 +1216,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       const diff = latestEntry.hpModTotal - (prevEntry.hpModTotal || 0)
                       return (
                         <span className={`diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff})
+                          ({maskDiffValue(diff)})
                         </span>
                       )
                     }
@@ -1187,7 +1225,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 </div>
                 <div className="stat-badge">
                   <span className="stat-label">対潜改修合計</span>
-                  <span className="stat-value">{latestEntry.aswModTotal}</span>
+                  <span className="stat-value">{maskValue(latestEntry.aswModTotal)}</span>
                   {(() => {
                     const latestIndex = fleetEntries.findIndex(entry => entry.id === latestEntry.id)
                     if (latestIndex > 0) {
@@ -1195,7 +1233,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                       const diff = latestEntry.aswModTotal - (prevEntry.aswModTotal || 0)
                       return (
                         <span className={`diff ${diff === 0 ? 'neutral' : diff > 0 ? 'positive' : 'negative'}`}>
-                          ({diff >= 0 ? '+' : ''}{diff})
+                          ({maskDiffValue(diff)})
                         </span>
                       )
                     }
@@ -1274,9 +1312,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                         >
                           <span className="material-icons">close</span>
                         </button>
-                        {task.inheritedFrom && (
-                          <span className="inherited-badge">{theme === 'shipgirl' ? '継続' : '継続'}</span>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -1380,44 +1415,44 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                 <div className="entry-stats">
                   <div className="stat-badge">
                     <span className="stat-label">現在経験値</span>
-                    <span className="stat-value">{entry.totalExp.toLocaleString()}</span>
+                    <span className="stat-value">{maskValue(entry.totalExp)}</span>
                     <span className={`diff ${getDifference(entry, 'totalExp') === 0 ? 'neutral' : getDifference(entry, 'totalExp') > 0 ? 'positive' : 'negative'}`}>
-                      ({getDifference(entry, 'totalExp') >= 0 ? '+' : ''}{getDifference(entry, 'totalExp').toLocaleString()})
+                      ({maskDiffValue(getDifference(entry, 'totalExp'))})
                     </span>
                   </div>
                   <div className="stat-badge">
                     <span className="stat-label">保有艦数</span>
-                    <span className="stat-value">{entry.shipCount}</span>
+                    <span className="stat-value">{maskValue(entry.shipCount)}</span>
                     <span className={`diff ${getDifference(entry, 'shipCount') === 0 ? 'neutral' : getDifference(entry, 'shipCount') > 0 ? 'positive' : 'negative'}`}>
-                      ({getDifference(entry, 'shipCount') >= 0 ? '+' : ''}{getDifference(entry, 'shipCount')})
+                      ({maskDiffValue(getDifference(entry, 'shipCount'))})
                     </span>
                   </div>
                   <div className="stat-badge">
                     <span className="stat-label">ケッコン艦</span>
-                    <span className="stat-value">{entry.marriedCount}</span>
+                    <span className="stat-value">{maskValue(entry.marriedCount)}</span>
                     <span className={`diff ${getDifference(entry, 'marriedCount') === 0 ? 'neutral' : getDifference(entry, 'marriedCount') > 0 ? 'positive' : 'negative'}`}>
-                      ({getDifference(entry, 'marriedCount') >= 0 ? '+' : ''}{getDifference(entry, 'marriedCount')})
+                      ({maskDiffValue(getDifference(entry, 'marriedCount'))})
                     </span>
                   </div>
                   <div className="stat-badge">
                     <span className="stat-label">運改修合計</span>
-                    <span className="stat-value">{entry.luckModTotal || 0}</span>
+                    <span className="stat-value">{maskValue(entry.luckModTotal || 0)}</span>
                     <span className={`diff ${getDifference(entry, 'luckModTotal') === 0 ? 'neutral' : getDifference(entry, 'luckModTotal') > 0 ? 'positive' : 'negative'}`}>
-                      ({getDifference(entry, 'luckModTotal') >= 0 ? '+' : ''}{getDifference(entry, 'luckModTotal')})
+                      ({maskDiffValue(getDifference(entry, 'luckModTotal'))})
                     </span>
                   </div>
                   <div className="stat-badge">
                     <span className="stat-label">耐久改修合計</span>
-                    <span className="stat-value">{entry.hpModTotal || 0}</span>
+                    <span className="stat-value">{maskValue(entry.hpModTotal || 0)}</span>
                     <span className={`diff ${getDifference(entry, 'hpModTotal') === 0 ? 'neutral' : getDifference(entry, 'hpModTotal') > 0 ? 'positive' : 'negative'}`}>
-                      ({getDifference(entry, 'hpModTotal') >= 0 ? '+' : ''}{getDifference(entry, 'hpModTotal')})
+                      ({maskDiffValue(getDifference(entry, 'hpModTotal'))})
                     </span>
                   </div>
                   <div className="stat-badge">
                     <span className="stat-label">対潜改修合計</span>
-                    <span className="stat-value">{entry.aswModTotal || 0}</span>
+                    <span className="stat-value">{maskValue(entry.aswModTotal || 0)}</span>
                     <span className={`diff ${getDifference(entry, 'aswModTotal') === 0 ? 'neutral' : getDifference(entry, 'aswModTotal') > 0 ? 'positive' : 'negative'}`}>
-                      ({getDifference(entry, 'aswModTotal') >= 0 ? '+' : ''}{getDifference(entry, 'aswModTotal')})
+                      ({maskDiffValue(getDifference(entry, 'aswModTotal'))})
                     </span>
                   </div>
                 </div>
@@ -1452,9 +1487,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) =>
                             />
                             <span className={task.completed ? 'completed' : ''}>{task.text}</span>
                           </label>
-                          {task.inheritedFrom && (
-                            <span className="inherited-badge">{theme === 'shipgirl' ? '継続' : '継続'}</span>
-                          )}
                         </div>
                       ))}
                     </div>
