@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import type { ShipMasterData } from '../data/shipMasterDataCore'
 import { 
   getShipMasterDataSync, 
-  CORE_SHIP_MASTER_DATA 
+  CORE_SHIP_MASTER_DATA
 } from '../data/shipMasterDataCore'
 
 // 全データの遅延ローディング管理
