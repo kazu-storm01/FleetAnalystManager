@@ -4,6 +4,7 @@ import {
   getShipType, 
   calculateRarity
 } from '../data/shipMasterDataCore'
+import { SHIP_TYPES as SHIP_TYPE_NAMES } from '../data/shipMasterData'
 import { useShipData } from '../hooks/useShipData'
 import { parseImprovements } from '../utils/shipStatsCalculator'
 
@@ -15,6 +16,7 @@ interface Ship {
   type: string
   rarity: number
   level: number
+  slotCount: number   // 装備スロット数
   // 実際のステータス（計算済み）
   currentStats: {
     hp: number
@@ -134,6 +136,7 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
         type: shipType,
         rarity: calculateRarity(level),
         level,
+        slotCount: masterData.slotCount || 2, // マスターデータから取得
         currentStats,
         improvements,
         isMarried,
@@ -399,7 +402,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                         {/* 位置とタイプ */}
                         <div className="ship-header-fleet">
                           <span className="ship-position">#{slot.position + 1}</span>
-                          <span className="ship-type-badge">{slot.ship.type}</span>
+                          <span className="ship-type-badge">{SHIP_TYPE_NAMES[slot.ship.type as keyof typeof SHIP_TYPE_NAMES] || slot.ship.type}</span>
                         </div>
                         
                         {/* 削除ボタン */}
@@ -423,30 +426,82 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                   <div className="ship-info-area">
                     <div className="ship-name-fleet">{slot.ship.name}</div>
                     <div className="ship-level-fleet">Lv.{slot.ship.level}</div>
+                    
+                    {/* 装備スロット */}
+                    <div className="equipment-slots">
+                      {Array.from({ length: slot.ship.slotCount }, (_, slotIndex) => (
+                        <div key={slotIndex} className="equipment-slot">
+                          <div className="equipment-icon">⚙</div>
+                          <div className="equipment-text">装備{slotIndex + 1}</div>
+                        </div>
+                      ))}
+                    </div>
+                    
                     <div className="ship-stats-grid">
                       <div className="stat-item-fleet">
-                        <span className="stat-label">火力</span>
-                        <span className="stat-value">{slot.ship.currentStats.firepower}</span>
+                        <span className="stat-label">耐久</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.hp}
+                          {slot.ship.improvements.hp > 0 && <span className="improvement">+{slot.ship.improvements.hp}</span>}
+                        </span>
                       </div>
                       <div className="stat-item-fleet">
-                        <span className="stat-label">雷装</span>
-                        <span className="stat-value">{slot.ship.currentStats.torpedo}</span>
+                        <span className="stat-label">火力</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.firepower}
+                          {slot.ship.improvements.firepower > 0 && <span className="improvement">+{slot.ship.improvements.firepower}</span>}
+                        </span>
                       </div>
                       <div className="stat-item-fleet">
                         <span className="stat-label">装甲</span>
-                        <span className="stat-value">{slot.ship.currentStats.armor}</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.armor}
+                          {slot.ship.improvements.armor > 0 && <span className="improvement">+{slot.ship.improvements.armor}</span>}
+                        </span>
                       </div>
                       <div className="stat-item-fleet">
-                        <span className="stat-label">対空</span>
-                        <span className="stat-value">{slot.ship.currentStats.aa}</span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">耐久</span>
-                        <span className="stat-value">{slot.ship.currentStats.hp}</span>
+                        <span className="stat-label">雷装</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.torpedo}
+                          {slot.ship.improvements.torpedo > 0 && <span className="improvement">+{slot.ship.improvements.torpedo}</span>}
+                        </span>
                       </div>
                       <div className="stat-item-fleet">
                         <span className="stat-label">回避</span>
                         <span className="stat-value">{slot.ship.currentStats.evasion}</span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">対空</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.aa}
+                          {slot.ship.improvements.aa > 0 && <span className="improvement">+{slot.ship.improvements.aa}</span>}
+                        </span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">対潜</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.asw}
+                          {slot.ship.improvements.asw > 0 && <span className="improvement">+{slot.ship.improvements.asw}</span>}
+                        </span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">索敵</span>
+                        <span className="stat-value">{slot.ship.currentStats.los}</span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">運</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.luck}
+                          {slot.ship.improvements.luck > 0 && <span className="improvement">+{slot.ship.improvements.luck}</span>}
+                        </span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">速力</span>
+                        <span className="stat-value">
+                          {slot.ship.currentStats.speed === 10 ? '高速' : 
+                           slot.ship.currentStats.speed === 5 ? '低速' : 
+                           slot.ship.currentStats.speed}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -569,26 +624,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                       <div className="ship-card-overlay">
                       <div className="ship-stats-inline">
                         <span className="stat-inline">
-                          火{ship.currentStats.firepower}
-                        </span>
-                        <span className="stat-inline">
-                          雷{ship.currentStats.torpedo}
-                        </span>
-                        <span className="stat-inline">
-                          空{ship.currentStats.aa}
-                        </span>
-                        <span className="stat-inline">
-                          甲{ship.currentStats.armor}
-                        </span>
-                        <span className="stat-inline">
                           耐{ship.currentStats.hp}
                           {ship.improvements.hp > 0 && <span className="improvement">+{ship.improvements.hp}</span>}
-                        </span>
-                        <span className="stat-inline">
-                          避{ship.currentStats.evasion}
-                        </span>
-                        <span className="stat-inline">
-                          索{ship.currentStats.los}
                         </span>
                         <span className="stat-inline">
                           潜{ship.currentStats.asw}

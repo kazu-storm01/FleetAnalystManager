@@ -8,6 +8,7 @@ export interface ShipMasterData {
   shipType: number
   rarity: number
   maxLevel: number
+  slotCount: number   // 装備スロット数（kancolle.csvから取得）
   initialStats: {
     hp: number          // 耐久（初期値）
     firepower: number   // 火力（初期値）
@@ -137,55 +138,55 @@ export const SHIP_TYPES = {
 export const CORE_SHIP_MASTER_DATA: { [key: number]: ShipMasterData } = {
   1: {
     shipId: 1, sortId: 31, name: '睦月', yomi: 'むつき', shipClass: 2, shipType: 28, rarity: 3,
-    maxLevel: 100, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 12, asw: 16 }
+    maxLevel: 100, slotCount: 3, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 12, asw: 16 }
   },
   2: {
     shipId: 2, sortId: 32, name: '如月', yomi: 'きさらぎ', shipClass: 2, shipType: 28, rarity: 2,
-    maxLevel: 100, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 10, asw: 16 }
+    maxLevel: 100, slotCount: 2, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 10, asw: 16 }
   },
   6: {
     shipId: 6, sortId: 35, name: '長月', yomi: 'ながつき', shipClass: 2, shipType: 28, rarity: 2,
-    maxLevel: 100, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 15, asw: 16 }
+    maxLevel: 100, slotCount: 2, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 15, asw: 16 }
   },
   7: {
     shipId: 7, sortId: 37, name: '三日月', yomi: 'みかづき', shipClass: 2, shipType: 28, rarity: 1,
-    maxLevel: 100, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 10, asw: 16 }
+    maxLevel: 100, slotCount: 1, initialStats: { hp: 13, firepower: 6, armor: 5, torpedo: 18, evasion: 58, aa: 7, aircraft: 2, speed: 10, los: 4, range: 1, luck: 10, asw: 16 }
   },
   9: {
     shipId: 9, sortId: 11, name: '吹雪', yomi: 'ふぶき', shipClass: 2, shipType: 12, rarity: 3,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 17, asw: 20 }
+    maxLevel: 100, slotCount: 3, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 17, asw: 20 }
   },
   10: {
     shipId: 10, sortId: 12, name: '白雪', yomi: 'しらゆき', shipClass: 2, shipType: 12, rarity: 2,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
+    maxLevel: 100, slotCount: 2, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
   },
   11: {
     shipId: 11, sortId: 14, name: '深雪', yomi: 'みゆき', shipClass: 2, shipType: 12, rarity: 2,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
+    maxLevel: 100, slotCount: 2, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
   },
   12: {
     shipId: 12, sortId: 16, name: '磯波', yomi: 'いそなみ', shipClass: 2, shipType: 12, rarity: 1,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
+    maxLevel: 100, slotCount: 1, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 10, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
   },
   13: {
     shipId: 13, sortId: 17, name: '綾波', yomi: 'あやなみ', shipClass: 2, shipType: 1, rarity: 3,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 12, asw: 20 }
+    maxLevel: 100, slotCount: 3, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 12, asw: 20 }
   },
   14: {
     shipId: 14, sortId: 18, name: '敷波', yomi: 'しきなみ', shipClass: 2, shipType: 1, rarity: 2,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
+    maxLevel: 100, slotCount: 2, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
   },
   15: {
     shipId: 15, sortId: 68, name: '曙', yomi: 'あけぼの', shipClass: 2, shipType: 1, rarity: 1,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
+    maxLevel: 100, slotCount: 1, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 10, asw: 20 }
   },
   16: {
     shipId: 16, sortId: 70, name: '潮', yomi: 'うしお', shipClass: 2, shipType: 1, rarity: 1,
-    maxLevel: 100, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 20, asw: 20 }
+    maxLevel: 100, slotCount: 1, initialStats: { hp: 15, firepower: 10, armor: 5, torpedo: 27, evasion: 74, aa: 12, aircraft: 2, speed: 10, los: 5, range: 1, luck: 20, asw: 20 }
   },
   17: {
     shipId: 17, sortId: 91, name: '陽炎', yomi: 'かげろう', shipClass: 2, shipType: 30, rarity: 3,
-    maxLevel: 100, initialStats: { hp: 16, firepower: 10, armor: 6, torpedo: 24, evasion: 70, aa: 12, aircraft: 2, speed: 10, los: 6, range: 1, luck: 12, asw: 24 }
+    maxLevel: 100, slotCount: 3, initialStats: { hp: 16, firepower: 10, armor: 6, torpedo: 24, evasion: 70, aa: 12, aircraft: 2, speed: 10, los: 6, range: 1, luck: 12, asw: 24 }
   },
   18: {
     shipId: 18, sortId: 92, name: '不知火', yomi: 'しらぬい', shipClass: 2, shipType: 30, rarity: 2,
@@ -197,7 +198,7 @@ export const CORE_SHIP_MASTER_DATA: { [key: number]: ShipMasterData } = {
   },
   20: {
     shipId: 20, sortId: 5, name: '雪風', yomi: 'ゆきかぜ', shipClass: 2, shipType: 30, rarity: 6,
-    maxLevel: 100, initialStats: { hp: 16, firepower: 10, armor: 7, torpedo: 24, evasion: 70, aa: 12, aircraft: 2, speed: 10, los: 6, range: 1, luck: 50, asw: 24 }
+    maxLevel: 100, slotCount: 6, initialStats: { hp: 16, firepower: 10, armor: 7, torpedo: 24, evasion: 70, aa: 12, aircraft: 2, speed: 10, los: 6, range: 1, luck: 50, asw: 24 }
   },
   21: {
     shipId: 21, sortId: 42, name: '長良', yomi: 'ながら', shipClass: 3, shipType: 20, rarity: 4,
@@ -313,7 +314,7 @@ export const CORE_SHIP_MASTER_DATA: { [key: number]: ShipMasterData } = {
   },
   50: {
     shipId: 50, sortId: 10, name: '島風', yomi: 'しまかぜ', shipClass: 2, shipType: 22, rarity: 6,
-    maxLevel: 100, initialStats: { hp: 19, firepower: 12, armor: 8, torpedo: 45, evasion: 70, aa: 14, aircraft: 2, speed: 10, los: 7, range: 1, luck: 10, asw: 24 }
+    maxLevel: 100, slotCount: 6, initialStats: { hp: 19, firepower: 12, armor: 8, torpedo: 45, evasion: 70, aa: 14, aircraft: 2, speed: 10, los: 7, range: 1, luck: 10, asw: 24 }
   },
   51: {
     shipId: 51, sortId: 28, name: '天龍', yomi: 'てんりゅう', shipClass: 3, shipType: 21, rarity: 3,
@@ -425,7 +426,7 @@ export const CORE_SHIP_MASTER_DATA: { [key: number]: ShipMasterData } = {
   },
   78: {
     shipId: 78, sortId: 21, name: '金剛', yomi: 'こんごう', shipClass: 8, shipType: 6, rarity: 5,
-    maxLevel: 100, initialStats: { hp: 63, firepower: 63, armor: 52, torpedo: 0, evasion: 30, aa: 24, aircraft: 3, speed: 10, los: 13, range: 3, luck: 12, asw: 0 }
+    maxLevel: 100, slotCount: 4, initialStats: { hp: 63, firepower: 63, armor: 52, torpedo: 0, evasion: 30, aa: 24, aircraft: 3, speed: 10, los: 13, range: 3, luck: 12, asw: 0 }
   },
   79: {
     shipId: 79, sortId: 23, name: '榛名', yomi: 'はるな', shipClass: 8, shipType: 6, rarity: 5,
@@ -433,7 +434,7 @@ export const CORE_SHIP_MASTER_DATA: { [key: number]: ShipMasterData } = {
   },
   80: {
     shipId: 80, sortId: 1, name: '長門', yomi: 'ながと', shipClass: 9, shipType: 19, rarity: 7,
-    maxLevel: 100, initialStats: { hp: 80, firepower: 82, armor: 75, torpedo: 0, evasion: 30, aa: 31, aircraft: 4, speed: 5, los: 12, range: 3, luck: 20, asw: 0 }
+    maxLevel: 100, slotCount: 4, initialStats: { hp: 80, firepower: 82, armor: 75, torpedo: 0, evasion: 30, aa: 31, aircraft: 4, speed: 5, los: 12, range: 3, luck: 20, asw: 0 }
   },
   108: {
     shipId: 108, sortId: 104, name: '千歳航', yomi: 'ちとせ', shipClass: 7, shipType: 15, rarity: 4,
@@ -552,6 +553,7 @@ export const CORE_SHIP_MASTER_DATA: { [key: number]: ShipMasterData } = {
 // 全艦データの遅延ローディング用
 let fullShipMasterData: { [key: number]: ShipMasterData } | null = null
 
+
 // 艦娘IDからマスターデータを取得（遅延ローディング対応）
 export const getShipMasterData = async (shipId: number): Promise<ShipMasterData> => {
   // まずコアデータから探す
@@ -588,6 +590,7 @@ const getDefaultShipData = (shipId: number): ShipMasterData => ({
   shipType: 1,
   rarity: 1,
   maxLevel: 100,
+  slotCount: 2, // デフォルト2スロット
   initialStats: {
     hp: 20, firepower: 10, armor: 10, torpedo: 20, evasion: 30,
     aa: 10, aircraft: 0, speed: 5, los: 10, range: 1, luck: 10, asw: 10
