@@ -27,14 +27,22 @@ interface FleetEntry {
 
 interface FleetAnalysisManagerProps {
   theme: 'shipgirl' | 'abyssal'
+  onFleetDataChange?: (data: string) => void
 }
 
-const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme }) => {
+const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFleetDataChange }) => {
   const [admiralName, setAdmiralName] = useState<string>('')
   const [isFirstSetup, setIsFirstSetup] = useState<boolean>(true)
   const [tempAdmiralName, setTempAdmiralName] = useState<string>('')
   const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([])
   const [fleetData, setFleetData] = useState<string>('')
+
+  // fleetDataが変更された時に親コンポーネントに通知
+  useEffect(() => {
+    if (onFleetDataChange && fleetData) {
+      onFleetDataChange(fleetData)
+    }
+  }, [fleetData, onFleetDataChange])
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
   const [currentPage, setCurrentPage] = useState<number>(0)
   const [showWelcome, setShowWelcome] = useState<boolean>(false)

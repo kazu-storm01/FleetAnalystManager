@@ -5,6 +5,1245 @@
   text-align: center;
 }
 
+/* ===== 艦隊編成機能のスタイル ===== */
+
+.fleet-composer {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0f2e 0%, #1a237e 50%, #283593 100%);
+  color: #e3f2fd;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+}
+
+.fleet-composer.abyssal {
+  background: linear-gradient(135deg, #1a0d0d 0%, #4a0e0e 50%, #6d1b1b 100%);
+  color: #ffebee;
+}
+
+/* メインエリア */
+.fleet-composition-area {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 580px; /* ドロワーのための余白 */
+}
+
+.fleet-composition-area h2 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 30px;
+  color: #64b5f6;
+  text-shadow: 0 0 10px rgba(100, 181, 246, 0.5);
+}
+
+.fleet-composer.abyssal .fleet-composition-area h2 {
+  color: #f48fb1;
+  text-shadow: 0 0 10px rgba(244, 143, 177, 0.5);
+}
+
+/* 艦隊ステータスパネル */
+.fleet-stats-panel {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  background: rgba(100, 181, 246, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 12px;
+  padding: 15px 20px;
+  text-align: center;
+  min-width: 100px;
+  transition: all 0.3s ease;
+}
+
+.fleet-composer.abyssal .stat-item {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .stat-item:hover {
+  box-shadow: 0 8px 20px rgba(244, 143, 177, 0.2);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #90caf9;
+  margin-bottom: 5px;
+}
+
+.fleet-composer.abyssal .stat-label {
+  color: #f8bbd9;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .stat-value {
+  color: #ffebee;
+}
+
+/* 編成スロット */
+.fleet-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.fleet-slot {
+  background: rgba(25, 118, 210, 0.1);
+  border: 2px dashed rgba(100, 181, 246, 0.3);
+  border-radius: 15px;
+  padding: 20px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.fleet-composer.abyssal .fleet-slot {
+  background: rgba(183, 28, 28, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.fleet-slot.occupied {
+  background: rgba(100, 181, 246, 0.15);
+  border-color: rgba(100, 181, 246, 0.5);
+  border-style: solid;
+}
+
+.fleet-composer.abyssal .fleet-slot.occupied {
+  background: rgba(244, 143, 177, 0.15);
+  border-color: rgba(244, 143, 177, 0.5);
+}
+
+.fleet-slot:hover {
+  border-color: rgba(100, 181, 246, 0.7);
+  background: rgba(100, 181, 246, 0.2);
+  transform: scale(1.02);
+}
+
+.fleet-composer.abyssal .fleet-slot:hover {
+  border-color: rgba(244, 143, 177, 0.7);
+  background: rgba(244, 143, 177, 0.2);
+}
+
+/* 艦娘カード（スロット内） */
+.ship-card-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+}
+
+.ship-card-slot .ship-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #64b5f6;
+  object-fit: cover;
+  box-shadow: 0 0 15px rgba(100, 181, 246, 0.4);
+}
+
+.fleet-composer.abyssal .ship-card-slot .ship-avatar {
+  border-color: #f48fb1;
+  box-shadow: 0 0 15px rgba(244, 143, 177, 0.4);
+}
+
+.ship-info {
+  flex: 1;
+}
+
+.ship-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #e3f2fd;
+  margin-bottom: 4px;
+}
+
+.fleet-composer.abyssal .ship-name {
+  color: #ffebee;
+}
+
+.ship-level {
+  font-size: 0.9rem;
+  color: #90caf9;
+}
+
+.fleet-composer.abyssal .ship-level {
+  color: #f8bbd9;
+}
+
+.remove-button {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f44336;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.remove-button:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+/* 空のスロット */
+.empty-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(100, 181, 246, 0.6);
+}
+
+.fleet-composer.abyssal .empty-slot {
+  color: rgba(244, 143, 177, 0.6);
+}
+
+.slot-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.slot-text {
+  font-size: 0.9rem;
+}
+
+/* 下部ドロワー */
+.bottom-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(13, 71, 161, 0.95);
+  backdrop-filter: blur(15px);
+  border-top: 2px solid rgba(100, 181, 246, 0.3);
+  border-radius: 20px 20px 0 0;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.fleet-composer.abyssal .bottom-drawer {
+  background: rgba(136, 14, 79, 0.95);
+  border-top-color: rgba(244, 143, 177, 0.3);
+}
+
+.bottom-drawer.closed {
+  transform: translateY(calc(100% - 60px));
+}
+
+.bottom-drawer.open {
+  transform: translateY(0);
+}
+
+/* ドロワーハンドル */
+.drawer-handle {
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(100, 181, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.fleet-composer.abyssal .drawer-handle {
+  border-bottom-color: rgba(244, 143, 177, 0.2);
+}
+
+.drawer-handle:hover {
+  background: rgba(100, 181, 246, 0.1);
+}
+
+.fleet-composer.abyssal .drawer-handle:hover {
+  background: rgba(244, 143, 177, 0.1);
+}
+
+.handle-bar {
+  width: 50px;
+  height: 4px;
+  background: #64b5f6;
+  border-radius: 2px;
+  margin: 0 auto 8px;
+  transition: all 0.3s ease;
+}
+
+.fleet-composer.abyssal .handle-bar {
+  background: #f48fb1;
+}
+
+.drawer-handle:hover .handle-bar {
+  background: #42a5f5;
+  width: 70px;
+}
+
+.fleet-composer.abyssal .drawer-handle:hover .handle-bar {
+  background: #f06292;
+}
+
+.handle-text {
+  font-size: 0.9rem;
+  color: #90caf9;
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .handle-text {
+  color: #f8bbd9;
+}
+
+/* ドロワーコンテンツ */
+.drawer-content {
+  padding: 20px;
+  max-height: calc(90vh - 60px);
+  overflow-y: auto;
+}
+
+/* 艦種別タブ */
+.ship-type-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.type-tab {
+  padding: 8px 16px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  background: rgba(100, 181, 246, 0.1);
+  color: #90caf9;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .type-tab {
+  border-color: rgba(244, 143, 177, 0.3);
+  background: rgba(244, 143, 177, 0.1);
+  color: #f8bbd9;
+}
+
+.type-tab:hover {
+  background: rgba(100, 181, 246, 0.2);
+  border-color: rgba(100, 181, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.fleet-composer.abyssal .type-tab:hover {
+  background: rgba(244, 143, 177, 0.2);
+  border-color: rgba(244, 143, 177, 0.5);
+}
+
+.type-tab.active {
+  background: rgba(100, 181, 246, 0.3);
+  border-color: #64b5f6;
+  color: #e3f2fd;
+  box-shadow: 0 0 15px rgba(100, 181, 246, 0.3);
+}
+
+.fleet-composer.abyssal .type-tab.active {
+  background: rgba(244, 143, 177, 0.3);
+  border-color: #f48fb1;
+  color: #ffebee;
+  box-shadow: 0 0 15px rgba(244, 143, 177, 0.3);
+}
+
+/* 上部ナビゲーション風艦種フィルター */
+.ship-type-nav {
+  background: rgba(13, 71, 161, 0.15);
+  border-radius: 12px;
+  padding: 8px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(100, 181, 246, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.fleet-composer.abyssal .ship-type-nav {
+  background: rgba(136, 14, 79, 0.15);
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+.nav-container {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.nav-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.nav-tab {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: #90caf9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  position: relative;
+}
+
+.fleet-composer.abyssal .nav-tab {
+  color: #f8bbd9;
+}
+
+.nav-tab:hover {
+  background: rgba(100, 181, 246, 0.15);
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .nav-tab:hover {
+  background: rgba(244, 143, 177, 0.15);
+  color: #ffebee;
+}
+
+.nav-tab.active {
+  background: rgba(100, 181, 246, 0.25);
+  color: #e3f2fd;
+  font-weight: 600;
+}
+
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: #64b5f6;
+  border-radius: 1px;
+}
+
+.fleet-composer.abyssal .nav-tab.active {
+  background: rgba(244, 143, 177, 0.25);
+  color: #ffebee;
+}
+
+.fleet-composer.abyssal .nav-tab.active::after {
+  background: #f48fb1;
+}
+
+/* ソートコントロール */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(13, 71, 161, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(100, 181, 246, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.fleet-composer.abyssal .sort-controls {
+  background: rgba(136, 14, 79, 0.1);
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+.sort-label {
+  font-size: 0.85rem;
+  color: #90caf9;
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.fleet-composer.abyssal .sort-label {
+  color: #f8bbd9;
+}
+
+.sort-button {
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: #90caf9;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.fleet-composer.abyssal .sort-button {
+  color: #f8bbd9;
+}
+
+.sort-button:hover {
+  background: rgba(100, 181, 246, 0.15);
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .sort-button:hover {
+  background: rgba(244, 143, 177, 0.15);
+  color: #ffebee;
+}
+
+.sort-button.active {
+  background: rgba(100, 181, 246, 0.25);
+  color: #e3f2fd;
+  font-weight: 600;
+}
+
+.fleet-composer.abyssal .sort-button.active {
+  background: rgba(244, 143, 177, 0.25);
+  color: #ffebee;
+}
+
+/* 艦娘横スクロールコンテナ */
+.ships-horizontal-container {
+  width: 100%;
+  height: 420px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 12px;
+  background: rgba(13, 71, 161, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.2);
+  position: relative;
+}
+
+.fleet-composer.abyssal .ships-horizontal-container {
+  background: rgba(136, 14, 79, 0.1);
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+.ships-horizontal-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.ships-horizontal-container::-webkit-scrollbar-track {
+  background: rgba(100, 181, 246, 0.1);
+  border-radius: 3px;
+}
+
+.fleet-composer.abyssal .ships-horizontal-container::-webkit-scrollbar-track {
+  background: rgba(244, 143, 177, 0.1);
+}
+
+.ships-horizontal-container::-webkit-scrollbar-thumb {
+  background: rgba(100, 181, 246, 0.4);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.fleet-composer.abyssal .ships-horizontal-container::-webkit-scrollbar-thumb {
+  background: rgba(244, 143, 177, 0.4);
+}
+
+.ships-horizontal-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 181, 246, 0.6);
+}
+
+.fleet-composer.abyssal .ships-horizontal-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(244, 143, 177, 0.6);
+}
+
+.ships-horizontal-list {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  height: 100%;
+  align-items: center;
+}
+
+/* 艦娘カードコンテナ（ラベル + カード） */
+.ship-card-container {
+  flex-shrink: 0;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: grab;
+  animation: slideInFromBottom 0.6s ease-out both;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.ship-card-container:hover {
+  transform: translateY(-8px);
+}
+
+/* 上部ラベル */
+.ship-label {
+  background: linear-gradient(135deg, rgba(100, 181, 246, 0.9), rgba(25, 118, 210, 0.8));
+  border-radius: 8px 8px 0 0;
+  padding: 6px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .ship-label {
+  background: linear-gradient(135deg, rgba(244, 143, 177, 0.9), rgba(136, 14, 79, 0.8));
+  border-color: rgba(244, 143, 177, 0.3);
+  box-shadow: 0 2px 8px rgba(244, 143, 177, 0.2);
+}
+
+.ship-name-label {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.ship-level-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  opacity: 0.95;
+}
+
+/* 艦これAC風艦娘カード */
+.ship-card-ac {
+  flex-shrink: 0;
+  width: 260px;
+  height: 300px;
+  background: linear-gradient(145deg, rgba(25, 118, 210, 0.15), rgba(13, 71, 161, 0.1));
+  border: 2px solid transparent;
+  border-radius: 15px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: slideInRight 0.6s ease-out;
+  backdrop-filter: blur(10px);
+}
+
+.fleet-composer.abyssal .ship-card-ac {
+  background: linear-gradient(145deg, rgba(183, 28, 28, 0.15), rgba(136, 14, 79, 0.1));
+}
+
+.ship-card-ac::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.ship-card-ac:hover::before {
+  transform: translateX(100%);
+}
+
+.ship-card-ac:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(100, 181, 246, 0.3);
+  border-color: rgba(100, 181, 246, 0.6);
+}
+
+.fleet-composer.abyssal .ship-card-ac:hover {
+  box-shadow: 0 15px 35px rgba(244, 143, 177, 0.3);
+  border-color: rgba(244, 143, 177, 0.6);
+}
+
+.ship-card-ac:active {
+  cursor: grabbing;
+  transform: scale(1.08);
+}
+
+/* 新しい背景画像ベースのカードレイアウト */
+.ship-card-background {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+  border-radius: 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ship-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.0) 0%,
+    rgba(0, 0, 0, 0.0) 70%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-radius: 15px;
+}
+
+/* コンパクトな上部情報表示 */
+.ship-info-compact {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+  border-radius: 8px;
+  padding: 4px 8px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.ship-name-compact {
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: #ffffff;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 1);
+  line-height: 1.1;
+}
+
+.ship-level-compact {
+  font-size: 0.7rem;
+  color: #ffffff;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 1);
+  opacity: 0.9;
+  line-height: 1;
+}
+
+/* 既存のオーバーレイ（非使用） */
+.ship-info-overlay {
+  text-align: center;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  padding: 8px 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.ship-card-inner {
+  padding: 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 2;
+}
+
+/* アバター部分 */
+.ship-avatar-container {
+  position: relative;
+  align-self: center;
+  margin-bottom: 8px;
+}
+
+.ship-avatar-ac {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.rarity-border {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: rotate 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ship-card-ac:hover .rarity-border {
+  opacity: 1;
+}
+
+.ship-card-ac.rarity-5 .ship-avatar-ac {
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+.ship-card-ac.rarity-4 .ship-avatar-ac {
+  border-color: #9c27b0;
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.6);
+}
+
+.ship-card-ac.rarity-3 .ship-avatar-ac {
+  border-color: #2196f3;
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.6);
+}
+
+/* 艦娘情報部分 */
+.ship-info-ac {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.ship-name-ac {
+  font-weight: bold;
+  font-size: 1.0rem;
+  color: #ffffff;
+  margin-bottom: 3px;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 1);
+}
+
+.fleet-composer.abyssal .ship-name-ac {
+  color: #ffebee;
+}
+
+.ship-type-ac {
+  font-size: 0.75rem;
+  color: #ffffff;
+  margin-bottom: 2px;
+  font-weight: 500;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
+  opacity: 0.9;
+}
+
+.fleet-composer.abyssal .ship-type-ac {
+  color: #f48fb1;
+}
+
+.ship-level-ac {
+  font-size: 0.8rem;
+  color: #ffffff;
+  font-weight: 600;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
+  opacity: 0.95;
+}
+
+.fleet-composer.abyssal .ship-level-ac {
+  color: #f8bbd9;
+}
+
+/* ステータス部分（1行表示） */
+.ship-stats-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 6px 10px;
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 10px;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.stat-inline {
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.improvement {
+  color: #66bb6a;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 1);
+}
+
+/* 既存のグリッド表示（非使用） */
+.ship-stats-ac {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+  padding: 0 10px;
+  margin-top: 10px;
+  flex-grow: 1;
+}
+
+.stat-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  padding: 5px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  min-height: 35px;
+  backdrop-filter: blur(5px);
+}
+
+.fleet-composer.abyssal .stat-row {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+/* 古いアイコンベースの定義（削除済み）
+.stat-icon {
+  font-size: 0.7rem;
+  margin-bottom: 1px;
+}
+
+.stat-value {
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .stat-value {
+  color: #ffebee;
+}
+*/
+
+/* データが無い場合のメッセージ */
+.no-ships-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  width: 100%;
+  color: #90caf9;
+  text-align: center;
+  padding: 20px;
+}
+
+.fleet-composer.abyssal .no-ships-message {
+  color: #f8bbd9;
+}
+
+.no-ships-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  opacity: 0.6;
+}
+
+.no-ships-text {
+  font-size: 0.9rem;
+  max-width: 400px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/* スクロールヒント */
+.scroll-hint {
+  text-align: center;
+  margin-top: 15px;
+  color: #90caf9;
+  font-size: 0.8rem;
+}
+
+.fleet-composer.abyssal .scroll-hint {
+  color: #f8bbd9;
+}
+
+.scroll-text {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.scroll-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.7;
+}
+
+.scroll-arrow {
+  font-size: 0.8rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.scroll-arrow.left {
+  animation-delay: 0s;
+}
+
+.scroll-arrow.right {
+  animation-delay: 1s;
+}
+
+.scroll-dots {
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+/* アニメーション */
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* 艦娘カード */
+.ship-card {
+  background: rgba(100, 181, 246, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 12px;
+  padding: 15px;
+  cursor: grab;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideUpFade 0.6s ease-out;
+}
+
+.fleet-composer.abyssal .ship-card {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.ship-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(100, 181, 246, 0.2);
+  border-color: rgba(100, 181, 246, 0.6);
+}
+
+.fleet-composer.abyssal .ship-card:hover {
+  box-shadow: 0 10px 25px rgba(244, 143, 177, 0.2);
+  border-color: rgba(244, 143, 177, 0.6);
+}
+
+.ship-card:active {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+.ship-card .ship-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid;
+  object-fit: cover;
+  margin: 0 auto 12px;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.ship-card.rarity-5 .ship-avatar {
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.ship-card.rarity-4 .ship-avatar {
+  border-color: #9c27b0;
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.4);
+}
+
+.ship-card.rarity-3 .ship-avatar {
+  border-color: #2196f3;
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.4);
+}
+
+.ship-details {
+  text-align: center;
+}
+
+.ship-card .ship-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #e3f2fd;
+  margin-bottom: 4px;
+}
+
+.fleet-composer.abyssal .ship-card .ship-name {
+  color: #ffebee;
+}
+
+.ship-type {
+  font-size: 0.85rem;
+  color: #64b5f6;
+  margin-bottom: 4px;
+}
+
+.fleet-composer.abyssal .ship-type {
+  color: #f48fb1;
+}
+
+.ship-card .ship-level {
+  font-size: 0.9rem;
+  color: #90caf9;
+  margin-bottom: 8px;
+}
+
+.fleet-composer.abyssal .ship-card .ship-level {
+  color: #f8bbd9;
+}
+
+.ship-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #81c784;
+  gap: 5px;
+}
+
+.fleet-composer.abyssal .ship-stats {
+  color: #a5d6a7;
+}
+
+.ship-stats span {
+  padding: 2px 6px;
+  background: rgba(129, 199, 132, 0.2);
+  border-radius: 8px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+
+.fleet-composer.abyssal .ship-stats span {
+  background: rgba(165, 214, 167, 0.2);
+}
+
+/* オーバーレイ */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* アニメーション */
+@keyframes slideUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .fleet-stats-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .fleet-slots {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .ships-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  
+  .ship-type-tabs {
+    gap: 5px;
+  }
+  
+  .type-tab {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .fleet-slots {
+    grid-template-columns: 1fr;
+  }
+  
+  .ships-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .fleet-stats-panel {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  
+  .stat-item {
+    padding: 10px;
+    min-width: auto;
+  }
+}
+
+/* ===== 既存スタイルの続き ===== */
+
 
 
 /* 艦隊分析コンテンツアプリ全体のスタイル */
@@ -8218,3 +9457,180 @@ h4 .material-icons {
   }
 }
 
+
+/* ローディングステータス */
+.loading-status {
+  margin-top: 8px;
+  padding: 5px 10px;
+  background: rgba(100, 181, 246, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+}
+
+.fleet-composer.abyssal .loading-status {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.loading-text {
+  font-size: 0.8rem;
+  color: #90caf9;
+  opacity: 0.8;
+}
+
+.fleet-composer.abyssal .loading-text {
+  color: #f8bbd9;
+}
+
+/* 改修値表示 */
+.improvement-value {
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 0.8em;
+  margin-left: 2px;
+}
+
+.fleet-composer.abyssal .improvement-value {
+  color: #81c784;
+}
+
+/* ケッコン表示 */
+.married-indicator {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 1.2em;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ステータス行の調整 */
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.stat-icon {
+  width: 16px;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.stat-value {
+  font-weight: bold;
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+}
+
+/* ステータス行のホバー効果 */
+.stat-row:hover {
+  background: rgba(100, 181, 246, 0.25);
+  transform: translateY(-1px);
+}
+
+.fleet-composer.abyssal .stat-row:hover {
+  background: rgba(244, 143, 177, 0.2);
+}
+
+/* ステータスアイコンとテキストの調整 */
+.stat-icon {
+  font-size: 1rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+.stat-value {
+  font-weight: bold;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .stat-value {
+  color: #ffebee;
+}
+
+/* 改修値表示の調整 */
+.improvement-value {
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 0.85em;
+  text-shadow: 0 0 2px rgba(76, 175, 80, 0.8);
+}
+
+.fleet-composer.abyssal .improvement-value {
+  color: #81c784;
+  text-shadow: 0 0 2px rgba(129, 199, 132, 0.8);
+}
+
+/* ケッコン表示の調整 */
+.married-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1.4em;
+  animation: heartbeat 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 3px rgba(255, 192, 203, 0.8));
+}
+
+/* 艦娘名・レベル表示の調整 */
+.ship-name-ac {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #e3f2fd;
+  margin-bottom: 3px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.ship-level-ac {
+  font-size: 0.9rem;
+  color: #90caf9;
+  font-weight: 600;
+}
+
+.ship-type-ac {
+  font-size: 0.8rem;
+  color: #64b5f6;
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+
+/* ステータスラベル（テキスト表示） */
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 2px;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.fleet-composer.abyssal .stat-label {
+  color: #f8bbd9;
+}
+
+/* ステータス値の表示調整 */
+.stat-value {
+  font-weight: bold;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.fleet-composer.abyssal .stat-value {
+  color: #ffebee;
+}

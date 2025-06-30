@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import FleetAnalystApp from './components/FleetAnalystApp'
 import FleetAnalysisManager from './components/FleetAnalysisManager'
+import FleetComposer from './components/FleetComposer'
 import './App.css'
 
 type Theme = 'shipgirl' | 'abyssal'
-type CurrentView = 'analysis-manager' | 'analyst'
+type CurrentView = 'analysis-manager' | 'analyst' | 'fleet-composer'
 
 function App() {
   const [theme, setTheme] = useState<Theme | null>(null)
   const [currentView, setCurrentView] = useState<CurrentView | null>(null)
+  const [sharedFleetData, setSharedFleetData] = useState<string>('')
 
   // テーマとビューの初期化
   useEffect(() => {
@@ -23,7 +25,7 @@ function App() {
     }
     
     // ビューの復元
-    if (savedView && (savedView === 'analysis-manager' || savedView === 'analyst')) {
+    if (savedView && (savedView === 'analysis-manager' || savedView === 'analyst' || savedView === 'fleet-composer')) {
       setCurrentView(savedView)
     } else {
       setCurrentView('analysis-manager') // デフォルト値
@@ -48,13 +50,24 @@ function App() {
     setTheme(prev => prev === 'shipgirl' ? 'abyssal' : 'shipgirl')
   }
 
-  const toggleView = () => {
-    setCurrentView(prev => prev === 'analysis-manager' ? 'analyst' : 'analysis-manager')
+  const cycleView = () => {
+    setCurrentView(prev => {
+      if (prev === 'analysis-manager') return 'analyst'
+      if (prev === 'analyst') return 'fleet-composer'
+      return 'analysis-manager'
+    })
   }
 
-
   const getNextViewTitle = () => {
-    return currentView === 'analysis-manager' ? '分析者管理' : '分析管理'
+    if (currentView === 'analysis-manager') return '分析者管理'
+    if (currentView === 'analyst') return '艦隊編成'
+    return '分析管理'
+  }
+
+  const getCurrentViewIcon = () => {
+    if (currentView === 'analysis-manager') return '👥'
+    if (currentView === 'analyst') return '⚓'
+    return '📊'
   }
 
   // 初期化中は何も表示しない
@@ -73,12 +86,12 @@ function App() {
       
       {/* 機能切り替えボタン（右下） */}
       <button 
-        onClick={toggleView} 
+        onClick={cycleView} 
         className={`floating-action-button ${theme}`}
         title={`${getNextViewTitle()}に切り替え`}
       >
         <span className="fab-icon">
-          {currentView === 'analysis-manager' ? '👥' : '📊'}
+          {getCurrentViewIcon()}
         </span>
         <span className="fab-label">
           {getNextViewTitle()}
@@ -87,9 +100,17 @@ function App() {
       
       {/* メインコンテンツ */}
       {currentView === 'analysis-manager' ? (
-        <FleetAnalysisManager theme={theme} />
-      ) : (
+        <FleetAnalysisManager 
+          theme={theme} 
+          onFleetDataChange={setSharedFleetData}
+        />
+      ) : currentView === 'analyst' ? (
         <FleetAnalystApp theme={theme} />
+      ) : (
+        <FleetComposer 
+          theme={theme} 
+          fleetData={sharedFleetData}
+        />
       )}
     </div>
   )
