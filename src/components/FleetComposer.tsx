@@ -154,6 +154,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     Array.from({ length: 6 }, (_, i) => ({ position: i, ship: null }))
   )
   const [draggedShip, setDraggedShip] = useState<Ship | null>(null)
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
+  const [fleetName, setFleetName] = useState<string>('')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [ships, setShips] = useState<Ship[]>([])
 
@@ -241,12 +243,31 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   }
 
   // ドラッグ開始
-  const handleDragStart = (ship: Ship) => {
+  const handleDragStart = (e: React.DragEvent, ship: Ship) => {
     setDraggedShip(ship)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', ship.id.toString())
+    // ドラッグ中はbodyにクラスを追加
+    document.body.classList.add('dragging-ship')
+  }
+
+  // ドラッグオーバー
+  const handleDragOver = (e: React.DragEvent, position: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverSlot(position)
+  }
+
+  // ドラッグリーブ
+  const handleDragLeave = () => {
+    setDragOverSlot(null)
   }
 
   // ドロップ処理
-  const handleDrop = (position: number) => {
+  const handleDrop = (e: React.DragEvent, position: number) => {
+    e.preventDefault()
+    e.stopPropagation() // イベントの伝播を停止
+    setDragOverSlot(null)
     if (draggedShip) {
       setFleetSlots(prev => prev.map(slot => 
         slot.position === position 
@@ -254,6 +275,39 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           : slot
       ))
       setDraggedShip(null)
+    }
+    // ドラッグ終了時にクラスを削除
+    document.body.classList.remove('dragging-ship')
+  }
+
+  // 画面外ドロップ処理（自動編成）
+  const handleDropOutside = () => {
+    if (draggedShip) {
+      // 最初の空いているスロットを探す
+      const emptySlot = fleetSlots.find(slot => slot.ship === null)
+      if (emptySlot) {
+        setFleetSlots(prev => prev.map(slot => 
+          slot.position === emptySlot.position 
+            ? { ...slot, ship: draggedShip }
+            : slot
+        ))
+      }
+    }
+    // 必ずクリーンアップ
+    setDraggedShip(null)
+    setDragOverSlot(null)
+    document.body.classList.remove('dragging-ship')
+  }
+
+  // ドラッグ終了
+  const handleDragEnd = (e: React.DragEvent) => {
+    // ドロップエフェクトが'none'の場合、ドロップ先が無効だったので自動編成する
+    if (e.dataTransfer.dropEffect === 'none' && draggedShip) {
+      handleDropOutside()
+    } else {
+      setDraggedShip(null)
+      setDragOverSlot(null)
+      document.body.classList.remove('dragging-ship')
     }
   }
 
@@ -270,43 +324,54 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   return (
     <div className={`fleet-composer ${theme}`}>
+      {/* ドラッグ中のヒント表示 */}
+      {draggedShip && (
+        <div className="drag-hint-overlay">
+          <div className="drag-hint-content">
+            <div className="drag-hint-icon">⚓</div>
+            <div className="drag-hint-text">
+              自動配置
+            </div>
+            <div className="drag-hint-ship">
+              {draggedShip.name} を編成中...
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* メインエリア：艦隊編成画面 */}
-      <div className="fleet-composition-area">
+      <div className="fleet-composition-area"
+           onDragOver={(e) => {
+             e.preventDefault()
+             e.dataTransfer.dropEffect = 'move'
+           }}
+           onDrop={(e) => {
+             e.preventDefault()
+             // スロット以外の場所へのドロップのみ処理
+             if (!e.target || !(e.target as Element).closest('.fleet-slot')) {
+               handleDropOutside()
+             }
+           }}>
         <h2>艦隊編成</h2>
         
-        {/* 艦隊ステータス表示 */}
-        <div className="fleet-stats-panel">
-          <div className="stat-item">
-            <span className="stat-label">火力:</span>
-            <span className="stat-value">{stats.totalFirepower}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">雷装:</span>
-            <span className="stat-value">{stats.totalTorpedo}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">対空:</span>
-            <span className="stat-value">{stats.totalAA}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">装甲:</span>
-            <span className="stat-value">{stats.totalArmor}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">耐久:</span>
-            <span className="stat-value">{stats.totalHP}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">回避:</span>
-            <span className="stat-value">{stats.totalEvasion}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">索敵:</span>
-            <span className="stat-value">{stats.totalLOS}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">艦数:</span>
-            <span className="stat-value">{stats.shipCount}/6</span>
+        {/* 編成名入力エリア */}
+        <div className="fleet-name-input-area">
+          <div className="fleet-name-container">
+            <label className="fleet-name-label">
+              <span className="fleet-name-icon">⚓</span>
+              編成名
+            </label>
+            <input 
+              type="text"
+              className="fleet-name-input"
+              placeholder="編成名を入力してください..."
+              maxLength={30}
+              value={fleetName}
+              onChange={(e) => setFleetName(e.target.value)}
+            />
+            <div className="fleet-count-indicator">
+              <span className="fleet-count-text">{stats.shipCount}/6隻</span>
+            </div>
           </div>
         </div>
 
@@ -315,36 +380,85 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           {fleetSlots.map(slot => (
             <div
               key={slot.position}
-              className={`fleet-slot ${slot.ship ? 'occupied' : 'empty'}`}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop(slot.position)}
+              className={`fleet-slot ${slot.ship ? 'occupied' : 'empty'} ${dragOverSlot === slot.position ? 'drag-over' : ''}`}
+              onDragOver={(e) => handleDragOver(e, slot.position)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, slot.position)}
             >
               {slot.ship ? (
-                <div className="ship-card-slot">
-                  <img 
-                    src={slot.ship.avatarUrl || `/api/placeholder/60/60`} 
-                    alt={slot.ship.name}
-                    className="ship-avatar"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = `/api/placeholder/60/60`;
-                    }}
-                  />
-                  <div className="ship-info">
-                    <div className="ship-name">{slot.ship.name}</div>
-                    <div className="ship-level">Lv.{slot.ship.level}</div>
+                <div className="ship-card-fleet-slot">
+                  {/* 艦娘バナー画像 */}
+                  <div className="ship-banner-container">
+                    <div 
+                      className="ship-background-fleet"
+                      style={{
+                        backgroundImage: `url(/FleetAnalystManager/images/banner/${slot.ship.shipId}.png)`,
+                      }}
+                    >
+                      <div className="ship-overlay-fleet">
+                        {/* 位置とタイプ */}
+                        <div className="ship-header-fleet">
+                          <span className="ship-position">#{slot.position + 1}</span>
+                          <span className="ship-type-badge">{slot.ship.type}</span>
+                        </div>
+                        
+                        {/* 削除ボタン */}
+                        <button 
+                          className="remove-button-fleet"
+                          onClick={() => clearSlot(slot.position)}
+                          title="艦娘を外す"
+                        >
+                          ×
+                        </button>
+                        
+                        {/* ケッコン指標 */}
+                        {slot.ship.isMarried && (
+                          <div className="married-indicator-fleet">♥</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <button 
-                    className="remove-button"
-                    onClick={() => clearSlot(slot.position)}
-                  >
-                    ×
-                  </button>
+                  
+                  {/* ステータス情報エリア */}
+                  <div className="ship-info-area">
+                    <div className="ship-name-fleet">{slot.ship.name}</div>
+                    <div className="ship-level-fleet">Lv.{slot.ship.level}</div>
+                    <div className="ship-stats-grid">
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">火力</span>
+                        <span className="stat-value">{slot.ship.currentStats.firepower}</span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">雷装</span>
+                        <span className="stat-value">{slot.ship.currentStats.torpedo}</span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">装甲</span>
+                        <span className="stat-value">{slot.ship.currentStats.armor}</span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">対空</span>
+                        <span className="stat-value">{slot.ship.currentStats.aa}</span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">耐久</span>
+                        <span className="stat-value">{slot.ship.currentStats.hp}</span>
+                      </div>
+                      <div className="stat-item-fleet">
+                        <span className="stat-label">回避</span>
+                        <span className="stat-value">{slot.ship.currentStats.evasion}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="empty-slot">
-                  <span className="slot-number">{slot.position + 1}</span>
-                  <span className="slot-text">ドロップ</span>
+                <div className="empty-slot-enhanced">
+                  <div className="empty-slot-content">
+                    <div className="slot-number-enhanced">{slot.position + 1}</div>
+                    <div className="slot-icon">⚓</div>
+                    <div className="slot-text-enhanced">艦娘をドロップ</div>
+                    <div className="drop-hint">下から艦娘を<br/>ドラッグしてください</div>
+                  </div>
                 </div>
               )}
             </div>
@@ -428,9 +542,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                 filteredAndSortedShips.map((ship, index) => (
                 <div
                   key={ship.id}
-                  className="ship-card-container"
+                  className={`ship-card-container ${draggedShip?.id === ship.id ? 'dragging' : ''}`}
                   draggable
-                  onDragStart={() => handleDragStart(ship)}
+                  onDragStart={(e) => handleDragStart(e, ship)}
+                  onDragEnd={handleDragEnd}
                   style={{ 
                     animationDelay: `${index * 0.05}s`,
                   }}
@@ -502,8 +617,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
         </div>
       </div>
 
-      {/* オーバーレイ */}
-      {isDrawerOpen && (
+      {/* オーバーレイ（ドラッグ中は無効） */}
+      {isDrawerOpen && !draggedShip && (
         <div 
           className="drawer-overlay"
           onClick={() => setIsDrawerOpen(false)}

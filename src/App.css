@@ -7,6 +7,59 @@
 
 /* ===== 艦隊編成機能のスタイル ===== */
 
+/* ドラッグヒントオーバーレイ（シンプル版） */
+.drag-hint-overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  pointer-events: none;
+  animation: fadeInHint 0.2s ease-out;
+}
+
+@keyframes fadeInHint {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.drag-hint-content {
+  background: rgba(13, 71, 161, 0.8);
+  border: 1px solid rgba(100, 181, 246, 0.4);
+  border-radius: 12px;
+  padding: 12px 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(100, 181, 246, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fleet-composer.abyssal .drag-hint-content {
+  background: rgba(136, 14, 79, 0.8);
+  border-color: rgba(244, 143, 177, 0.4);
+  box-shadow: 0 4px 12px rgba(244, 143, 177, 0.2);
+}
+
+.drag-hint-icon {
+  font-size: 1.5rem;
+  opacity: 0.8;
+}
+
+.drag-hint-text {
+  font-size: 0.9rem;
+  color: #e3f2fd;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.fleet-composer.abyssal .drag-hint-text {
+  color: #ffebee;
+}
+
+.drag-hint-ship {
+  display: none;
+}
+
 .fleet-composer {
   position: relative;
   min-height: 100vh;
@@ -27,6 +80,21 @@
   max-width: 1200px;
   margin: 0 auto;
   padding-bottom: 580px; /* ドロワーのための余白 */
+  position: relative;
+  z-index: 100; /* ドロップターゲットとして機能するように */
+  transition: all 0.3s ease;
+}
+
+/* ドラッグ中のエリアハイライト（控えめ） */
+body.dragging-ship .fleet-composition-area {
+  background: rgba(100, 181, 246, 0.05);
+  border: 1px dashed rgba(100, 181, 246, 0.2);
+  border-radius: 20px;
+}
+
+body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
+  background: rgba(244, 143, 177, 0.05);
+  border-color: rgba(244, 143, 177, 0.2);
 }
 
 .fleet-composition-area h2 {
@@ -98,12 +166,312 @@
   color: #ffebee;
 }
 
-/* 編成スロット */
+/* 洗練されたステータスパネル */
+.fleet-stats-panel-enhanced {
+  background: linear-gradient(135deg, rgba(13, 71, 161, 0.15), rgba(25, 118, 210, 0.1));
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(100, 181, 246, 0.1);
+}
+
+.fleet-composer.abyssal .fleet-stats-panel-enhanced {
+  background: linear-gradient(135deg, rgba(136, 14, 79, 0.15), rgba(183, 28, 28, 0.1));
+  border-color: rgba(244, 143, 177, 0.3);
+  box-shadow: 0 8px 32px rgba(244, 143, 177, 0.1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.stat-group {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 16px;
+  border: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .stat-group {
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+.stat-group-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #64b5f6;
+  margin: 0 0 12px 0;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
+}
+
+.fleet-composer.abyssal .stat-group-title {
+  color: #f48fb1;
+  text-shadow: 0 0 10px rgba(244, 143, 177, 0.3);
+}
+
+.stat-row-enhanced {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.stat-row-enhanced:hover {
+  background: rgba(100, 181, 246, 0.1);
+}
+
+.fleet-composer.abyssal .stat-row-enhanced:hover {
+  background: rgba(244, 143, 177, 0.1);
+}
+
+.stat-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 60px;
+}
+
+.stat-label-enhanced {
+  font-size: 0.8rem;
+  color: #90caf9;
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .stat-label-enhanced {
+  color: #f8bbd9;
+}
+
+.stat-value-enhanced {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #e3f2fd;
+  text-shadow: 0 0 5px rgba(100, 181, 246, 0.3);
+}
+
+.fleet-composer.abyssal .stat-value-enhanced {
+  color: #ffebee;
+  text-shadow: 0 0 5px rgba(244, 143, 177, 0.3);
+}
+
+.stat-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #64b5f6, #42a5f5);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.fleet-composer.abyssal .stat-bar-fill {
+  background: linear-gradient(90deg, #f48fb1, #ec407a);
+}
+
+.stat-bar-fill.defense {
+  background: linear-gradient(90deg, #81c784, #66bb6a);
+}
+
+.stat-bar-fill.hp {
+  background: linear-gradient(90deg, #e57373, #ef5350);
+}
+
+.stat-bar-fill.evasion {
+  background: linear-gradient(90deg, #ffb74d, #ffa726);
+}
+
+.stat-bar-fill.los {
+  background: linear-gradient(90deg, #ba68c8, #ab47bc);
+}
+
+.fleet-composition-info {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .fleet-composition-info {
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+.ship-count-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.ship-count-icon {
+  font-size: 1.2rem;
+}
+
+.ship-count-text {
+  font-size: 0.9rem;
+  color: #64b5f6;
+  font-weight: 600;
+}
+
+.fleet-composer.abyssal .ship-count-text {
+  color: #f48fb1;
+}
+
+.ship-count-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.ship-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.ship-dot.filled {
+  background: #64b5f6;
+  box-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
+}
+
+.fleet-composer.abyssal .ship-dot.filled {
+  background: #f48fb1;
+  box-shadow: 0 0 8px rgba(244, 143, 177, 0.5);
+}
+
+.ship-dot.empty {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(100, 181, 246, 0.3);
+}
+
+.fleet-composer.abyssal .ship-dot.empty {
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+/* 編成名入力エリア */
+.fleet-name-input-area {
+  background: linear-gradient(135deg, rgba(13, 71, 161, 0.1), rgba(25, 118, 210, 0.05));
+  border: 1px solid rgba(100, 181, 246, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.fleet-composer.abyssal .fleet-name-input-area {
+  background: linear-gradient(135deg, rgba(136, 14, 79, 0.1), rgba(183, 28, 28, 0.05));
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+.fleet-name-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.fleet-name-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #64b5f6;
+  min-width: 80px;
+}
+
+.fleet-composer.abyssal .fleet-name-label {
+  color: #f48fb1;
+}
+
+.fleet-name-icon {
+  font-size: 1.2rem;
+}
+
+.fleet-name-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid rgba(100, 181, 246, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e3f2fd;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.fleet-composer.abyssal .fleet-name-input {
+  border-color: rgba(244, 143, 177, 0.3);
+  color: #ffebee;
+}
+
+.fleet-name-input:focus {
+  outline: none;
+  border-color: #64b5f6;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 15px rgba(100, 181, 246, 0.3);
+}
+
+.fleet-composer.abyssal .fleet-name-input:focus {
+  border-color: #f48fb1;
+  box-shadow: 0 0 15px rgba(244, 143, 177, 0.3);
+}
+
+.fleet-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+.fleet-count-indicator {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(100, 181, 246, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+}
+
+.fleet-composer.abyssal .fleet-count-indicator {
+  background: rgba(244, 143, 177, 0.2);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.fleet-count-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64b5f6;
+}
+
+.fleet-composer.abyssal .fleet-count-text {
+  color: #f48fb1;
+}
+
+/* 2列×3行の6隻編成レイアウト */
 .fleet-slots {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  max-width: 800px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, auto);
+  gap: 15px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -111,8 +479,8 @@
   background: rgba(25, 118, 210, 0.1);
   border: 2px dashed rgba(100, 181, 246, 0.3);
   border-radius: 15px;
-  padding: 20px;
-  min-height: 120px;
+  padding: 12px;
+  min-height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -145,6 +513,35 @@
 .fleet-composer.abyssal .fleet-slot:hover {
   border-color: rgba(244, 143, 177, 0.7);
   background: rgba(244, 143, 177, 0.2);
+}
+
+/* ドラッグ&ドロップ視覚的フィードバック */
+.fleet-slot.drag-over {
+  border-color: #4caf50 !important;
+  background: rgba(76, 175, 80, 0.2) !important;
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+}
+
+.ship-card-container.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  filter: brightness(0.7);
+  z-index: 1100; /* ドラッグ中は最前面に */
+  position: relative;
+}
+
+.ship-card-container {
+  transition: all 0.2s ease;
+}
+
+.ship-card-container:hover {
+  transform: translateY(-4px);
+  cursor: grab;
+}
+
+.ship-card-container:active {
+  cursor: grabbing;
 }
 
 /* 艦娘カード（スロット内） */
@@ -237,6 +634,276 @@
   font-size: 0.9rem;
 }
 
+/* 新しい洗練された艦隊スロット */
+.ship-card-fleet-slot {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.ship-banner-container {
+  flex: 0 0 auto;
+  height: 60px;
+  width: 100%;
+  position: relative;
+}
+
+.ship-background-fleet {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #000;
+  position: relative;
+}
+
+.ship-overlay-fleet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.1) 40%,
+    rgba(0, 0, 0, 0.1) 60%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+}
+
+.ship-header-fleet {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.ship-position {
+  background: rgba(100, 181, 246, 0.9);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  line-height: 1;
+}
+
+.fleet-composer.abyssal .ship-position {
+  background: rgba(244, 143, 177, 0.9);
+}
+
+.ship-type-badge {
+  background: rgba(0, 0, 0, 0.8);
+  color: #64b5f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  border: 1px solid rgba(100, 181, 246, 0.5);
+  backdrop-filter: blur(5px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.fleet-composer.abyssal .ship-type-badge {
+  color: #f48fb1;
+  border-color: rgba(244, 143, 177, 0.5);
+}
+
+/* 情報エリア */
+.ship-info-area {
+  flex: 1;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ship-name-fleet {
+  color: #e3f2fd;
+  font-weight: bold;
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+
+.ship-level-fleet {
+  color: #64b5f6;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.fleet-composer.abyssal .ship-level-fleet {
+  color: #f48fb1;
+}
+
+/* ステータスグリッド */
+.ship-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+  font-size: 0.75rem;
+}
+
+.stat-item-fleet {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(100, 181, 246, 0.1);
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .stat-item-fleet {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+.stat-label {
+  color: #90caf9;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .stat-label {
+  color: #f8bbd9;
+}
+
+.stat-value {
+  color: #e3f2fd;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.fleet-composer.abyssal .stat-value {
+  color: #ffebee;
+}
+
+.remove-button-fleet {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.remove-button-fleet:hover {
+  background: #f44336;
+  transform: scale(1.1);
+}
+
+.married-indicator-fleet {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  color: #ff69b4;
+  font-size: 12px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* 新しい洗練された空スロット */
+.empty-slot-enhanced {
+  width: 100%;
+  height: 120px;
+  border: 2px dashed rgba(100, 181, 246, 0.4);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  background: rgba(100, 181, 246, 0.05);
+}
+
+.fleet-composer.abyssal .empty-slot-enhanced {
+  border-color: rgba(244, 143, 177, 0.4);
+  background: rgba(244, 143, 177, 0.05);
+}
+
+.empty-slot-enhanced:hover {
+  border-color: rgba(100, 181, 246, 0.7);
+  background: rgba(100, 181, 246, 0.1);
+  transform: scale(1.02);
+}
+
+.fleet-composer.abyssal .empty-slot-enhanced:hover {
+  border-color: rgba(244, 143, 177, 0.7);
+  background: rgba(244, 143, 177, 0.1);
+}
+
+.empty-slot-content {
+  text-align: center;
+  color: rgba(100, 181, 246, 0.7);
+  padding: 8px;
+}
+
+.fleet-composer.abyssal .empty-slot-content {
+  color: rgba(244, 143, 177, 0.7);
+}
+
+.slot-number-enhanced {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.slot-icon {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.slot-text-enhanced {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.drop-hint {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  line-height: 1.2;
+}
+
 /* 下部ドロワー */
 .bottom-drawer {
   position: fixed;
@@ -259,7 +926,7 @@
 }
 
 .bottom-drawer.closed {
-  transform: translateY(calc(100% - 60px));
+  transform: translateY(calc(100% - 40px));
 }
 
 .bottom-drawer.open {
@@ -268,11 +935,16 @@
 
 /* ドロワーハンドル */
 .drawer-handle {
-  padding: 15px;
+  padding: 6px;
   text-align: center;
   cursor: pointer;
   border-bottom: 1px solid rgba(100, 181, 246, 0.2);
   transition: all 0.3s ease;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .fleet-composer.abyssal .drawer-handle {
@@ -289,10 +961,10 @@
 
 .handle-bar {
   width: 50px;
-  height: 4px;
+  height: 3px;
   background: #64b5f6;
   border-radius: 2px;
-  margin: 0 auto 8px;
+  margin: 0 auto 4px;
   transition: all 0.3s ease;
 }
 
@@ -310,9 +982,10 @@
 }
 
 .handle-text {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #90caf9;
   font-weight: 500;
+  line-height: 1;
 }
 
 .fleet-composer.abyssal .handle-text {
@@ -321,8 +994,8 @@
 
 /* ドロワーコンテンツ */
 .drawer-content {
-  padding: 20px;
-  max-height: calc(90vh - 60px);
+  padding: 8px;
+  max-height: calc(90vh - 40px);
   overflow-y: auto;
 }
 
@@ -382,8 +1055,8 @@
 .ship-type-nav {
   background: rgba(13, 71, 161, 0.15);
   border-radius: 12px;
-  padding: 8px;
-  margin-bottom: 16px;
+  padding: 6px;
+  margin-bottom: 8px;
   border: 1px solid rgba(100, 181, 246, 0.2);
   backdrop-filter: blur(10px);
 }
@@ -466,17 +1139,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  padding: 8px 12px;
+  margin-bottom: 0;
+  padding: 6px 10px;
   background: rgba(13, 71, 161, 0.1);
-  border-radius: 10px;
+  border-radius: 10px 10px 0 0;
   border: 1px solid rgba(100, 181, 246, 0.2);
+  border-bottom: none;
   backdrop-filter: blur(8px);
 }
 
 .fleet-composer.abyssal .sort-controls {
   background: rgba(136, 14, 79, 0.1);
   border-color: rgba(244, 143, 177, 0.2);
+  border-bottom: none;
 }
 
 .sort-label {
@@ -531,18 +1206,20 @@
 /* 艦娘横スクロールコンテナ */
 .ships-horizontal-container {
   width: 100%;
-  height: 420px;
+  height: 300px;
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: 12px;
+  border-radius: 0 0 12px 12px;
   background: rgba(13, 71, 161, 0.1);
   border: 1px solid rgba(100, 181, 246, 0.2);
+  border-top: none;
   position: relative;
 }
 
 .fleet-composer.abyssal .ships-horizontal-container {
   background: rgba(136, 14, 79, 0.1);
   border-color: rgba(244, 143, 177, 0.2);
+  border-top: none;
 }
 
 .ships-horizontal-container::-webkit-scrollbar {
@@ -578,8 +1255,8 @@
 
 .ships-horizontal-list {
   display: flex;
-  gap: 15px;
-  padding: 15px;
+  gap: 10px;
+  padding: 8px;
   height: 100%;
   align-items: center;
 }
@@ -587,10 +1264,10 @@
 /* 艦娘カードコンテナ（ラベル + カード） */
 .ship-card-container {
   flex-shrink: 0;
-  width: 260px;
+  width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   cursor: grab;
   animation: slideInFromBottom 0.6s ease-out both;
   position: relative;
@@ -604,8 +1281,8 @@
 /* 上部ラベル */
 .ship-label {
   background: linear-gradient(135deg, rgba(100, 181, 246, 0.9), rgba(25, 118, 210, 0.8));
-  border-radius: 8px 8px 0 0;
-  padding: 6px 12px;
+  border-radius: 5px 5px 0 0;
+  padding: 3px 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -622,27 +1299,27 @@
 
 .ship-name-label {
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: #ffffff;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 }
 
 .ship-level-label {
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: #ffffff;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
   opacity: 0.95;
 }
 
-/* 艦これAC風艦娘カード */
+/* 艦これAC風艦娘カード（コンパクト版） */
 .ship-card-ac {
   flex-shrink: 0;
-  width: 260px;
-  height: 300px;
+  width: 200px;
+  height: 220px;
   background: linear-gradient(145deg, rgba(25, 118, 210, 0.15), rgba(13, 71, 161, 0.1));
   border: 2px solid transparent;
-  border-radius: 15px;
+  border-radius: 10px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -693,7 +1370,7 @@
   background-size: contain;
   background-position: center center;
   background-repeat: no-repeat;
-  border-radius: 15px;
+  border-radius: 10px;
   position: relative;
   overflow: hidden;
 }
@@ -710,22 +1387,22 @@
     rgba(0, 0, 0, 0.0) 70%,
     rgba(0, 0, 0, 0.8) 100%
   );
-  padding: 12px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  border-radius: 15px;
+  border-radius: 10px;
 }
 
 /* コンパクトな上部情報表示 */
 .ship-info-compact {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
+  top: 4px;
+  left: 4px;
+  right: 4px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
-  border-radius: 8px;
-  padding: 4px 8px;
+  border-radius: 4px;
+  padding: 2px 4px;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   text-align: center;
@@ -733,14 +1410,14 @@
 
 .ship-name-compact {
   font-weight: bold;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   color: #ffffff;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 1);
   line-height: 1.1;
 }
 
 .ship-level-compact {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   color: #ffffff;
   font-weight: 500;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 1);
@@ -760,7 +1437,7 @@
 }
 
 .ship-card-inner {
-  padding: 12px;
+  padding: 6px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -773,17 +1450,17 @@
 .ship-avatar-container {
   position: relative;
   align-self: center;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 
 .ship-avatar-ac {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid;
+  border: 2px solid;
   transition: all 0.3s ease;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .rarity-border {
@@ -821,14 +1498,14 @@
 /* 艦娘情報部分 */
 .ship-info-ac {
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .ship-name-ac {
   font-weight: bold;
   font-size: 1.0rem;
   color: #ffffff;
-  margin-bottom: 3px;
+  margin-bottom: 1px;
   text-shadow: 2px 2px 6px rgba(0, 0, 0, 1);
 }
 
@@ -839,7 +1516,7 @@
 .ship-type-ac {
   font-size: 0.75rem;
   color: #ffffff;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   font-weight: 500;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
   opacity: 0.9;
@@ -865,11 +1542,11 @@
 .ship-stats-inline {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  padding: 6px 10px;
-  margin-top: 8px;
+  gap: 2px;
+  padding: 4px 8px;
+  margin-top: 3px;
   background: rgba(0, 0, 0, 0.75);
-  border-radius: 10px;
+  border-radius: 8px;
   justify-content: center;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -877,15 +1554,15 @@
 
 .stat-inline {
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 700;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 3px;
-  border-radius: 4px;
+  gap: 1px;
+  padding: 1px 2px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -1175,6 +1852,14 @@
   z-index: 999;
   opacity: 0;
   animation: fadeIn 0.3s ease-out forwards;
+  pointer-events: auto;
+}
+
+/* ドラッグ中はオーバーレイを無効化 */
+.fleet-composer:has(.ship-card-container.dragging) .drawer-overlay,
+body.dragging-ship .drawer-overlay {
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 /* アニメーション */
@@ -1205,7 +1890,8 @@
   }
   
   .fleet-slots {
-    grid-template-columns: repeat(2, 1fr);
+    max-width: 500px;
+    gap: 12px;
   }
   
   .ships-grid {
@@ -1225,6 +1911,9 @@
 @media (max-width: 480px) {
   .fleet-slots {
     grid-template-columns: 1fr;
+    grid-template-rows: repeat(6, auto);
+    max-width: 300px;
+    gap: 10px;
   }
   
   .ships-grid {
