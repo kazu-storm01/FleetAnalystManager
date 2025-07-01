@@ -5,6 +5,27 @@
   text-align: center;
 }
 
+/* fleethub式ステータス表示のスタイル調整 */
+.ship-stats-fleethub {
+  margin-top: 8px;
+}
+
+.fleet-slot-stats {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.ship-stats-fleethub .ship-status-display {
+  height: auto;
+  min-height: 120px;
+}
+
+/* アビサルテーマでの調整 */
+[data-theme="abyssal"] .fleet-slot-stats {
+  background-color: rgba(139, 0, 0, 0.15);
+}
+
 /* ===== 艦隊編成機能のスタイル ===== */
 
 /* ドラッグヒントオーバーレイ（シンプル版） */

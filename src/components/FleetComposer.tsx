@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   SHIP_TYPES, 
-  getShipType, 
+  getShipTypeByShipType,
   calculateRarity
 } from '../data/shipMasterDataCore'
 import { SHIP_TYPES as SHIP_TYPE_NAMES } from '../data/shipMasterData'
 import { useShipData } from '../hooks/useShipData'
 import { parseImprovements } from '../utils/shipStatsCalculator'
+import ShipStatusDisplay from './ShipStatusDisplay'
 
 // 艦娘データの型定義
 interface Ship {
@@ -107,27 +108,72 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
       // 改修値の解析
       const improvements = parseImprovements(ship.api_kyouka || ship.st)
       
-      // 改修値から最終ステータスを計算（マスターデータ初期値 + 改修値）
+      // ケッコン判定
+      const isMarried = level >= 100
+      
+      // HP計算：レベル100超え（ケッコン艦）の場合はhpMarriedを参照
+      const baseHp = isMarried && masterData.initialStats.hpMarried 
+        ? masterData.initialStats.hpMarried 
+        : masterData.initialStats.hp
+      
+      // 対潜値計算サイト準拠の正確な計算式
+      // 公式: Math.floor((aswMax - aswMin) * level / 99 + aswMin)
+      const calculateAswFromLevel = (level: number, aswMin: number, aswMax: number): number => {
+        if (aswMin === 0 && (!aswMax || aswMax === 0)) {
+          // 初期値も最大値も0なら対潜能力なし
+          return 0
+        }
+        if (aswMax === undefined || aswMax === 0) {
+          // 最大値が不明な場合は初期値のまま（成長しない）
+          return aswMin
+        }
+        // 線形補間による対潜値計算
+        return Math.floor((aswMax - aswMin) * level / 99 + aswMin)
+      }
+      
+      // その他のステータス計算（従来通り）
+      const calculateStatusFromLevel = (level: number, max: number, min: number): number => {
+        if (level === 99 && max > 0) {
+          return max
+        } else if (max > 0) {
+          return Math.floor((max - min) * (level / 99) + min)
+        }
+        return min
+      }
+      
+      // マスターデータから最大値を取得、なければ推定
+      const aswMax = masterData.initialStats.aswMax || (
+        masterData.initialStats.asw > 0 ? masterData.initialStats.asw + 20 : 0
+      )
+      const maxFirepower = masterData.initialStats.firepowerMax || Math.max(masterData.initialStats.firepower * 1.2, masterData.initialStats.firepower + 15)
+      const maxTorpedo = masterData.initialStats.torpedoMax || Math.max(masterData.initialStats.torpedo * 1.2, masterData.initialStats.torpedo + 15)
+      const maxArmor = masterData.initialStats.armorMax || Math.max(masterData.initialStats.armor * 1.2, masterData.initialStats.armor + 10)
+      
+      // レベルに応じたステータス計算
+      const levelBasedAsw = calculateAswFromLevel(level, masterData.initialStats.asw, aswMax)
+      const levelBasedFirepower = calculateStatusFromLevel(level, maxFirepower, masterData.initialStats.firepower)
+      const levelBasedTorpedo = calculateStatusFromLevel(level, maxTorpedo, masterData.initialStats.torpedo)
+      const levelBasedArmor = calculateStatusFromLevel(level, maxArmor, masterData.initialStats.armor)
+      const levelBasedLuck = masterData.initialStats.luck  // 運はレベル成長しない
+      
+      // 改修値から最終ステータスを計算（レベル成長 + 改修値）
       const currentStats = {
-        hp: masterData.initialStats.hp + (improvements.hp || 0),
-        firepower: masterData.initialStats.firepower + (improvements.firepower || 0),
-        torpedo: masterData.initialStats.torpedo + (improvements.torpedo || 0),
+        hp: baseHp + (improvements.hp || 0),
+        firepower: levelBasedFirepower + (improvements.firepower || 0),
+        torpedo: levelBasedTorpedo + (improvements.torpedo || 0),
         aa: masterData.initialStats.aa + (improvements.aa || 0),
-        armor: masterData.initialStats.armor + (improvements.armor || 0),
+        armor: levelBasedArmor + (improvements.armor || 0),
         evasion: masterData.initialStats.evasion,
-        asw: masterData.initialStats.asw + (improvements.asw || 0),
+        asw: levelBasedAsw + (improvements.asw || 0),
         los: masterData.initialStats.los,
-        luck: masterData.initialStats.luck + (improvements.luck || 0),
+        luck: levelBasedLuck + (improvements.luck || 0),
         range: masterData.initialStats.range,
         speed: masterData.initialStats.speed,
         aircraft: masterData.initialStats.aircraft
       }
       
-      // 艦種の取得（マスターデータのshipClassから）
-      const shipType = getShipType(masterData.shipClass)
-      
-      // ケッコン判定
-      const isMarried = level >= 100
+      // 艦種の取得（マスターデータのshipTypeから）
+      const shipType = getShipTypeByShipType(masterData.shipType)
       
       return {
         id: ship.api_id || ship.id || index + 1,
@@ -152,7 +198,7 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
 const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<string>('all')
-  const [sortType, setSortType] = useState<'level' | 'id' | 'shipId'>('level')
+  const [sortType, setSortType] = useState<'level' | 'id' | 'shipId' | 'shipType'>('level')
   const [fleetSlots, setFleetSlots] = useState<FleetSlot[]>(
     Array.from({ length: 6 }, (_, i) => ({ position: i, ship: null }))
   )
@@ -183,6 +229,40 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           return a.id - b.id // 入手順(ID順)
         case 'shipId':
           return a.shipId - b.shipId // 艦種ID順
+        case 'shipType':
+          // 艦種で並び替え（駆逐艦→軽巡→重巡→戦艦→空母の順）
+          const getShipTypePriority = (type: string): number => {
+            const priorities: { [key: string]: number } = {
+              'destroyer': 1,
+              'escort': 2,
+              'light_cruiser': 3,
+              'torpedo_cruiser': 4,
+              'heavy_cruiser': 5,
+              'training_cruiser': 6,
+              'aviation_cruiser': 7,
+              'battleship': 8,
+              'fast_battleship': 9,
+              'aviation_battleship': 10,
+              'light_carrier': 11,
+              'carrier': 12,
+              'armored_carrier': 13,
+              'submarine': 14,
+              'submarine_carrier': 15,
+              'submarine_tender': 16,
+              'seaplane_tender': 17,
+              'supply_ship': 18,
+              'repair_ship': 19,
+              'landing_ship': 20
+            }
+            return priorities[type] || 999
+          }
+          const priorityA = getShipTypePriority(a.type)
+          const priorityB = getShipTypePriority(b.type)
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB
+          }
+          // 同じ艦種内ではレベル順
+          return b.level - a.level
         default:
           return 0
       }
@@ -437,72 +517,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                       ))}
                     </div>
                     
-                    <div className="ship-stats-grid">
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">耐久</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.hp}
-                          {slot.ship.improvements.hp > 0 && <span className="improvement">+{slot.ship.improvements.hp}</span>}
-                        </span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">火力</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.firepower}
-                          {slot.ship.improvements.firepower > 0 && <span className="improvement">+{slot.ship.improvements.firepower}</span>}
-                        </span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">装甲</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.armor}
-                          {slot.ship.improvements.armor > 0 && <span className="improvement">+{slot.ship.improvements.armor}</span>}
-                        </span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">雷装</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.torpedo}
-                          {slot.ship.improvements.torpedo > 0 && <span className="improvement">+{slot.ship.improvements.torpedo}</span>}
-                        </span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">回避</span>
-                        <span className="stat-value">{slot.ship.currentStats.evasion}</span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">対空</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.aa}
-                          {slot.ship.improvements.aa > 0 && <span className="improvement">+{slot.ship.improvements.aa}</span>}
-                        </span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">対潜</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.asw}
-                          {slot.ship.improvements.asw > 0 && <span className="improvement">+{slot.ship.improvements.asw}</span>}
-                        </span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">索敵</span>
-                        <span className="stat-value">{slot.ship.currentStats.los}</span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">運</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.luck}
-                          {slot.ship.improvements.luck > 0 && <span className="improvement">+{slot.ship.improvements.luck}</span>}
-                        </span>
-                      </div>
-                      <div className="stat-item-fleet">
-                        <span className="stat-label">速力</span>
-                        <span className="stat-value">
-                          {slot.ship.currentStats.speed === 10 ? '高速' : 
-                           slot.ship.currentStats.speed === 5 ? '低速' : 
-                           slot.ship.currentStats.speed}
-                        </span>
-                      </div>
+                    {/* fleethub式のステータス表示 */}
+                    <div className="ship-stats-fleethub">
+                      <ShipStatusDisplay 
+                        ship={slot.ship}
+                        className="fleet-slot-stats"
+                      />
                     </div>
                   </div>
                 </div>
@@ -577,6 +597,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
               onClick={() => setSortType('shipId')}
             >
               艦種ID順
+            </button>
+            <button
+              className={`sort-button ${sortType === 'shipType' ? 'active' : ''}`}
+              onClick={() => setSortType('shipType')}
+            >
+              艦種順
             </button>
           </div>
 
