@@ -73,18 +73,17 @@ const StatIcon: React.FC<StatIconProps> = ({ icon, className }) => {
   
   const [imageError, setImageError] = React.useState(false);
   
-  // デバッグ用: 開発時のみログ出力
-  React.useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log(`StatIcon DEBUG: ${icon} -> ${displayName} -> ${imagePath}`);
-      console.log(`BASE_URL: ${import.meta.env.BASE_URL}`);
-      // ファイルの存在チェック
-      if (icon === 'speed' || icon === 'range' || icon === 'torpedo') {
-        console.log(`CRITICAL ICON: ${icon} mapped to ${displayName}`);
-        console.log(`Generated path: ${imagePath}`);
-      }
-    }
-  }, [icon, displayName, imagePath]);
+  // デバッグログを無効化
+  // React.useEffect(() => {
+  //   if (import.meta.env.DEV) {
+  //     console.log(`StatIcon DEBUG: ${icon} -> ${displayName} -> ${imagePath}`);
+  //     console.log(`BASE_URL: ${import.meta.env.BASE_URL}`);
+  //     if (icon === 'speed' || icon === 'range' || icon === 'torpedo') {
+  //       console.log(`CRITICAL ICON: ${icon} mapped to ${displayName}`);
+  //       console.log(`Generated path: ${imagePath}`);
+  //     }
+  //   }
+  // }, [icon, displayName, imagePath]);
   
   // 画像が読み込めない場合のフォールバック
   if (imageError) {
@@ -115,18 +114,11 @@ const StatIcon: React.FC<StatIconProps> = ({ icon, className }) => {
       height={15}
       src={imagePath}
       alt={icon}
-      onError={(e) => {
-        console.error(`Failed to load stat icon: ${imagePath}`);
-        console.error(`Icon: ${icon}, Display name: ${displayName}`);
-        console.error(`Error details:`, e);
-        console.error(`Image src attribute:`, (e.target as HTMLImageElement).src);
+      onError={() => {
         setImageError(true);
       }}
       onLoad={() => {
-        console.log(`Successfully loaded: ${imagePath}`);
-        if (icon === 'speed' || icon === 'range' || icon === 'torpedo') {
-          console.log(`✅ CRITICAL ICON LOADED: ${icon}`);
-        }
+        // ロード成功時は特に何もしない
       }}
     />
   );

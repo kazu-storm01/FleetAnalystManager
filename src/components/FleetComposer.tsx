@@ -195,6 +195,51 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
 // LocalStorage用のキー
 const FLEET_DATA_STORAGE_KEY = 'fleetComposer_fleetData'
 const FLEET_COMPOSITION_STORAGE_KEY = 'fleetComposer_composition'
+const SAVED_FORMATIONS_STORAGE_KEY = 'fleetComposer_savedFormations'
+const TRAINING_CANDIDATES_STORAGE_KEY = 'fleetComposer_trainingCandidates'
+
+// 保存された編成の型定義
+interface SavedFormation {
+  id: string
+  name: string
+  ships: (number | null)[] // 艦娘IDの配列（6要素）
+  createdAt: string
+  updatedAt: string
+}
+
+// 育成候補の型定義
+interface TrainingCandidate {
+  id: number
+  shipId: number
+  name: string
+  level: number
+  addedAt: string
+}
+
+// 育成候補リスト管理
+const getTrainingCandidatesFromStorage = (): TrainingCandidate[] => {
+  try {
+    const stored = localStorage.getItem(TRAINING_CANDIDATES_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch (error) {
+    console.error('育成候補リスト読み込みエラー:', error)
+    return []
+  }
+}
+
+const saveTrainingCandidatesToStorage = (candidates: TrainingCandidate[]) => {
+  try {
+    localStorage.setItem(TRAINING_CANDIDATES_STORAGE_KEY, JSON.stringify(candidates))
+  } catch (error) {
+    console.error('育成候補リスト保存エラー:', error)
+  }
+}
+
+const deleteTrainingCandidateFromStorage = (candidateId: number) => {
+  const candidates = getTrainingCandidatesFromStorage()
+  const filtered = candidates.filter(c => c.id !== candidateId)
+  saveTrainingCandidatesToStorage(filtered)
+}
 
 // LocalStorageユーティリティ関数
 const saveFleetDataToStorage = (data: any) => {
@@ -241,6 +286,48 @@ const loadFleetCompositionFromStorage = (): any | null => {
   }
 }
 
+// 保存された編成管理関数
+const saveFormationToStorage = (formation: SavedFormation) => {
+  try {
+    const saved = getSavedFormationsFromStorage()
+    const existingIndex = saved.findIndex(f => f.id === formation.id)
+    
+    if (existingIndex >= 0) {
+      // 既存の編成を更新
+      saved[existingIndex] = { ...formation, updatedAt: new Date().toISOString() }
+    } else {
+      // 新しい編成を追加
+      saved.push(formation)
+    }
+    
+    localStorage.setItem(SAVED_FORMATIONS_STORAGE_KEY, JSON.stringify(saved))
+    console.log('編成を保存しました:', formation.name)
+  } catch (error) {
+    console.error('編成の保存に失敗:', error)
+  }
+}
+
+const getSavedFormationsFromStorage = (): SavedFormation[] => {
+  try {
+    const saved = localStorage.getItem(SAVED_FORMATIONS_STORAGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch (error) {
+    console.error('保存された編成の読み込みに失敗:', error)
+    return []
+  }
+}
+
+const deleteFormationFromStorage = (formationId: string) => {
+  try {
+    const saved = getSavedFormationsFromStorage()
+    const filtered = saved.filter(f => f.id !== formationId)
+    localStorage.setItem(SAVED_FORMATIONS_STORAGE_KEY, JSON.stringify(filtered))
+    console.log('編成を削除しました:', formationId)
+  } catch (error) {
+    console.error('編成の削除に失敗:', error)
+  }
+}
+
 const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<string>('all')
@@ -254,40 +341,47 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [ships, setShips] = useState<Ship[]>([])
   const [storedFleetData, setStoredFleetData] = useState<any>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [savedFormations, setSavedFormations] = useState<SavedFormation[]>([])
+  const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>(getTrainingCandidatesFromStorage())
+  const [isDroppedOnTrainingCandidates, setIsDroppedOnTrainingCandidates] = useState(false)
+  const [sidebarActiveTab, setSidebarActiveTab] = useState<'formations' | 'training'>('formations')
 
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
 
-  // コンポーネント初期化時にLocalStorageからデータを復元
+  // コンポーネント初期化時にLocalStorageからデータを復元（初回のみ）
   useEffect(() => {
     const savedFleetData = loadFleetDataFromStorage()
     if (savedFleetData && !fleetData) {
-      // 新しいAPIデータがない場合のみ、保存されたデータを使用
       setStoredFleetData(savedFleetData)
-      console.log('保存された艦隊データを復元しました')
     }
 
     const savedComposition = loadFleetCompositionFromStorage()
     if (savedComposition) {
       setFleetName(savedComposition.name || '')
-      console.log('保存された編成データを復元しました')
     }
-  }, [fleetData])
+
+    const formations = getSavedFormationsFromStorage()
+    setSavedFormations(formations)
+  }, []) // 初回のみ実行
 
   // 艦隊データが変更された時に艦娘リストを更新
   useEffect(() => {
+    if (!isFullDataLoaded) return // データが読み込まれていない場合は処理しない
+    
     const currentFleetData = fleetData || storedFleetData
     if (currentFleetData) {
       const parsedShips = parseFleetData(currentFleetData, getShipData)
       setShips(parsedShips)
       
-      // 新しいAPIデータが来た場合は保存（上書き）
-      if (fleetData) {
+      // 新しいAPIデータが来た場合のみ保存
+      if (fleetData && fleetData !== storedFleetData) {
         saveFleetDataToStorage(fleetData)
-        console.log('新しい艦隊データで上書き保存しました')
+        setStoredFleetData(fleetData)
       }
     }
-  }, [fleetData, storedFleetData, getShipData])
+  }, [fleetData, isFullDataLoaded]) // getShipDataとstoredFleetDataを除去して無限ループを防止
 
   // 艦娘リストが更新されたときに保存された編成を復元（初回のみ）
   const [hasRestoredComposition, setHasRestoredComposition] = useState(false)
@@ -319,7 +413,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       
       return () => clearTimeout(saveTimer)
     }
-  }, [fleetSlots, fleetName, ships, hasRestoredComposition])
+  }, [fleetSlots, fleetName, hasRestoredComposition]) // shipsを除去して無限ループを防止
 
   // ソート関数
   const sortShips = (ships: Ship[], sortType: string): Ship[] => {
@@ -429,11 +523,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // ドラッグ開始
   const handleDragStart = (e: React.DragEvent, ship: Ship) => {
-    console.log('ドラッグ開始:', ship.name)
     setDraggedShip(ship)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', ship.id.toString())
-    // ドラッグ中はbodyにクラスを追加
+    e.dataTransfer.setData('application/json', JSON.stringify(ship))
     document.body.classList.add('dragging-ship')
   }
 
@@ -451,12 +544,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // ドロップ処理
   const handleDrop = (e: React.DragEvent, position: number) => {
-    console.log('ドロップ実行:', position, draggedShip?.name)
     e.preventDefault()
     e.stopPropagation() // イベントの伝播を停止
     setDragOverSlot(null)
     if (draggedShip) {
-      console.log('艦娘を配置:', draggedShip.name, 'スロット:', position)
       setFleetSlots(prev => prev.map(slot => 
         slot.position === position 
           ? { ...slot, ship: draggedShip }
@@ -470,8 +561,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // 画面外ドロップ処理（自動編成）
   const handleDropOutside = () => {
+    if (isDroppedOnTrainingCandidates) {
+      return
+    }
+    
     if (draggedShip) {
-      // 最初の空いているスロットを探す
       const emptySlot = fleetSlots.find(slot => slot.ship === null)
       if (emptySlot) {
         setFleetSlots(prev => prev.map(slot => 
@@ -489,14 +583,48 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // ドラッグ終了
   const handleDragEnd = (e: React.DragEvent) => {
-    // ドロップエフェクトが'none'の場合、ドロップ先が無効だったので自動編成する
-    if (e.dataTransfer.dropEffect === 'none' && draggedShip) {
-      handleDropOutside()
-    } else {
+    setTimeout(() => {
+      if (isDroppedOnTrainingCandidates) {
+        setIsDroppedOnTrainingCandidates(false)
+      } else if (e.dataTransfer.dropEffect === 'none' && draggedShip) {
+        handleDropOutside()
+      }
+      
       setDraggedShip(null)
       setDragOverSlot(null)
       document.body.classList.remove('dragging-ship')
+    }, 50) // 50ms待つ
+  }
+
+  // 育成候補への追加
+  const handleAddToTrainingCandidates = (ship: Ship) => {
+    const existing = trainingCandidates.find(c => c.shipId === ship.id)
+    if (existing) {
+      alert(`${ship.name} は既に育成候補に登録されています`)
+      return
     }
+
+    const newCandidate: TrainingCandidate = {
+      id: Date.now(),
+      shipId: ship.id,
+      name: ship.name,
+      level: ship.level,
+      addedAt: new Date().toISOString()
+    }
+    
+    const updatedCandidates = [...trainingCandidates, newCandidate]
+    setTrainingCandidates(updatedCandidates)
+    saveTrainingCandidatesToStorage(updatedCandidates)
+    
+    console.log('✅ 育成候補に追加:', ship.name)
+    alert(`${ship.name} を育成候補に追加しました！`)
+  }
+
+  // 育成候補から削除
+  const handleRemoveFromTrainingCandidates = (candidateId: number) => {
+    const updatedCandidates = trainingCandidates.filter(c => c.id !== candidateId)
+    setTrainingCandidates(updatedCandidates)
+    deleteTrainingCandidateFromStorage(candidateId)
   }
 
   // スロットクリア
@@ -506,6 +634,54 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
         ? { ...slot, ship: null }
         : slot
     ))
+  }
+
+  // 編成保存
+  const handleSaveFormation = () => {
+    if (!fleetName.trim()) {
+      alert('編成名を入力してください')
+      return
+    }
+
+    // 同じ名前の編成があるかチェック
+    const existingFormation = savedFormations.find(f => f.name === fleetName.trim())
+    
+    const formation: SavedFormation = {
+      id: existingFormation ? existingFormation.id : Date.now().toString(),
+      name: fleetName.trim(),
+      ships: fleetSlots.map(slot => slot.ship?.id || null),
+      createdAt: existingFormation ? existingFormation.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    saveFormationToStorage(formation)
+    setSavedFormations(getSavedFormationsFromStorage())
+    
+    if (existingFormation) {
+      console.log('編成を更新しました:', formation.name)
+    } else {
+      console.log('新しい編成を保存しました:', formation.name)
+    }
+  }
+
+  // 編成読み込み
+  const handleLoadFormation = (formation: SavedFormation) => {
+    const newSlots = fleetSlots.map((slot, index) => {
+      const shipId = formation.ships[index]
+      const ship = shipId ? ships.find(s => s.id === shipId) || null : null
+      return { ...slot, ship }
+    })
+    setFleetSlots(newSlots)
+    setFleetName(formation.name)
+    console.log('編成を読み込みました:', formation.name)
+  }
+
+  // 編成削除
+  const handleDeleteFormation = (formationId: string) => {
+    if (confirm('この編成を削除しますか？')) {
+      deleteFormationFromStorage(formationId)
+      setSavedFormations(getSavedFormationsFromStorage())
+    }
   }
 
   const stats = calculateFleetStats()
@@ -535,8 +711,13 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
            }}
            onDrop={(e) => {
              e.preventDefault()
-             // スロット以外の場所へのドロップのみ処理
-             if (!e.target || !(e.target as Element).closest('.fleet-slot')) {
+             
+             if (isDroppedOnTrainingCandidates) {
+               return
+             }
+             
+             const isSidebarArea = (e.target as Element).closest('.formation-sidebar, .training-candidates-content, .drop-zone-tab')
+             if (!isSidebarArea && (!e.target || !(e.target as Element).closest('.fleet-slot'))) {
                handleDropOutside()
              }
            }}>
@@ -549,14 +730,23 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
               <span className="fleet-name-icon">⚓</span>
               編成名
             </label>
-            <input 
-              type="text"
-              className="fleet-name-input"
-              placeholder="編成名を入力してください..."
-              maxLength={30}
-              value={fleetName}
-              onChange={(e) => setFleetName(e.target.value)}
-            />
+            <div className="fleet-name-input-container">
+              <input 
+                type="text"
+                className="fleet-name-input"
+                placeholder="編成名を入力してください..."
+                maxLength={30}
+                value={fleetName}
+                onChange={(e) => setFleetName(e.target.value)}
+              />
+              <button 
+                className="save-formation-btn"
+                onClick={handleSaveFormation}
+                title="現在の編成を保存"
+              >
+                💾 保存
+              </button>
+            </div>
             <div className="fleet-count-indicator">
               <span className="fleet-count-text">{stats.shipCount}/6隻</span>
             </div>
@@ -614,8 +804,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                     
                     {/* 装備スロット */}
                     <div className="equipment-slots-vertical">
-                      {Array.from({ length: slot.ship.slotCount }, (_, slotIndex) => {
-                        const aircraftCount = slot.ship.aircraftSlots[slotIndex] || 0;
+                      {Array.from({ length: slot.ship?.slotCount || 0 }, (_, slotIndex) => {
+                        const aircraftCount = slot.ship?.aircraftSlots[slotIndex] || 0;
                         return (
                           <div key={slotIndex} className="equipment-slot-field">
                             <div className="equipment-slot-content">
@@ -792,6 +982,275 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           )}
         </div>
       </div>
+
+      {/* フローティングサイドバー開閉アイコン */}
+      <span 
+        className={`floating-sidebar-icon ${isSidebarOpen ? 'open' : 'closed'}`}
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+      >
+        »
+      </span>
+
+      {/* 統合サイドバー（編成管理 + 育成候補） */}
+      <div 
+        className={`formation-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}
+        onDragOver={(e) => {
+          if (sidebarActiveTab === 'training') {
+            e.preventDefault()
+            e.dataTransfer.dropEffect = 'copy'
+          }
+        }}
+        onDrop={(e) => {
+          if (sidebarActiveTab === 'training') {
+            e.preventDefault()
+            e.stopPropagation()
+            
+            setIsDroppedOnTrainingCandidates(true)
+            
+            if (draggedShip) {
+              handleAddToTrainingCandidates(draggedShip)
+            } else {
+              try {
+                const shipData = e.dataTransfer.getData('application/json')
+                if (shipData) {
+                  const ship = JSON.parse(shipData)
+                  handleAddToTrainingCandidates(ship)
+                }
+              } catch (error) {
+                console.log('❌ dataTransferからの艦娘データ取得に失敗:', error)
+              }
+            }
+          }
+        }}
+      >
+        <div className="sidebar-header">
+          <h3>
+            {sidebarActiveTab === 'formations' ? '保存済み編成' : '育成候補リスト'}
+          </h3>
+          <button 
+            className="close-sidebar-btn"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            ×
+          </button>
+        </div>
+        
+        {/* タブナビゲーション */}
+        <div className="sidebar-tabs">
+          <button 
+            className={`sidebar-tab ${sidebarActiveTab === 'formations' ? 'active' : ''}`}
+            onClick={() => setSidebarActiveTab('formations')}
+          >
+            ⚓ 編成管理
+          </button>
+          <button 
+            className={`sidebar-tab ${sidebarActiveTab === 'training' ? 'active' : ''}`}
+            onClick={() => setSidebarActiveTab('training')}
+          >
+            📚 育成候補
+          </button>
+        </div>
+        
+        {/* タブコンテンツ */}
+        <div className="sidebar-content">
+          {sidebarActiveTab === 'formations' ? (
+            <div className="formation-list">
+              {savedFormations.length === 0 ? (
+                <div className="no-formations">
+                  保存された編成がありません
+                </div>
+              ) : (
+                savedFormations.map(formation => (
+                  <div key={formation.id} className="formation-item">
+                    <div className="formation-info">
+                      <div className="formation-name">{formation.name}</div>
+                      <div className="formation-date">
+                        {new Date(formation.updatedAt).toLocaleDateString()}
+                      </div>
+                      <div className="formation-ships">
+                        {formation.ships.filter(id => id !== null).length}/6隻
+                      </div>
+                    </div>
+                    <div className="formation-actions">
+                      <button 
+                        className="load-btn"
+                        onClick={() => handleLoadFormation(formation)}
+                        title="この編成を読み込み"
+                      >
+                        📂
+                      </button>
+                      <button 
+                        className="delete-btn"
+                        onClick={() => handleDeleteFormation(formation.id)}
+                        title="この編成を削除"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div 
+              className="training-candidates-content"
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'copy'
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsDroppedOnTrainingCandidates(true)
+              }}
+              onDragLeave={(e) => {
+                const relatedTarget = e.relatedTarget as Element
+                if (!relatedTarget || !relatedTarget.closest('.formation-sidebar')) {
+                  setIsDroppedOnTrainingCandidates(false)
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('🐛 DEBUG: Drop event on training tab')
+                
+                setIsDroppedOnTrainingCandidates(true)
+                
+                let shipToAdd = draggedShip
+                
+                if (!shipToAdd) {
+                  try {
+                    const shipData = e.dataTransfer.getData('application/json')
+                    if (shipData) {
+                      shipToAdd = JSON.parse(shipData)
+                    }
+                  } catch (error) {
+                    console.log('❌ Failed to parse ship data:', error)
+                  }
+                }
+                
+                if (shipToAdd) {
+                  handleAddToTrainingCandidates(shipToAdd)
+                }
+              }}
+            >
+              {/* テストボタン */}
+              <div style={{ padding: '10px', borderBottom: '1px solid rgba(100, 181, 246, 0.3)', marginBottom: '10px' }}>
+                <button 
+                  onClick={() => {
+                    if (ships.length > 0) {
+                      handleAddToTrainingCandidates(ships[0])
+                    } else {
+                      alert('艦娘データが読み込まれていません。先に艦隊データを入力してください。')
+                    }
+                  }}
+                  style={{ 
+                    background: 'rgba(46, 125, 50, 0.3)', 
+                    border: '1px solid rgba(76, 175, 80, 0.5)',
+                    color: '#e8f5e8',
+                    padding: '8px 12px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  ✅ テスト: 最初の艦娘を追加
+                </button>
+              </div>
+              
+              <div className="candidates-list">
+                {trainingCandidates.length === 0 ? (
+                  <div className="no-candidates">
+                    <div className="no-candidates-icon">⚓</div>
+                    <div className="no-candidates-text">
+                      育成候補がありません<br/>
+                      艦娘をここにドラッグして追加してください
+                    </div>
+                  </div>
+                ) : (
+                  trainingCandidates.map(candidate => {
+                    const ship = ships.find(s => s.id === candidate.shipId)
+                    return (
+                      <div key={candidate.id} className="candidate-item">
+                        <div className="candidate-info">
+                          <div className="candidate-name">{candidate.name}</div>
+                          <div className="candidate-level">Lv.{candidate.level}</div>
+                          <div className="candidate-date">
+                            {new Date(candidate.addedAt).toLocaleDateString()}
+                          </div>
+                          {ship && (
+                            <div className="candidate-current-level">
+                              現在: Lv.{ship.level}
+                            </div>
+                          )}
+                        </div>
+                        <div className="candidate-actions">
+                          <button 
+                            className="remove-candidate-btn"
+                            onClick={() => handleRemoveFromTrainingCandidates(candidate.id)}
+                            title="育成候補から削除"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+              
+              {/* ドロップゾーン */}
+              <div 
+                className="drop-zone-tab"
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  e.dataTransfer.dropEffect = 'copy'
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setIsDroppedOnTrainingCandidates(true)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  
+                  setIsDroppedOnTrainingCandidates(true)
+                  
+                  let shipToAdd = draggedShip
+                  
+                  if (!shipToAdd) {
+                    try {
+                      const shipData = e.dataTransfer.getData('application/json')
+                      if (shipData) {
+                        shipToAdd = JSON.parse(shipData)
+                      }
+                    } catch (error) {
+                      console.log('❌ Failed to parse ship data:', error)
+                    }
+                  }
+                  
+                  if (shipToAdd) {
+                    handleAddToTrainingCandidates(shipToAdd)
+                  }
+                }}
+              >
+                <div className="drop-zone-content">
+                  <div className="drop-zone-icon">📚</div>
+                  <div className="drop-zone-text">
+                    育成したい艦娘を<br/>ここにドロップ
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+
 
       {/* オーバーレイ（ドラッグ中は無効） */}
       {isDrawerOpen && !draggedShip && (
