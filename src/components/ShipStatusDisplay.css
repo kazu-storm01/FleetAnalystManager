@@ -1,0 +1,129 @@
+/* Ship Status Display Styles - Based on fleethub design */
+
+.ship-status-display {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 2px;
+  padding: 4px;
+}
+
+.ship-stat-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s;
+}
+
+.ship-stat-label:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.stat-icon {
+  filter: contrast(1.8);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.stat-value {
+  min-width: 24px;
+  text-align: right;
+  white-space: nowrap;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.stat-text {
+  margin-left: 4px;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.7rem;
+}
+
+.stat-bonus {
+  color: #4caf50; /* Green for bonuses */
+  font-size: 0.7rem;
+  margin-left: 2px;
+}
+
+.stat-mod {
+  color: #ff9800; /* Orange for modifications */
+  font-size: 0.7rem;
+  margin-left: 2px;
+}
+
+.stat-modifier-open,
+.stat-modifier-close {
+  color: #cccccc;
+  font-size: 0.7rem;
+}
+
+.stat-modifier-open {
+  margin-left: 2px;
+}
+
+/* Dark theme adjustments */
+[data-theme="abyssal"] .ship-stat-label {
+  background-color: rgba(139, 0, 0, 0.1);
+}
+
+[data-theme="abyssal"] .ship-stat-label:hover {
+  background-color: rgba(139, 0, 0, 0.2);
+}
+
+[data-theme="abyssal"] .stat-bonus {
+  color: #66bb6a;
+}
+
+[data-theme="abyssal"] .stat-mod {
+  color: #ffb74d;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .ship-status-display {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(12, auto);
+    gap: 1px;
+  }
+  
+  .ship-stat-label {
+    font-size: 0.7rem;
+    padding: 1px 3px;
+  }
+  
+  .stat-text,
+  .stat-bonus,
+  .stat-mod {
+    font-size: 0.65rem;
+  }
+}
+
+/* Animation for stat changes */
+.ship-stat-label .stat-value,
+.ship-stat-label .stat-text {
+  transition: color 0.3s ease;
+}
+
+/* Tooltip-like hover effect */
+.ship-stat-label:hover::after {
+  content: attr(data-stat-name);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+}
