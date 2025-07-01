@@ -916,6 +916,422 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   background: rgba(248, 187, 217, 0.2);
 }
 
+/* 編成名入力コンテナ */
+.fleet-name-input-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.fleet-name-input {
+  flex: 1;
+}
+
+.fleet-count-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.save-formation-btn {
+  background: rgba(100, 181, 246, 0.8);
+  border: 1px solid rgba(100, 181, 246, 0.9);
+  border-radius: 6px;
+  color: white;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-formation-btn:hover {
+  background: rgba(100, 181, 246, 1);
+  transform: translateY(-1px);
+}
+
+.fleet-composer.abyssal .save-formation-btn {
+  background: rgba(244, 143, 177, 0.8);
+  border-color: rgba(244, 143, 177, 0.9);
+}
+
+.fleet-composer.abyssal .save-formation-btn:hover {
+  background: rgba(244, 143, 177, 1);
+}
+
+/* 点滅アニメーション */
+@keyframes gentle-pulse {
+  0% {
+    opacity: 0.7;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) 
+            drop-shadow(0 0 16px rgba(255, 193, 7, 0.3));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) 
+            drop-shadow(0 0 24px rgba(255, 193, 7, 0.6));
+  }
+  100% {
+    opacity: 0.7;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) 
+            drop-shadow(0 0 16px rgba(255, 193, 7, 0.3));
+  }
+}
+
+/* フローティングサイドバー開閉アイコン */
+.floating-sidebar-icon {
+  position: fixed;
+  left: 16px;
+  top: 8px;
+  font-size: 7rem;
+  font-weight: bold;
+  color: rgba(255, 193, 7, 0.9);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease;
+  z-index: 999;
+  text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) 
+          drop-shadow(0 0 16px rgba(255, 193, 7, 0.4));
+  transform-origin: center;
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+.floating-sidebar-icon:hover {
+  color: rgba(255, 215, 0, 1);
+  transform: scale(1.2);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.8)) 
+          drop-shadow(0 0 32px rgba(255, 215, 0, 0.8));
+  text-shadow: 4px 4px 12px rgba(0, 0, 0, 1);
+  animation: none; /* ホバー時は点滅停止 */
+  opacity: 1;
+}
+
+.floating-sidebar-icon:active {
+  transform: scale(1.1);
+  transition: transform 0.1s ease;
+}
+
+.floating-sidebar-icon.open {
+  left: 340px; /* サイドバー幅(320px) + パディング(20px) */
+  color: rgba(255, 193, 7, 0.9);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) 
+          drop-shadow(0 0 16px rgba(255, 193, 7, 0.4));
+  transform: rotate(180deg);
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+.floating-sidebar-icon.open:hover {
+  color: rgba(255, 215, 0, 1);
+  transform: rotate(180deg) scale(1.2);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.8)) 
+          drop-shadow(0 0 32px rgba(255, 215, 0, 0.8));
+  animation: none;
+  opacity: 1;
+}
+
+.floating-sidebar-icon.open:active {
+  transform: rotate(180deg) scale(1.1);
+}
+
+/* Abyssalテーマでも金色統一（アニメーション継承） */
+.fleet-composer.abyssal .floating-sidebar-icon {
+  color: rgba(255, 193, 7, 0.9);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) 
+          drop-shadow(0 0 16px rgba(255, 193, 7, 0.4));
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+.fleet-composer.abyssal .floating-sidebar-icon:hover {
+  color: rgba(255, 215, 0, 1);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.8)) 
+          drop-shadow(0 0 32px rgba(255, 215, 0, 0.8));
+  animation: none;
+  opacity: 1;
+}
+
+.fleet-composer.abyssal .floating-sidebar-icon.open {
+  color: rgba(255, 193, 7, 0.9);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) 
+          drop-shadow(0 0 16px rgba(255, 193, 7, 0.4));
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+.fleet-composer.abyssal .floating-sidebar-icon.open:hover {
+  color: rgba(255, 215, 0, 1);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.8)) 
+          drop-shadow(0 0 32px rgba(255, 215, 0, 0.8));
+  animation: none;
+  opacity: 1;
+}
+
+/* 編成管理サイドバー */
+.formation-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 100vh;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border-right: 2px solid rgba(100, 181, 246, 0.3);
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  transform: translateX(-100%);
+}
+
+.formation-sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.sidebar-header h3 {
+  color: #90caf9;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.close-sidebar-btn {
+  background: none;
+  border: none;
+  color: #90caf9;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.close-sidebar-btn:hover {
+  background: rgba(100, 181, 246, 0.2);
+}
+
+.formation-list {
+  padding: 8px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.no-formations {
+  text-align: center;
+  color: #666;
+  padding: 32px 16px;
+  font-style: italic;
+}
+
+.formation-item {
+  background: rgba(100, 181, 246, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.formation-item:hover {
+  background: rgba(100, 181, 246, 0.15);
+}
+
+.formation-info {
+  flex: 1;
+}
+
+.formation-name {
+  color: #90caf9;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.formation-date,
+.formation-ships {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+.formation-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.load-btn,
+.delete-btn {
+  background: none;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.load-btn {
+  color: #4caf50;
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.load-btn:hover {
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.delete-btn {
+  color: #f44336;
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.delete-btn:hover {
+  background: rgba(244, 67, 54, 0.2);
+}
+
+
+/* Abyssalテーマ */
+.fleet-composer.abyssal .formation-sidebar {
+  border-right-color: rgba(244, 143, 177, 0.3);
+}
+
+.fleet-composer.abyssal .sidebar-header {
+  border-bottom-color: rgba(244, 143, 177, 0.2);
+}
+
+.fleet-composer.abyssal .sidebar-header h3,
+.fleet-composer.abyssal .close-sidebar-btn {
+  color: #f8bbd9;
+}
+
+.fleet-composer.abyssal .formation-item {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.fleet-composer.abyssal .formation-item:hover {
+  background: rgba(244, 143, 177, 0.15);
+}
+
+.fleet-composer.abyssal .formation-name {
+  color: #f8bbd9;
+}
+
+/* ===== サイドバータブスタイル ===== */
+
+/* タブナビゲーション */
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 2px solid rgba(100, 181, 246, 0.3);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.fleet-composer.abyssal .sidebar-tabs {
+  border-bottom-color: rgba(244, 143, 177, 0.3);
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: rgba(227, 242, 253, 0.7);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  border-bottom: 2px solid transparent;
+}
+
+.fleet-composer.abyssal .sidebar-tab {
+  color: rgba(255, 235, 238, 0.7);
+}
+
+.sidebar-tab:hover {
+  background: rgba(100, 181, 246, 0.1);
+  color: rgba(227, 242, 253, 0.9);
+}
+
+.fleet-composer.abyssal .sidebar-tab:hover {
+  background: rgba(244, 143, 177, 0.1);
+  color: rgba(255, 235, 238, 0.9);
+}
+
+.sidebar-tab.active {
+  background: rgba(100, 181, 246, 0.15);
+  color: #e3f2fd;
+  border-bottom-color: #64b5f6;
+}
+
+.fleet-composer.abyssal .sidebar-tab.active {
+  background: rgba(244, 143, 177, 0.15);
+  color: #ffebee;
+  border-bottom-color: #f48fb1;
+}
+
+/* サイドバーコンテンツ */
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* 育成候補タブ専用スタイル */
+.training-candidates-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.training-candidates-content .candidates-list {
+  flex: 1;
+  padding: 16px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* タブ内のドロップゾーン */
+.drop-zone-tab {
+  margin-top: auto;
+  padding: 20px;
+  border-top: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .drop-zone-tab {
+  border-top-color: rgba(244, 143, 177, 0.2);
+}
+
+.drop-zone-tab .drop-zone-content {
+  border: 2px dashed rgba(100, 181, 246, 0.4);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: rgba(100, 181, 246, 0.05);
+}
+
+.fleet-composer.abyssal .drop-zone-tab .drop-zone-content {
+  border-color: rgba(244, 143, 177, 0.4);
+  background: rgba(244, 143, 177, 0.05);
+}
+
+.drop-zone-tab .drop-zone-content:hover {
+  border-color: rgba(100, 181, 246, 0.7);
+  background: rgba(100, 181, 246, 0.1);
+  transform: scale(1.02);
+}
+
+.fleet-composer.abyssal .drop-zone-tab .drop-zone-content:hover {
+  border-color: rgba(244, 143, 177, 0.7);
+  background: rgba(244, 143, 177, 0.1);
+}
+
 .remove-button-fleet {
   position: absolute;
   top: 4px;
@@ -940,6 +1356,298 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
 .remove-button-fleet:hover {
   background: #f44336;
   transform: scale(1.1);
+}
+
+/* ===== 育成候補リストサイドバー ===== */
+
+/* 右側サイドバー */
+.training-candidates-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background: rgba(13, 71, 161, 0.95);
+  backdrop-filter: blur(15px);
+  border-left: 2px solid rgba(100, 181, 246, 0.3);
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+  color: #e3f2fd;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.training-candidates-sidebar.open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.training-candidates-sidebar.closed {
+  pointer-events: none;
+}
+
+.fleet-composer.abyssal .training-candidates-sidebar {
+  background: rgba(136, 14, 79, 0.95);
+  border-left-color: rgba(244, 143, 177, 0.3);
+  color: #ffebee;
+}
+
+/* サイドバーヘッダー */
+.training-candidates-sidebar .sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(100, 181, 246, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fleet-composer.abyssal .training-candidates-sidebar .sidebar-header {
+  border-bottom-color: rgba(244, 143, 177, 0.2);
+}
+
+.training-candidates-sidebar .sidebar-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #e3f2fd;
+  font-weight: 600;
+}
+
+.fleet-composer.abyssal .training-candidates-sidebar .sidebar-header h3 {
+  color: #f8bbd9;
+}
+
+/* 候補リスト */
+.candidates-list {
+  flex: 1;
+  padding: 16px;
+  min-height: 0;
+}
+
+.no-candidates {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(227, 242, 253, 0.7);
+}
+
+.fleet-composer.abyssal .no-candidates {
+  color: rgba(255, 235, 238, 0.7);
+}
+
+.no-candidates-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.no-candidates-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* 候補アイテム */
+.candidate-item {
+  background: rgba(100, 181, 246, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.fleet-composer.abyssal .candidate-item {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.candidate-item:hover {
+  background: rgba(100, 181, 246, 0.15);
+  transform: translateX(-2px);
+}
+
+.fleet-composer.abyssal .candidate-item:hover {
+  background: rgba(244, 143, 177, 0.15);
+}
+
+.candidate-info {
+  flex: 1;
+}
+
+.candidate-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 4px;
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .candidate-name {
+  color: #f8bbd9;
+}
+
+.candidate-level {
+  font-size: 0.85rem;
+  color: rgba(227, 242, 253, 0.8);
+  margin-bottom: 2px;
+}
+
+.fleet-composer.abyssal .candidate-level {
+  color: rgba(255, 235, 238, 0.8);
+}
+
+.candidate-date {
+  font-size: 0.75rem;
+  color: rgba(227, 242, 253, 0.6);
+  margin-bottom: 2px;
+}
+
+.fleet-composer.abyssal .candidate-date {
+  color: rgba(255, 235, 238, 0.6);
+}
+
+.candidate-current-level {
+  font-size: 0.75rem;
+  color: #64b5f6;
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .candidate-current-level {
+  color: #f48fb1;
+}
+
+.candidate-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.remove-candidate-btn {
+  background: rgba(244, 67, 54, 0.2);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  color: #ff6b6b;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.remove-candidate-btn:hover {
+  background: rgba(244, 67, 54, 0.3);
+  transform: scale(1.05);
+}
+
+/* ドロップゾーン */
+.drop-zone {
+  margin-top: auto;
+  padding: 20px;
+  border-top: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .drop-zone {
+  border-top-color: rgba(244, 143, 177, 0.2);
+}
+
+.drop-zone-content {
+  border: 2px dashed rgba(100, 181, 246, 0.4);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: rgba(100, 181, 246, 0.05);
+}
+
+.fleet-composer.abyssal .drop-zone-content {
+  border-color: rgba(244, 143, 177, 0.4);
+  background: rgba(244, 143, 177, 0.05);
+}
+
+.drop-zone:hover .drop-zone-content,
+.drop-zone-content:hover {
+  border-color: rgba(100, 181, 246, 0.7);
+  background: rgba(100, 181, 246, 0.1);
+  transform: scale(1.02);
+}
+
+.fleet-composer.abyssal .drop-zone:hover .drop-zone-content,
+.fleet-composer.abyssal .drop-zone-content:hover {
+  border-color: rgba(244, 143, 177, 0.7);
+  background: rgba(244, 143, 177, 0.1);
+}
+
+.drop-zone-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.drop-zone-text {
+  font-size: 0.9rem;
+  color: rgba(227, 242, 253, 0.8);
+  line-height: 1.4;
+}
+
+.fleet-composer.abyssal .drop-zone-text {
+  color: rgba(255, 235, 238, 0.8);
+}
+
+/* 右側サイドバーアイコン */
+.floating-training-icon {
+  position: fixed;
+  top: 100px;
+  right: 16px;
+  font-size: 5rem;
+  color: #ffd700;
+  cursor: pointer;
+  z-index: 1002;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 4px 12px rgba(255, 215, 0, 0.4)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.2));
+  animation: gentle-pulse 3s ease-in-out infinite;
+  user-select: none;
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+.floating-training-icon:hover {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 6px 16px rgba(255, 215, 0, 0.6)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.4));
+  animation: none;
+}
+
+.floating-training-icon.open {
+  right: 366px;
+  transform: rotate(180deg);
+}
+
+.floating-training-icon.open:hover {
+  transform: scale(1.1) rotate(175deg);
+}
+
+/* スクロールバースタイル */
+.training-candidates-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.training-candidates-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.training-candidates-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(100, 181, 246, 0.3);
+  border-radius: 3px;
+}
+
+.fleet-composer.abyssal .training-candidates-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(244, 143, 177, 0.3);
+}
+
+.training-candidates-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 181, 246, 0.5);
+}
+
+.fleet-composer.abyssal .training-candidates-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(244, 143, 177, 0.5);
 }
 
 .married-indicator-fleet {
