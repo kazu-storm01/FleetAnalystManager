@@ -1,9 +1,5 @@
 import React from 'react';
 import './ShipStatusDisplay.css';
-import { 
-  getSpeedRank, 
-  getRangeAbbr
-} from '../utils/shipCalculations';
 import { getStatIconPath } from '../utils/imagePaths';
 
 // Ship stat keys as defined in fleethub
@@ -24,6 +20,31 @@ const SHIP_STAT_KEYS = [
 
 export type ShipStatKey = typeof SHIP_STAT_KEYS[number];
 
+// 速度の数値を文字列に変換
+const getSpeedText = (speed: number): string => {
+  switch (speed) {
+    case 0: return '陸上';
+    case 5: return '低速';
+    case 10: return '高速';
+    case 15: return '高速+';
+    case 20: return '最速';
+    default: return `速度${speed}`;
+  }
+};
+
+// 射程の数値を文字列に変換
+const getRangeText = (range: number): string => {
+  switch (range) {
+    case 0: return '射程無';
+    case 1: return '射程短';
+    case 2: return '射程中';
+    case 3: return '射程長';
+    case 4: return '射程超長';
+    case 5: return '射程超超長';
+    default: return `射程${range}`;
+  }
+};
+
 // Map fleethub stat keys to available image file names
 const STAT_DISPLAY_MAPPING: Record<ShipStatKey, string> = {
   hp: 'max_hp',
@@ -32,7 +53,7 @@ const STAT_DISPLAY_MAPPING: Record<ShipStatKey, string> = {
   torpedo: 'torpedo',
   evasion: 'evasion',
   anti_air: 'anti_air',
-  accuracy: 'accuracy',
+  accuracy: 'accuracy', // 命中アイコンに戻す
   asw: 'asw',
   speed: 'speed',
   los: 'los',
@@ -40,21 +61,6 @@ const STAT_DISPLAY_MAPPING: Record<ShipStatKey, string> = {
   luck: 'luck'
 };
 
-// Japanese translations for speed and range
-const SPEED_TRANSLATIONS: Record<string, string> = {
-  FastestPlus: '最速+',
-  Fastest: '最速',
-  Fast: '高速',
-  Slow: '低速',
-  Slowest: '最低速'
-};
-
-const RANGE_TRANSLATIONS: Record<string, string> = {
-  VeryLong: '超長',
-  Long: '長',
-  Medium: '中',
-  Short: '短'
-};
 
 interface StatIconProps {
   icon: ShipStatKey;
@@ -70,7 +76,13 @@ const StatIcon: React.FC<StatIconProps> = ({ icon, className }) => {
   // デバッグ用: 開発時のみログ出力
   React.useEffect(() => {
     if (import.meta.env.DEV) {
-      console.log(`StatIcon: ${icon} -> ${displayName} -> ${imagePath}`);
+      console.log(`StatIcon DEBUG: ${icon} -> ${displayName} -> ${imagePath}`);
+      console.log(`BASE_URL: ${import.meta.env.BASE_URL}`);
+      // ファイルの存在チェック
+      if (icon === 'speed' || icon === 'range' || icon === 'torpedo') {
+        console.log(`CRITICAL ICON: ${icon} mapped to ${displayName}`);
+        console.log(`Generated path: ${imagePath}`);
+      }
     }
   }, [icon, displayName, imagePath]);
   
@@ -103,15 +115,17 @@ const StatIcon: React.FC<StatIconProps> = ({ icon, className }) => {
       height={15}
       src={imagePath}
       alt={icon}
-      onError={() => {
-        if (import.meta.env.DEV) {
-          console.error(`Failed to load stat icon: ${imagePath}`);
-        }
+      onError={(e) => {
+        console.error(`Failed to load stat icon: ${imagePath}`);
+        console.error(`Icon: ${icon}, Display name: ${displayName}`);
+        console.error(`Error details:`, e);
+        console.error(`Image src attribute:`, (e.target as HTMLImageElement).src);
         setImageError(true);
       }}
       onLoad={() => {
-        if (import.meta.env.DEV) {
-          console.log(`Successfully loaded: ${imagePath}`);
+        console.log(`Successfully loaded: ${imagePath}`);
+        if (icon === 'speed' || icon === 'range' || icon === 'torpedo') {
+          console.log(`✅ CRITICAL ICON LOADED: ${icon}`);
         }
       }}
     />
@@ -133,27 +147,28 @@ const ShipStatLabel: React.FC<ShipStatLabelProps> = ({
 }) => {
   let displayText: React.ReactNode;
 
-  if (statKey === 'range') {
-    const abbr = getRangeAbbr(value);
-    const label = RANGE_TRANSLATIONS[abbr] || '?';
-    displayText = <span className="stat-text">{label}</span>;
-  } else if (statKey === 'speed') {
-    const rank = getSpeedRank(value);
-    const label = SPEED_TRANSLATIONS[rank] || '?';
-    displayText = <span className="stat-text">{label}</span>;
+  if (statKey === 'speed') {
+    // 速度の文字列表示
+    const speedText = getSpeedText(value);
+    displayText = <span className="stat-value">{speedText}</span>;
+  } else if (statKey === 'range') {
+    // 射程の文字列表示
+    const rangeText = getRangeText(value);
+    displayText = <span className="stat-value">{rangeText}</span>;
   } else {
     displayText = <span className="stat-value">{value}</span>;
   }
 
   return (
     <div className="ship-stat-label">
+      {/* 全てのステータスにアイコンと値を表示 */}
       <StatIcon icon={statKey} />
       {displayText}
-      {(bonus || mod) && (
+      {(bonus > 0 || mod > 0) && (
         <>
           <span className="stat-modifier-open">(</span>
-          {bonus ? <span className="stat-bonus">+{bonus}</span> : null}
-          {mod ? <span className="stat-mod">{mod > 0 ? '+' : ''}{mod}</span> : null}
+          {bonus > 0 ? <span className="stat-bonus">+{bonus}</span> : null}
+          {mod > 0 ? <span className="stat-mod">+{mod}</span> : null}
           <span className="stat-modifier-close">)</span>
         </>
       )}
@@ -206,7 +221,7 @@ const ShipStatusDisplay: React.FC<ShipStatusDisplayProps> = ({
       case 'armor': return ship.currentStats.armor;
       case 'evasion': return ship.currentStats.evasion;
       case 'anti_air': return ship.currentStats.aa;
-      case 'accuracy': return 0; // FleetComposerでは計算していない
+      case 'accuracy': return 0; // 命中値（FleetComposerでは計算していない）
       case 'asw': return ship.currentStats.asw;
       case 'speed': return ship.currentStats.speed;
       case 'los': return ship.currentStats.los;
@@ -217,15 +232,12 @@ const ShipStatusDisplay: React.FC<ShipStatusDisplayProps> = ({
   };
 
   const getImprovementValue = (statKey: ShipStatKey): number => {
+    // 増分表示は耐久、対潜、運のみ
     switch (statKey) {
       case 'hp': return ship.improvements.hp || 0;
-      case 'firepower': return ship.improvements.firepower || 0;
-      case 'torpedo': return ship.improvements.torpedo || 0;
-      case 'armor': return ship.improvements.armor || 0;
-      case 'anti_air': return ship.improvements.aa || 0;
       case 'asw': return ship.improvements.asw || 0;
       case 'luck': return ship.improvements.luck || 0;
-      default: return 0;
+      default: return 0; // その他のステータスは増分表示なし
     }
   };
 

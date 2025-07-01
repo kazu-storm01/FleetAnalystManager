@@ -844,6 +844,47 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   border-color: rgba(244, 143, 177, 0.3);
 }
 
+/* 新しい縦並び装備スロット */
+.equipment-slots-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 6px 0;
+  width: 100%;
+}
+
+.equipment-slot-field {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.4);
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-height: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.7rem;
+  transition: background-color 0.2s ease;
+}
+
+.equipment-slot-field:hover {
+  background: rgba(100, 181, 246, 0.15);
+}
+
+.equipment-slot-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.fleet-composer.abyssal .equipment-slot-field {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(244, 143, 177, 0.4);
+}
+
+.fleet-composer.abyssal .equipment-slot-field:hover {
+  background: rgba(244, 143, 177, 0.15);
+}
+
 .equipment-icon {
   font-size: 0.7rem;
   opacity: 0.7;
@@ -854,8 +895,25 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   font-weight: 500;
 }
 
+.aircraft-count {
+  color: #ffb74d;
+  font-weight: 600;
+  font-size: 0.65rem;
+  background: rgba(255, 183, 77, 0.3);
+  border-radius: 3px;
+  padding: 2px 6px;
+  margin-left: auto;
+  min-width: 20px;
+  text-align: center;
+}
+
 .fleet-composer.abyssal .equipment-text {
   color: #f8bbd9;
+}
+
+.fleet-composer.abyssal .aircraft-count {
+  color: #f8bbd9;
+  background: rgba(248, 187, 217, 0.2);
 }
 
 .remove-button-fleet {

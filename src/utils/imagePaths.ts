@@ -7,7 +7,15 @@ export const getStatIconPath = (iconName: string): string => {
   // ベースパスが '/' で終わっていない場合は追加
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
   
-  return `${normalizedBasePath}stats/${iconName}.png`;
+  const fullPath = `${normalizedBasePath}stats/${iconName}.png`;
+  
+  // デバッグ用: パス生成の詳細ログ
+  if (import.meta.env.DEV) {
+    console.log(`getStatIconPath: ${iconName} -> BASE_URL: ${basePath} -> Full path: ${fullPath}`);
+    console.log(`Expected file location: public/stats/${iconName}.png`);
+  }
+  
+  return fullPath;
 };
 
 // デバッグ用: 利用可能なアイコン名の一覧

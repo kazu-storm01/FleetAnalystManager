@@ -18,6 +18,7 @@ interface Ship {
   rarity: number
   level: number
   slotCount: number   // 装備スロット数
+  aircraftSlots: number[] // 各スロットの搭載数 [18, 18, 27, 10] など
   // 実際のステータス（計算済み）
   currentStats: {
     hp: number
@@ -116,36 +117,27 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
         ? masterData.initialStats.hpMarried 
         : masterData.initialStats.hp
       
-      // 線形補間によるステータス計算（対潜値サイト準拠）
-      // 公式: Math.floor((statMax - statMin) * level / 99 + statMin)
+      // APIから取得したステータス値（現在値）を使用
+      const apiFirepower = ship.api_karyoku ? ship.api_karyoku[0] : (ship.karyoku ? ship.karyoku[0] : masterData.initialStats.firepower)
+      const apiTorpedo = ship.api_raisou ? ship.api_raisou[0] : (ship.raisou ? ship.raisou[0] : masterData.initialStats.torpedo)
+      const apiAA = ship.api_taiku ? ship.api_taiku[0] : (ship.taiku ? ship.taiku[0] : masterData.initialStats.aa)
+      const apiArmor = ship.api_soukou ? ship.api_soukou[0] : (ship.soukou ? ship.soukou[0] : masterData.initialStats.armor)
+      const apiLuck = ship.api_lucky ? ship.api_lucky[0] : (ship.lucky ? ship.lucky[0] : masterData.initialStats.luck)
+      
+      // 回避・索敵・対潜は以前の線形補間処理を復元
       const calculateStatFromLevel = (level: number, statMin: number, statMax: number | undefined): number => {
         if (statMin === 0 && (!statMax || statMax === 0)) {
-          // 初期値も最大値も0なら成長なし
           return 0
         }
         if (statMax === undefined || statMax === 0) {
-          // 最大値が不明な場合は初期値のまま（成長しない）
           return statMin
         }
         if (statMax <= statMin) {
-          // 最大値が初期値以下なら成長なし
           return statMin
         }
-        // 線形補間によるステータス計算
         return Math.floor((statMax - statMin) * level / 99 + statMin)
       }
       
-      // その他のステータス計算（従来通り）
-      const calculateStatusFromLevel = (level: number, max: number, min: number): number => {
-        if (level === 99 && max > 0) {
-          return max
-        } else if (max > 0) {
-          return Math.floor((max - min) * (level / 99) + min)
-        }
-        return min
-      }
-      
-      // マスターデータから最大値を取得、なければ推定
       const aswMax = masterData.initialStats.aswMax || (
         masterData.initialStats.asw > 0 ? masterData.initialStats.asw + 20 : 0
       )
@@ -155,30 +147,22 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
       const losMax = masterData.initialStats.losMax || (
         masterData.initialStats.los > 0 ? masterData.initialStats.los + 20 : masterData.initialStats.los
       )
-      const maxFirepower = masterData.initialStats.firepowerMax || Math.max(masterData.initialStats.firepower * 1.2, masterData.initialStats.firepower + 15)
-      const maxTorpedo = masterData.initialStats.torpedoMax || Math.max(masterData.initialStats.torpedo * 1.2, masterData.initialStats.torpedo + 15)
-      const maxArmor = masterData.initialStats.armorMax || Math.max(masterData.initialStats.armor * 1.2, masterData.initialStats.armor + 10)
       
-      // レベルに応じたステータス計算
       const levelBasedAsw = calculateStatFromLevel(level, masterData.initialStats.asw, aswMax)
       const levelBasedEvasion = calculateStatFromLevel(level, masterData.initialStats.evasion, evasionMax)
       const levelBasedLos = calculateStatFromLevel(level, masterData.initialStats.los, losMax)
-      const levelBasedFirepower = calculateStatusFromLevel(level, maxFirepower, masterData.initialStats.firepower)
-      const levelBasedTorpedo = calculateStatusFromLevel(level, maxTorpedo, masterData.initialStats.torpedo)
-      const levelBasedArmor = calculateStatusFromLevel(level, maxArmor, masterData.initialStats.armor)
-      const levelBasedLuck = masterData.initialStats.luck  // 運はレベル成長しない
       
-      // 改修値から最終ステータスを計算（レベル成長 + 改修値）
+      // 改修値から最終ステータスを計算（火力・雷装・装甲・対空・運はAPI値、回避・索敵・対潜はレベル成長値）
       const currentStats = {
         hp: baseHp + (improvements.hp || 0),
-        firepower: levelBasedFirepower + (improvements.firepower || 0),
-        torpedo: levelBasedTorpedo + (improvements.torpedo || 0),
-        aa: masterData.initialStats.aa + (improvements.aa || 0),
-        armor: levelBasedArmor + (improvements.armor || 0),
+        firepower: apiFirepower + (improvements.firepower || 0),
+        torpedo: apiTorpedo + (improvements.torpedo || 0),
+        aa: apiAA + (improvements.aa || 0),
+        armor: apiArmor + (improvements.armor || 0),
         evasion: levelBasedEvasion,
         asw: levelBasedAsw + (improvements.asw || 0),
         los: levelBasedLos,
-        luck: levelBasedLuck + (improvements.luck || 0),
+        luck: apiLuck + (improvements.luck || 0),
         range: masterData.initialStats.range,
         speed: masterData.initialStats.speed,
         aircraft: masterData.initialStats.aircraft
@@ -195,6 +179,7 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
         rarity: calculateRarity(level),
         level,
         slotCount: masterData.slotCount || 2, // マスターデータから取得
+        aircraftSlots: masterData.aircraft || [], // 搭載数配列を追加
         currentStats,
         improvements,
         isMarried,
@@ -204,6 +189,55 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
   } catch (error) {
     console.error('艦隊データの解析に失敗しました:', error)
     return []
+  }
+}
+
+// LocalStorage用のキー
+const FLEET_DATA_STORAGE_KEY = 'fleetComposer_fleetData'
+const FLEET_COMPOSITION_STORAGE_KEY = 'fleetComposer_composition'
+
+// LocalStorageユーティリティ関数
+const saveFleetDataToStorage = (data: any) => {
+  try {
+    localStorage.setItem(FLEET_DATA_STORAGE_KEY, JSON.stringify(data))
+    console.log('艦隊データをLocalStorageに保存しました')
+  } catch (error) {
+    console.error('艦隊データの保存に失敗:', error)
+  }
+}
+
+const loadFleetDataFromStorage = (): any | null => {
+  try {
+    const saved = localStorage.getItem(FLEET_DATA_STORAGE_KEY)
+    return saved ? JSON.parse(saved) : null
+  } catch (error) {
+    console.error('艦隊データの読み込みに失敗:', error)
+    return null
+  }
+}
+
+const saveFleetCompositionToStorage = (slots: FleetSlot[], name: string) => {
+  try {
+    const compositionData = {
+      slots: slots.map(slot => slot.ship ? {
+        position: slot.position,
+        shipId: slot.ship.id
+      } : { position: slot.position, shipId: null }),
+      name
+    }
+    localStorage.setItem(FLEET_COMPOSITION_STORAGE_KEY, JSON.stringify(compositionData))
+  } catch (error) {
+    console.error('編成データの保存に失敗:', error)
+  }
+}
+
+const loadFleetCompositionFromStorage = (): any | null => {
+  try {
+    const saved = localStorage.getItem(FLEET_COMPOSITION_STORAGE_KEY)
+    return saved ? JSON.parse(saved) : null
+  } catch (error) {
+    console.error('編成データの読み込みに失敗:', error)
+    return null
   }
 }
 
@@ -219,17 +253,73 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const [fleetName, setFleetName] = useState<string>('')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [ships, setShips] = useState<Ship[]>([])
+  const [storedFleetData, setStoredFleetData] = useState<any>(null)
 
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
 
+  // コンポーネント初期化時にLocalStorageからデータを復元
+  useEffect(() => {
+    const savedFleetData = loadFleetDataFromStorage()
+    if (savedFleetData && !fleetData) {
+      // 新しいAPIデータがない場合のみ、保存されたデータを使用
+      setStoredFleetData(savedFleetData)
+      console.log('保存された艦隊データを復元しました')
+    }
+
+    const savedComposition = loadFleetCompositionFromStorage()
+    if (savedComposition) {
+      setFleetName(savedComposition.name || '')
+      console.log('保存された編成データを復元しました')
+    }
+  }, [fleetData])
+
   // 艦隊データが変更された時に艦娘リストを更新
   useEffect(() => {
-    if (fleetData) {
-      const parsedShips = parseFleetData(fleetData, getShipData)
+    const currentFleetData = fleetData || storedFleetData
+    if (currentFleetData) {
+      const parsedShips = parseFleetData(currentFleetData, getShipData)
       setShips(parsedShips)
+      
+      // 新しいAPIデータが来た場合は保存（上書き）
+      if (fleetData) {
+        saveFleetDataToStorage(fleetData)
+        console.log('新しい艦隊データで上書き保存しました')
+      }
     }
-  }, [fleetData, getShipData])
+  }, [fleetData, storedFleetData, getShipData])
+
+  // 艦娘リストが更新されたときに保存された編成を復元（初回のみ）
+  const [hasRestoredComposition, setHasRestoredComposition] = useState(false)
+  
+  useEffect(() => {
+    if (ships.length > 0 && !hasRestoredComposition) {
+      const savedComposition = loadFleetCompositionFromStorage()
+      if (savedComposition && savedComposition.slots) {
+        const restoredSlots = savedComposition.slots.map((savedSlot: any) => {
+          if (savedSlot.shipId) {
+            const ship = ships.find(s => s.id === savedSlot.shipId)
+            return { position: savedSlot.position, ship: ship || null }
+          }
+          return { position: savedSlot.position, ship: null }
+        })
+        setFleetSlots(restoredSlots)
+        setHasRestoredComposition(true)
+        console.log('編成を復元しました')
+      }
+    }
+  }, [ships, hasRestoredComposition])
+
+  // 編成またはフリート名が変更されたときに自動保存（遅延実行）
+  useEffect(() => {
+    if (ships.length > 0 && hasRestoredComposition) {
+      const saveTimer = setTimeout(() => {
+        saveFleetCompositionToStorage(fleetSlots, fleetName)
+      }, 500) // 500ms遅延で保存
+      
+      return () => clearTimeout(saveTimer)
+    }
+  }, [fleetSlots, fleetName, ships, hasRestoredComposition])
 
   // ソート関数
   const sortShips = (ships: Ship[], sortType: string): Ship[] => {
@@ -339,6 +429,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // ドラッグ開始
   const handleDragStart = (e: React.DragEvent, ship: Ship) => {
+    console.log('ドラッグ開始:', ship.name)
     setDraggedShip(ship)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', ship.id.toString())
@@ -360,10 +451,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // ドロップ処理
   const handleDrop = (e: React.DragEvent, position: number) => {
+    console.log('ドロップ実行:', position, draggedShip?.name)
     e.preventDefault()
     e.stopPropagation() // イベントの伝播を停止
     setDragOverSlot(null)
     if (draggedShip) {
+      console.log('艦娘を配置:', draggedShip.name, 'スロット:', position)
       setFleetSlots(prev => prev.map(slot => 
         slot.position === position 
           ? { ...slot, ship: draggedShip }
@@ -520,13 +613,21 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                     <div className="ship-level-fleet">Lv.{slot.ship.level}</div>
                     
                     {/* 装備スロット */}
-                    <div className="equipment-slots">
-                      {Array.from({ length: slot.ship.slotCount }, (_, slotIndex) => (
-                        <div key={slotIndex} className="equipment-slot">
-                          <div className="equipment-icon">⚙</div>
-                          <div className="equipment-text">装備{slotIndex + 1}</div>
-                        </div>
-                      ))}
+                    <div className="equipment-slots-vertical">
+                      {Array.from({ length: slot.ship.slotCount }, (_, slotIndex) => {
+                        const aircraftCount = slot.ship.aircraftSlots[slotIndex] || 0;
+                        return (
+                          <div key={slotIndex} className="equipment-slot-field">
+                            <div className="equipment-slot-content">
+                              <div className="equipment-icon">⚙</div>
+                              <div className="equipment-text">装備{slotIndex + 1}</div>
+                              {aircraftCount > 0 && (
+                                <div className="aircraft-count">{aircraftCount}</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                     
                     {/* fleethub式のステータス表示 */}
