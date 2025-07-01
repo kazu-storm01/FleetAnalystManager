@@ -116,19 +116,23 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
         ? masterData.initialStats.hpMarried 
         : masterData.initialStats.hp
       
-      // 対潜値計算サイト準拠の正確な計算式
-      // 公式: Math.floor((aswMax - aswMin) * level / 99 + aswMin)
-      const calculateAswFromLevel = (level: number, aswMin: number, aswMax: number): number => {
-        if (aswMin === 0 && (!aswMax || aswMax === 0)) {
-          // 初期値も最大値も0なら対潜能力なし
+      // 線形補間によるステータス計算（対潜値サイト準拠）
+      // 公式: Math.floor((statMax - statMin) * level / 99 + statMin)
+      const calculateStatFromLevel = (level: number, statMin: number, statMax: number | undefined): number => {
+        if (statMin === 0 && (!statMax || statMax === 0)) {
+          // 初期値も最大値も0なら成長なし
           return 0
         }
-        if (aswMax === undefined || aswMax === 0) {
+        if (statMax === undefined || statMax === 0) {
           // 最大値が不明な場合は初期値のまま（成長しない）
-          return aswMin
+          return statMin
         }
-        // 線形補間による対潜値計算
-        return Math.floor((aswMax - aswMin) * level / 99 + aswMin)
+        if (statMax <= statMin) {
+          // 最大値が初期値以下なら成長なし
+          return statMin
+        }
+        // 線形補間によるステータス計算
+        return Math.floor((statMax - statMin) * level / 99 + statMin)
       }
       
       // その他のステータス計算（従来通り）
@@ -145,12 +149,20 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
       const aswMax = masterData.initialStats.aswMax || (
         masterData.initialStats.asw > 0 ? masterData.initialStats.asw + 20 : 0
       )
+      const evasionMax = masterData.initialStats.evasionMax || (
+        masterData.initialStats.evasion > 0 ? masterData.initialStats.evasion + 30 : masterData.initialStats.evasion
+      )
+      const losMax = masterData.initialStats.losMax || (
+        masterData.initialStats.los > 0 ? masterData.initialStats.los + 20 : masterData.initialStats.los
+      )
       const maxFirepower = masterData.initialStats.firepowerMax || Math.max(masterData.initialStats.firepower * 1.2, masterData.initialStats.firepower + 15)
       const maxTorpedo = masterData.initialStats.torpedoMax || Math.max(masterData.initialStats.torpedo * 1.2, masterData.initialStats.torpedo + 15)
       const maxArmor = masterData.initialStats.armorMax || Math.max(masterData.initialStats.armor * 1.2, masterData.initialStats.armor + 10)
       
       // レベルに応じたステータス計算
-      const levelBasedAsw = calculateAswFromLevel(level, masterData.initialStats.asw, aswMax)
+      const levelBasedAsw = calculateStatFromLevel(level, masterData.initialStats.asw, aswMax)
+      const levelBasedEvasion = calculateStatFromLevel(level, masterData.initialStats.evasion, evasionMax)
+      const levelBasedLos = calculateStatFromLevel(level, masterData.initialStats.los, losMax)
       const levelBasedFirepower = calculateStatusFromLevel(level, maxFirepower, masterData.initialStats.firepower)
       const levelBasedTorpedo = calculateStatusFromLevel(level, maxTorpedo, masterData.initialStats.torpedo)
       const levelBasedArmor = calculateStatusFromLevel(level, maxArmor, masterData.initialStats.armor)
@@ -163,9 +175,9 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
         torpedo: levelBasedTorpedo + (improvements.torpedo || 0),
         aa: masterData.initialStats.aa + (improvements.aa || 0),
         armor: levelBasedArmor + (improvements.armor || 0),
-        evasion: masterData.initialStats.evasion,
+        evasion: levelBasedEvasion,
         asw: levelBasedAsw + (improvements.asw || 0),
-        los: masterData.initialStats.los,
+        los: levelBasedLos,
         luck: levelBasedLuck + (improvements.luck || 0),
         range: masterData.initialStats.range,
         speed: masterData.initialStats.speed,
