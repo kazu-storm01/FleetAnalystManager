@@ -41,3 +41,4 @@ kancolle.csv
 # Node系
 node_modules/
 dist/
+fleethub-develop
