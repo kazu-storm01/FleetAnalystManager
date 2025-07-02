@@ -219,6 +219,62 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     }
   }, [privacyMode])
 
+  // LocalStorageの変更を監視してリアルタイム更新
+  useEffect(() => {
+    if (!admiralName) return
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `${admiralName}_fleetEntries` && e.newValue) {
+        try {
+          const updatedEntries = JSON.parse(e.newValue)
+          const processedEntries = updatedEntries.map((entry: FleetEntry) => ({
+            ...entry,
+            luckModTotal: entry.luckModTotal ?? 0,
+            hpModTotal: entry.hpModTotal ?? 0,
+            aswModTotal: entry.aswModTotal ?? 0
+          }))
+          setFleetEntries(processedEntries)
+          console.log('🔄 艦隊エントリーがリアルタイム更新されました')
+        } catch (error) {
+          console.error('LocalStorage更新の処理に失敗:', error)
+        }
+      }
+    }
+
+    // 同一タブ内での変更を検知するために定期チェックも追加
+    const checkForUpdates = () => {
+      const saved = localStorage.getItem(`${admiralName}_fleetEntries`)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          const currentSerialized = JSON.stringify(fleetEntries)
+          const newSerialized = JSON.stringify(parsed)
+          
+          if (currentSerialized !== newSerialized) {
+            const processedEntries = parsed.map((entry: FleetEntry) => ({
+              ...entry,
+              luckModTotal: entry.luckModTotal ?? 0,
+              hpModTotal: entry.hpModTotal ?? 0,
+              aswModTotal: entry.aswModTotal ?? 0
+            }))
+            setFleetEntries(processedEntries)
+            console.log('🔄 艦隊エントリーが定期チェックで更新されました')
+          }
+        } catch (error) {
+          console.error('定期チェックの処理に失敗:', error)
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    const interval = setInterval(checkForUpdates, 2000) // 2秒間隔でチェック
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(interval)
+    }
+  }, [admiralName, fleetEntries])
+
   // 艦隊エントリーの読み込み
   const loadFleetEntries = (admiral: string) => {
     const saved = localStorage.getItem(`${admiral}_fleetEntries`)

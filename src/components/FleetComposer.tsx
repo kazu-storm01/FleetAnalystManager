@@ -214,6 +214,13 @@ interface TrainingCandidate {
   name: string
   level: number
   addedAt: string
+  // 目標値
+  targetLevel?: number
+  targetHp?: number
+  targetAsw?: number
+  targetLuck?: number
+  // タスク連動用
+  mainTaskId?: number // メインの「●●を育成する」タスクID
 }
 
 // 育成候補リスト管理
@@ -239,6 +246,103 @@ const deleteTrainingCandidateFromStorage = (candidateId: number) => {
   const candidates = getTrainingCandidatesFromStorage()
   const filtered = candidates.filter(c => c.id !== candidateId)
   saveTrainingCandidatesToStorage(filtered)
+}
+
+// タスク管理連動機能
+const getFleetEntriesFromStorage = () => {
+  try {
+    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || localStorage.getItem('admiralName') || '提督'
+    const saved = localStorage.getItem(`${admiralName}_fleetEntries`)
+    return saved ? JSON.parse(saved) : []
+  } catch (error) {
+    console.error('艦隊エントリー読み込みエラー:', error)
+    return []
+  }
+}
+
+const saveFleetEntriesToStorage = (entries: any[]) => {
+  try {
+    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || localStorage.getItem('admiralName') || '提督'
+    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(entries))
+  } catch (error) {
+    console.error('艦隊エントリー保存エラー:', error)
+  }
+}
+
+const addTaskToLatestFleetEntry = (taskText: string): number => {
+  let entries = getFleetEntriesFromStorage()
+  
+  // エントリーが存在しない場合は自動作成
+  if (entries.length === 0) {
+    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || localStorage.getItem('admiralName') || '提督'
+    const newEntry = {
+      id: Date.now(),
+      totalExp: 0,
+      shipCount: 0,
+      marriedCount: 0,
+      luckModTotal: 0,
+      hpModTotal: 0,
+      aswModTotal: 0,
+      tasks: [],
+      createdAt: new Date().toISOString(),
+      admiralName: admiralName,
+      isLatest: true
+    }
+    entries = [newEntry]
+    saveFleetEntriesToStorage(entries)
+  }
+  
+  let latestEntry = entries.find((entry: any) => entry.isLatest)
+  
+  // isLatestなエントリーがない場合は最新のものをisLatestにする
+  if (!latestEntry) {
+    entries.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    if (entries.length > 0) {
+      entries.forEach((entry: any) => entry.isLatest = false)
+      entries[0].isLatest = true
+      latestEntry = entries[0]
+      saveFleetEntriesToStorage(entries)
+    }
+  }
+  
+  if (!latestEntry) return -1
+  
+  const newTask = {
+    id: Date.now(),
+    text: taskText,
+    completed: false,
+    createdAt: new Date().toISOString()
+  }
+  
+  latestEntry.tasks = latestEntry.tasks || []
+  latestEntry.tasks.push(newTask)
+  
+  saveFleetEntriesToStorage(entries)
+  return newTask.id
+}
+
+const removeTaskFromFleetEntry = (taskId: number) => {
+  const entries = getFleetEntriesFromStorage()
+  entries.forEach((entry: any) => {
+    if (entry.tasks) {
+      entry.tasks = entry.tasks.filter((task: any) => task.id !== taskId)
+    }
+  })
+  saveFleetEntriesToStorage(entries)
+}
+
+const updateTaskText = (taskId: number, newText: string) => {
+  const entries = getFleetEntriesFromStorage()
+  entries.forEach((entry: any) => {
+    if (entry.tasks) {
+      entry.tasks.forEach((task: any) => {
+        if (task.id === taskId) {
+          task.text = newText
+        }
+      })
+    }
+  })
+  saveFleetEntriesToStorage(entries)
 }
 
 // LocalStorageユーティリティ関数
@@ -337,11 +441,14 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   )
   const [draggedShip, setDraggedShip] = useState<Ship | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
+  const [isDraggingFormation, setIsDraggingFormation] = useState(false)
   const [fleetName, setFleetName] = useState<string>('')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const candidatesListRef = useRef<HTMLDivElement>(null)
   const [ships, setShips] = useState<Ship[]>([])
   const [storedFleetData, setStoredFleetData] = useState<any>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [pendingTaskUpdates, setPendingTaskUpdates] = useState<Set<number>>(new Set())
   const [savedFormations, setSavedFormations] = useState<SavedFormation[]>([])
   const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>(getTrainingCandidatesFromStorage())
   const [isDroppedOnTrainingCandidates, setIsDroppedOnTrainingCandidates] = useState(false)
@@ -351,6 +458,120 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
+
+  // タスク連動のチェック（定期実行）
+  useEffect(() => {
+    if (!isFullDataLoaded || trainingCandidates.length === 0) return
+    
+    const checkTasksAndTargets = () => {
+      const entries = getFleetEntriesFromStorage()
+      const updatedCandidates = trainingCandidates.map(candidate => {
+        if (!candidate.mainTaskId) return candidate
+        
+        const ship = ships.find(s => s.shipId === candidate.shipId)
+        if (!ship) return candidate
+        
+        // メインタスクが存在するかチェック
+        const taskExists = entries.some((entry: any) => 
+          entry.tasks?.some((task: any) => task.id === candidate.mainTaskId && !task.completed)
+        )
+        
+        if (!taskExists) {
+          // メインタスクが削除されているか完了している場合、育成候補も削除
+          return null // 削除マーク
+        }
+        
+        // 目標達成チェック（すべての目標が達成されたらタスク完了）
+        let allTargetsAchieved = false
+        const hasTargets = candidate.targetLevel || candidate.targetHp || candidate.targetAsw || candidate.targetLuck
+        
+        if (hasTargets) {
+          const levelAchieved = !candidate.targetLevel || ship.level >= candidate.targetLevel
+          const hpAchieved = !candidate.targetHp || ship.currentStats.hp >= candidate.targetHp
+          const aswAchieved = !candidate.targetAsw || ship.currentStats.asw >= candidate.targetAsw
+          const luckAchieved = !candidate.targetLuck || ship.currentStats.luck >= candidate.targetLuck
+          
+          allTargetsAchieved = levelAchieved && hpAchieved && aswAchieved && luckAchieved
+        }
+        
+        if (allTargetsAchieved) {
+          // すべての目標達成時はタスクを完了にマーク
+          markTaskAsCompleted(candidate.mainTaskId)
+          showToast(`${candidate.name}の育成目標を達成しました！`)
+          return null // 削除マーク
+        }
+        
+        return candidate
+      }).filter(candidate => candidate !== null) // 削除マークされたものを除外
+      
+      // 変更があった場合のみ更新
+      if (updatedCandidates.length !== trainingCandidates.length) {
+        setTrainingCandidates(updatedCandidates)
+        saveTrainingCandidatesToStorage(updatedCandidates)
+      }
+    }
+    
+    // 初回実行
+    checkTasksAndTargets()
+    
+    // 5秒間隔でチェック
+    const interval = setInterval(checkTasksAndTargets, 5000)
+    
+    return () => clearInterval(interval)
+  }, [trainingCandidates, ships, isFullDataLoaded])
+
+  // サイドバーが閉じられた時の処理
+  useEffect(() => {
+    if (!isSidebarOpen && pendingTaskUpdates.size > 0) {
+      // サイドバーが閉じられた時、保留中のタスク更新を実行
+      pendingTaskUpdates.forEach(candidateId => {
+        const candidate = trainingCandidates.find(c => c.id === candidateId)
+        if (candidate && candidate.mainTaskId) {
+          const newTaskText = createMainTaskText(candidate)
+          updateTaskText(candidate.mainTaskId, newTaskText)
+        }
+      })
+      
+      if (pendingTaskUpdates.size > 0) {
+        showToast(`${pendingTaskUpdates.size}件の育成タスクを更新しました`)
+      }
+      
+      // 保留リストをクリア
+      setPendingTaskUpdates(new Set())
+    }
+  }, [isSidebarOpen, pendingTaskUpdates, trainingCandidates])
+
+
+  // 目標達成チェック
+  const checkTargetAchieved = (candidate: TrainingCandidate, ship: Ship, targetType: string): boolean => {
+    switch (targetType) {
+      case 'level':
+        return candidate.targetLevel ? ship.level >= candidate.targetLevel : false
+      case 'hp':
+        return candidate.targetHp ? ship.currentStats.hp >= candidate.targetHp : false
+      case 'asw':
+        return candidate.targetAsw ? ship.currentStats.asw >= candidate.targetAsw : false
+      case 'luck':
+        return candidate.targetLuck ? ship.currentStats.luck >= candidate.targetLuck : false
+      default:
+        return false
+    }
+  }
+
+  // タスクを完了にマーク
+  const markTaskAsCompleted = (taskId: number) => {
+    const entries = getFleetEntriesFromStorage()
+    entries.forEach((entry: any) => {
+      if (entry.tasks) {
+        entry.tasks.forEach((task: any) => {
+          if (task.id === taskId) {
+            task.completed = true
+          }
+        })
+      }
+    })
+    saveFleetEntriesToStorage(entries)
+  }
 
   // コンポーネント初期化時にLocalStorageからデータを復元（初回のみ）
   useEffect(() => {
@@ -556,13 +777,25 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   // ドラッグオーバー
   const handleDragOver = (e: React.DragEvent, position: number) => {
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDragOverSlot(position)
+    
+    // 編成データかどうかを確認
+    const types = Array.from(e.dataTransfer.types)
+    if (types.includes('application/json')) {
+      e.dataTransfer.dropEffect = 'copy'
+      console.log('🔧 DEBUG: Formation drag over slot', position)
+      setIsDraggingFormation(true)
+      setDragOverSlot(position)
+    } else {
+      e.dataTransfer.dropEffect = 'move'
+      setIsDraggingFormation(false)
+      setDragOverSlot(position)
+    }
   }
 
   // ドラッグリーブ
   const handleDragLeave = () => {
     setDragOverSlot(null)
+    setIsDraggingFormation(false)
   }
 
   // ドロップ処理
@@ -570,6 +803,32 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     e.preventDefault()
     e.stopPropagation() // イベントの伝播を停止
     setDragOverSlot(null)
+    setIsDraggingFormation(false)
+
+    console.log('🔧 DEBUG: Drop on slot', position)
+    console.log('🔧 DEBUG: Available data types:', e.dataTransfer.types)
+
+    // 編成データのドロップ処理を最優先
+    try {
+      const formationData = e.dataTransfer.getData('application/json')
+      console.log('🔧 DEBUG: Formation data in slot:', formationData)
+      
+      if (formationData) {
+        const formation = JSON.parse(formationData)
+        console.log('🔧 DEBUG: Parsed formation in slot:', formation)
+        
+        if (formation.ships && formation.name) {
+          console.log('🔧 DEBUG: Loading formation via slot drop:', formation.name)
+          handleLoadFormation(formation)
+          showToast(`編成「${formation.name}」を読み込みました！`)
+          return
+        }
+      }
+    } catch (error) {
+      console.log('🔧 DEBUG: Error parsing formation data in slot:', error)
+    }
+
+    // 艦娘のドロップ処理
     if (draggedShip) {
       setFleetSlots(prev => prev.map(slot => 
         slot.position === position 
@@ -640,7 +899,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const handleAddToTrainingCandidates = (ship: Ship) => {
     console.log('🔧 DEBUG: handleAddToTrainingCandidates called for:', ship.name)
     
-    const existing = trainingCandidates.find(c => c.shipId === ship.id)
+    const existing = trainingCandidates.find(c => c.shipId === ship.shipId)
     if (existing) {
       // 既に存在する場合でもドロップフラグを設定
       setIsDroppedOnTrainingCandidates(true)
@@ -648,12 +907,17 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       return
     }
 
+    // メインタスクを作成
+    const mainTaskText = `${ship.name}を育成する`
+    const mainTaskId = addTaskToLatestFleetEntry(mainTaskText)
+    
     const newCandidate: TrainingCandidate = {
       id: Date.now(),
-      shipId: ship.id,
+      shipId: ship.shipId, // ship.id から ship.shipId に変更
       name: ship.name,
       level: ship.level,
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      mainTaskId: mainTaskId !== -1 ? mainTaskId : undefined
     }
     
     const updatedCandidates = [...trainingCandidates, newCandidate]
@@ -664,14 +928,137 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     setIsDroppedOnTrainingCandidates(true)
     
     console.log('✅ 育成候補に追加:', ship.name)
-    showToast(`${ship.name} を育成候補に追加しました！`)
+    if (mainTaskId !== -1) {
+      showToast(`${ship.name} を育成候補に追加し、育成タスクを作成しました！`)
+    } else {
+      showToast(`${ship.name} を育成候補に追加しました！`)
+    }
+    
+    // 新しい候補が見えるように自動スクロール
+    setTimeout(() => {
+      if (candidatesListRef.current) {
+        candidatesListRef.current.scrollTop = candidatesListRef.current.scrollHeight
+      }
+    }, 100)
   }
 
-  // 育成候補から削除
+  // 育成候補から削除（タスク連動）
   const handleRemoveFromTrainingCandidates = (candidateId: number) => {
+    const candidate = trainingCandidates.find(c => c.id === candidateId)
+    
+    // メインタスクを削除
+    if (candidate?.mainTaskId) {
+      removeTaskFromFleetEntry(candidate.mainTaskId)
+    }
+    
     const updatedCandidates = trainingCandidates.filter(c => c.id !== candidateId)
     setTrainingCandidates(updatedCandidates)
     deleteTrainingCandidateFromStorage(candidateId)
+    
+    showToast(`${candidate?.name || '艦娘'}を育成候補から削除し、関連タスクも削除しました`)
+  }
+
+  // タスク更新を保留リストに追加
+  const addToPendingTaskUpdates = (candidateId: number) => {
+    setPendingTaskUpdates(prev => new Set([...prev, candidateId]))
+  }
+
+  // サイドバーを閉じる処理（タスク更新込み）
+  const closeSidebar = () => {
+    // 保留中のタスク更新を即座に実行
+    if (pendingTaskUpdates.size > 0) {
+      pendingTaskUpdates.forEach(candidateId => {
+        const candidate = trainingCandidates.find(c => c.id === candidateId)
+        if (candidate && candidate.mainTaskId) {
+          const newTaskText = createMainTaskText(candidate)
+          updateTaskText(candidate.mainTaskId, newTaskText)
+        }
+      })
+      
+      showToast(`${pendingTaskUpdates.size}件の育成タスクを更新しました`)
+      setPendingTaskUpdates(new Set())
+    }
+    
+    setIsSidebarOpen(false)
+  }
+
+  // 育成候補の目標値を更新（サイドバー閉じ時にタスク連動）
+  const updateTrainingCandidateTargets = (candidateId: number, targets: { targetLevel?: number, targetHp?: number, targetAsw?: number, targetLuck?: number }) => {
+    const candidate = trainingCandidates.find(c => c.id === candidateId)
+    if (!candidate) return
+
+    // まず目標値だけを即座に更新
+    const updatedCandidates = trainingCandidates.map(existingCandidate => {
+      if (existingCandidate.id !== candidateId) return existingCandidate
+      return { ...existingCandidate, ...targets }
+    })
+    
+    setTrainingCandidates(updatedCandidates)
+    saveTrainingCandidatesToStorage(updatedCandidates)
+    
+    // タスク更新を保留リストに追加（サイドバーが開いている場合のみ）
+    if (isSidebarOpen && candidate.mainTaskId) {
+      addToPendingTaskUpdates(candidateId)
+    }
+  }
+
+  // メインタスクテキストを生成
+  const createMainTaskText = (candidate: TrainingCandidate): string => {
+    const ship = ships.find(s => s.shipId === candidate.shipId)
+    if (!ship) return `${candidate.name}を育成する`
+    
+    const targets: string[] = []
+    
+    if (candidate.targetLevel && candidate.targetLevel > ship.level) {
+      targets.push(`Lv${ship.level}→${candidate.targetLevel}`)
+    }
+    if (candidate.targetHp && candidate.targetHp > ship.currentStats.hp) {
+      targets.push(`耐久${ship.currentStats.hp}→${candidate.targetHp}`)
+    }
+    if (candidate.targetAsw && candidate.targetAsw > ship.currentStats.asw) {
+      targets.push(`対潜${ship.currentStats.asw}→${candidate.targetAsw}`)
+    }
+    if (candidate.targetLuck && candidate.targetLuck > ship.currentStats.luck) {
+      targets.push(`運${ship.currentStats.luck}→${candidate.targetLuck}`)
+    }
+    
+    if (targets.length === 0) {
+      return `${candidate.name}を育成する`
+    }
+    
+    return `${candidate.name}を育成する（${targets.join('、')}）`
+  }
+
+  // タスクテキストを生成
+  const createTaskText = (shipName: string, targetKey: string, targetValue: number, currentValue: number): string => {
+    const labels: { [key: string]: string } = {
+      targetLevel: 'レベル',
+      targetHp: '耐久',
+      targetAsw: '対潜',
+      targetLuck: '運'
+    }
+    
+    const label = labels[targetKey] || targetKey
+    return `${shipName} ${label}${currentValue}→${targetValue}に育成`
+  }
+
+  // 現在値を取得
+  const getCurrentValue = (candidate: TrainingCandidate, targetKey: string): number => {
+    const ship = ships.find(s => s.shipId === candidate.shipId)
+    if (!ship) return candidate.level // フォールバック
+    
+    switch (targetKey) {
+      case 'targetLevel':
+        return ship.level
+      case 'targetHp':
+        return ship.currentStats.hp
+      case 'targetAsw':
+        return ship.currentStats.asw
+      case 'targetLuck':
+        return ship.currentStats.luck
+      default:
+        return 0
+    }
   }
 
   // スロットクリア
@@ -686,7 +1073,13 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   // 編成保存
   const handleSaveFormation = () => {
     if (!fleetName.trim()) {
-      alert('編成名を入力してください')
+      showToast('編成名を入力してください', 'error')
+      return
+    }
+
+    const shipCount = fleetSlots.filter(slot => slot.ship !== null).length
+    if (shipCount === 0) {
+      showToast('編成が空です。艦娘を配置してから保存してください', 'error')
       return
     }
 
@@ -705,8 +1098,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     setSavedFormations(getSavedFormationsFromStorage())
     
     if (existingFormation) {
+      showToast(`編成「${formation.name}」を更新しました！`)
       console.log('編成を更新しました:', formation.name)
     } else {
+      showToast(`編成「${formation.name}」を保存しました！`)
       console.log('新しい編成を保存しました:', formation.name)
     }
   }
@@ -728,6 +1123,22 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     if (confirm('この編成を削除しますか？')) {
       deleteFormationFromStorage(formationId)
       setSavedFormations(getSavedFormationsFromStorage())
+    }
+  }
+
+  // 編成全解散
+  const handleClearAllFleet = () => {
+    const shipCount = fleetSlots.filter(slot => slot.ship !== null).length
+    if (shipCount === 0) {
+      showToast('編成は既に空です', 'error')
+      return
+    }
+    
+    if (confirm(`現在の編成（${shipCount}隻）をすべて解散しますか？`)) {
+      setFleetSlots(prev => prev.map(slot => ({ ...slot, ship: null })))
+      setFleetName('')
+      showToast('編成を全解散しました')
+      console.log('編成を全解散しました')
     }
   }
 
@@ -754,8 +1165,18 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       <div className="fleet-composition-area"
            onDragOver={(e) => {
              e.preventDefault()
+             e.stopPropagation()
+             
+             // 編成データかどうかを確認
+             const types = Array.from(e.dataTransfer.types)
+             console.log('🔧 DEBUG: Drag over fleet area, types:', types)
+             
+             if (types.includes('application/json')) {
+               e.dataTransfer.dropEffect = 'copy'
+               console.log('🔧 DEBUG: Formation drag over fleet area - setting copy effect')
+             }
              // サイドバーが開いていて育成タブが選択されている場合は、copy効果を維持
-             if (isSidebarOpen && sidebarActiveTab === 'training') {
+             else if (isSidebarOpen && sidebarActiveTab === 'training') {
                e.dataTransfer.dropEffect = 'copy'
              } else {
                e.dataTransfer.dropEffect = 'move'
@@ -763,15 +1184,38 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
            }}
            onDrop={(e) => {
              e.preventDefault()
+             e.stopPropagation()
              
-             console.log('🔧 DEBUG: Drop on fleet-composition-area, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
+             console.log('🔧 DEBUG: Drop on fleet-composition-area')
+             console.log('🔧 DEBUG: Available data types:', e.dataTransfer.types)
              
+             // 編成データのドロップ処理を最優先
+             try {
+               const formationData = e.dataTransfer.getData('application/json')
+               console.log('🔧 DEBUG: Formation data:', formationData)
+               
+               if (formationData) {
+                 const formation = JSON.parse(formationData)
+                 console.log('🔧 DEBUG: Parsed formation:', formation)
+                 
+                 if (formation.ships && formation.name) {
+                   console.log('🔧 DEBUG: Loading formation via drag:', formation.name)
+                   handleLoadFormation(formation)
+                   showToast(`編成「${formation.name}」を読み込みました！`)
+                   return
+                 }
+               }
+             } catch (error) {
+               console.log('🔧 DEBUG: Error parsing formation data:', error)
+             }
+             
+             // 育成候補への追加処理
              if (isDroppedOnTrainingCandidates) {
                console.log('🔧 DEBUG: Skipping fleet area drop because already dropped on training candidates')
                return
              }
              
-             // サイドバー全体、育成候補エリア、ドロップゾーンを除外
+             // 艦娘の自動配置処理
              const isSidebarArea = (e.target as Element).closest('.formation-sidebar, .training-candidates-content, .drop-zone-tab, .candidates-list, .candidate-item')
              if (!isSidebarArea && (!e.target || !(e.target as Element).closest('.fleet-slot'))) {
                console.log('🔧 DEBUG: Calling handleDropOutside from fleet-composition-area')
@@ -796,13 +1240,22 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                 value={fleetName}
                 onChange={(e) => setFleetName(e.target.value)}
               />
-              <button 
-                className="save-formation-btn"
-                onClick={handleSaveFormation}
-                title="現在の編成を保存"
-              >
-                💾 保存
-              </button>
+              <div className="formation-action-buttons">
+                <button 
+                  className="save-formation-btn"
+                  onClick={handleSaveFormation}
+                  title="現在の編成を保存"
+                >
+                  <span className="material-symbols-outlined">save</span> 保存
+                </button>
+                <button 
+                  className="clear-all-fleet-btn"
+                  onClick={handleClearAllFleet}
+                  title="編成をすべて解散"
+                >
+                  <span className="material-symbols-outlined">clear_all</span> 全解散
+                </button>
+              </div>
             </div>
             <div className="fleet-count-indicator">
               <span className="fleet-count-text">{stats.shipCount}/6隻</span>
@@ -815,7 +1268,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           {fleetSlots.map(slot => (
             <div
               key={slot.position}
-              className={`fleet-slot ${slot.ship ? 'occupied' : 'empty'} ${dragOverSlot === slot.position ? 'drag-over' : ''}`}
+              className={`fleet-slot ${slot.ship ? 'occupied' : 'empty'} ${dragOverSlot === slot.position ? (isDraggingFormation ? 'formation-drag-over' : 'drag-over') : ''}`}
               onDragOver={(e) => handleDragOver(e, slot.position)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, slot.position)}
@@ -1052,7 +1505,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       {/* サイドバー開閉ボタン */}
       <button 
         className={`sidebar-toggle-btn ${isSidebarOpen ? 'open' : 'closed'}`}
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        onClick={() => isSidebarOpen ? closeSidebar() : setIsSidebarOpen(true)}
         title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
         aria-label={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
       >
@@ -1117,7 +1570,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           </h3>
           <button 
             className="close-sidebar-btn"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={closeSidebar}
           >
             ×
           </button>
@@ -1161,31 +1614,44 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                 </div>
               ) : (
                 savedFormations.map(formation => (
-                  <div key={formation.id} className="formation-item">
+                  <div 
+                    key={formation.id} 
+                    className="formation-item"
+                    draggable
+                    onDragStart={(e) => {
+                      const formationData = JSON.stringify(formation)
+                      e.dataTransfer.setData('application/json', formationData)
+                      e.dataTransfer.setData('text/plain', `formation:${formation.name}`)
+                      e.dataTransfer.effectAllowed = 'copy'
+                      e.currentTarget.style.opacity = '0.5'
+                      console.log('🔧 DEBUG: Dragging formation:', formation.name)
+                      console.log('🔧 DEBUG: Formation data set:', formationData)
+                    }}
+                    onDragEnd={(e) => {
+                      e.currentTarget.style.opacity = '1'
+                      console.log('🔧 DEBUG: Formation drag ended')
+                    }}
+                  >
                     <div className="formation-info">
-                      <div className="formation-name">{formation.name}</div>
-                      <div className="formation-date">
-                        {new Date(formation.updatedAt).toLocaleDateString()}
+                      <div className="formation-header">
+                        <span className="material-icons formation-drag-icon">drag_indicator</span>
+                        <div className="formation-name">{formation.name}</div>
+                        <button 
+                          className="delete-btn"
+                          onClick={() => handleDeleteFormation(formation.id)}
+                          title="この編成を削除"
+                        >
+                          <span className="material-icons">close</span>
+                        </button>
                       </div>
-                      <div className="formation-ships">
-                        {formation.ships.filter(id => id !== null).length}/6隻
+                      <div className="formation-meta">
+                        <div className="formation-date">
+                          {new Date(formation.updatedAt).toLocaleDateString()}
+                        </div>
+                        <div className="formation-ships">
+                          {formation.ships.filter(id => id !== null).length}/6隻
+                        </div>
                       </div>
-                    </div>
-                    <div className="formation-actions">
-                      <button 
-                        className="load-btn"
-                        onClick={() => handleLoadFormation(formation)}
-                        title="この編成を読み込み"
-                      >
-                        📂
-                      </button>
-                      <button 
-                        className="delete-btn"
-                        onClick={() => handleDeleteFormation(formation.id)}
-                        title="この編成を削除"
-                      >
-                        🗑️
-                      </button>
                     </div>
                   </div>
                 ))
@@ -1240,7 +1706,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
               }}
             >
               
-              <div className="candidates-list">
+              <div className="candidates-list" ref={candidatesListRef}>
                 {trainingCandidates.length === 0 ? (
                   <div className="no-candidates">
                     <div className="no-candidates-icon"><span className="material-icons">anchor</span></div>
@@ -1251,29 +1717,136 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                   </div>
                 ) : (
                   trainingCandidates.map(candidate => {
-                    const ship = ships.find(s => s.id === candidate.shipId)
+                    const ship = ships.find(s => s.shipId === candidate.shipId)
                     return (
-                      <div key={candidate.id} className="candidate-item">
-                        <div className="candidate-info">
-                          <div className="candidate-name">{candidate.name}</div>
-                          <div className="candidate-level">Lv.{candidate.level}</div>
-                          <div className="candidate-date">
-                            {new Date(candidate.addedAt).toLocaleDateString()}
-                          </div>
-                          {ship && (
-                            <div className="candidate-current-level">
-                              現在: Lv.{ship.level}
+                      <div key={candidate.id} className="training-candidate-banner">
+                        <div 
+                          className="candidate-banner-full"
+                          style={{
+                            backgroundImage: `url(/FleetAnalystManager/images/banner/${candidate.shipId}.png)`,
+                          }}
+                        >
+                          {/* オーバーレイ */}
+                          <div className="candidate-banner-overlay-full">
+                            {/* 上部：艦娘名と削除ボタン */}
+                            <div className="candidate-top-bar">
+                              <div className="candidate-name-full">{candidate.name}</div>
+                              <button 
+                                className="remove-candidate-btn-banner"
+                                onClick={() => handleRemoveFromTrainingCandidates(candidate.id)}
+                                title="育成候補から削除"
+                              >
+                                <span className="material-icons">close</span>
+                              </button>
                             </div>
-                          )}
-                        </div>
-                        <div className="candidate-actions">
-                          <button 
-                            className="remove-candidate-btn"
-                            onClick={() => handleRemoveFromTrainingCandidates(candidate.id)}
-                            title="育成候補から削除"
-                          >
-                            🗑️
-                          </button>
+
+                            {/* 下部：ステータス情報 */}
+                            <div className="candidate-stats-overlay">
+                              {/* レベル */}
+                              <div className="stat-overlay-item">
+                                <div className="stat-overlay-label">Lv</div>
+                                <div className="stat-overlay-value">{ship?.level || candidate.level}</div>
+                                <input 
+                                  type="number"
+                                  className="target-overlay-input"
+                                  placeholder="目標"
+                                  min="1"
+                                  max="180"
+                                  value={candidate.targetLevel || ''}
+                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
+                                    targetLevel: e.target.value ? parseInt(e.target.value) : undefined
+                                  })}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const nextInput = e.currentTarget.closest('.candidate-stats-overlay')?.querySelector('.stat-overlay-item:nth-child(2) input') as HTMLInputElement
+                                      nextInput?.focus()
+                                    }
+                                  }}
+                                />
+                              </div>
+
+                              {/* 耐久 */}
+                              <div className="stat-overlay-item">
+                                <div className="stat-overlay-label">耐久</div>
+                                <div className="stat-overlay-value">
+                                  {ship?.currentStats.hp || '--'}
+                                  {ship?.improvements.hp > 0 && <span className="improvement-overlay">+{ship.improvements.hp}</span>}
+                                </div>
+                                <input 
+                                  type="number"
+                                  className="target-overlay-input"
+                                  placeholder="目標"
+                                  min="0"
+                                  max="99"
+                                  value={candidate.targetHp || ''}
+                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
+                                    targetHp: e.target.value ? parseInt(e.target.value) : undefined
+                                  })}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const nextInput = e.currentTarget.closest('.candidate-stats-overlay')?.querySelector('.stat-overlay-item:nth-child(3) input') as HTMLInputElement
+                                      nextInput?.focus()
+                                    }
+                                  }}
+                                />
+                              </div>
+
+                              {/* 対潜 */}
+                              <div className="stat-overlay-item">
+                                <div className="stat-overlay-label">対潜</div>
+                                <div className="stat-overlay-value">
+                                  {ship?.currentStats.asw || '--'}
+                                  {ship?.improvements.asw > 0 && <span className="improvement-overlay">+{ship.improvements.asw}</span>}
+                                </div>
+                                <input 
+                                  type="number"
+                                  className="target-overlay-input"
+                                  placeholder="目標"
+                                  min="0"
+                                  max="200"
+                                  value={candidate.targetAsw || ''}
+                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
+                                    targetAsw: e.target.value ? parseInt(e.target.value) : undefined
+                                  })}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const nextInput = e.currentTarget.closest('.candidate-stats-overlay')?.querySelector('.stat-overlay-item:nth-child(4) input') as HTMLInputElement
+                                      nextInput?.focus()
+                                    }
+                                  }}
+                                />
+                              </div>
+
+                              {/* 運 */}
+                              <div className="stat-overlay-item">
+                                <div className="stat-overlay-label">運</div>
+                                <div className="stat-overlay-value">
+                                  {ship?.currentStats.luck || '--'}
+                                  {ship?.improvements.luck > 0 && <span className="improvement-overlay">+{ship.improvements.luck}</span>}
+                                </div>
+                                <input 
+                                  type="number"
+                                  className="target-overlay-input"
+                                  placeholder="目標"
+                                  min="0"
+                                  max="100"
+                                  value={candidate.targetLuck || ''}
+                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
+                                    targetLuck: e.target.value ? parseInt(e.target.value) : undefined
+                                  })}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      // 最後の入力欄なので、次の候補の最初の入力欄にフォーカス
+                                      const nextCandidate = e.currentTarget.closest('.training-candidate-banner')?.nextElementSibling?.querySelector('.stat-overlay-item:first-child input') as HTMLInputElement
+                                      if (nextCandidate) {
+                                        nextCandidate.focus()
+                                      }
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )

@@ -618,19 +618,40 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   right: -5px;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  background: #f44336;
-  color: white;
+  border-radius: 2px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
   border: none;
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .remove-button:hover {
-  background: #d32f2f;
-  transform: scale(1.1);
+  background: rgba(244, 67, 54, 0.8);
+  color: #fff;
+}
+
+.remove-button::before,
+.remove-button::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.remove-button::before {
+  transform: rotate(45deg);
+}
+
+.remove-button::after {
+  transform: rotate(-45deg);
 }
 
 /* 空のスロット */
@@ -935,6 +956,13 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   margin-top: 8px;
 }
 
+/* 編成アクションボタンコンテナ */
+.formation-action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .save-formation-btn {
   background: rgba(100, 181, 246, 0.8);
   border: 1px solid rgba(100, 181, 246, 0.9);
@@ -942,8 +970,12 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   color: white;
   padding: 6px 12px;
   font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .save-formation-btn:hover {
@@ -951,6 +983,35 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   transform: translateY(-1px);
 }
 
+.save-formation-btn .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.clear-all-fleet-btn {
+  background: rgba(255, 152, 0, 0.8);
+  border: 1px solid rgba(255, 152, 0, 0.9);
+  border-radius: 6px;
+  color: white;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clear-all-fleet-btn:hover {
+  background: rgba(255, 152, 0, 1);
+  transform: translateY(-1px);
+}
+
+.clear-all-fleet-btn .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+/* Abyssalテーマ */
 .fleet-composer.abyssal .save-formation-btn {
   background: rgba(244, 143, 177, 0.8);
   border-color: rgba(244, 143, 177, 0.9);
@@ -958,6 +1019,15 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
 
 .fleet-composer.abyssal .save-formation-btn:hover {
   background: rgba(244, 143, 177, 1);
+}
+
+.fleet-composer.abyssal .clear-all-fleet-btn {
+  background: rgba(255, 183, 77, 0.8);
+  border-color: rgba(255, 183, 77, 0.9);
+}
+
+.fleet-composer.abyssal .clear-all-fleet-btn:hover {
+  background: rgba(255, 183, 77, 1);
 }
 
 /* 点滅アニメーション */
@@ -1167,33 +1237,172 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   gap: 4px;
 }
 
-.load-btn,
-.delete-btn {
-  background: none;
+/* 編成アイテム（ドラッグ対応） */
+.formation-item {
+  background: rgba(100, 181, 246, 0.1);
   border: 1px solid rgba(100, 181, 246, 0.3);
-  border-radius: 4px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 12px;
+  cursor: grab;
+  transition: all 0.3s ease;
+}
+
+.formation-item:hover {
+  background: rgba(100, 181, 246, 0.15);
+  border-color: rgba(100, 181, 246, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.formation-item:active {
+  cursor: grabbing;
+}
+
+.formation-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.formation-drag-icon {
+  color: rgba(100, 181, 246, 0.6);
+  font-size: 1rem;
+  cursor: grab;
+}
+
+.formation-name {
+  flex: 1;
+  color: #e3f2fd;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.formation-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 24px; /* ドラッグアイコン分のインデント */
+}
+
+.formation-date,
+.formation-ships {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+}
+
+/* ドラッグ中のスタイル */
+.formation-item.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+/* 編成ドロップ時のフィードバック */
+.fleet-composition-area.formation-drop-over {
+  background: rgba(76, 175, 80, 0.1);
+  border: 2px dashed rgba(76, 175, 80, 0.5);
+  border-radius: 12px;
+}
+
+.fleet-composer.abyssal .fleet-composition-area.formation-drop-over {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+/* 編成ドロップ時のスロットフィードバック */
+.fleet-slot.formation-drag-over {
+  background: rgba(76, 175, 80, 0.1) !important;
+  border: 2px dashed rgba(76, 175, 80, 0.6) !important;
+  transform: scale(1.02);
+}
+
+.fleet-slot.formation-drag-over::before {
+  content: '編成読み込み';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
   padding: 4px 8px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s ease;
-}
-
-.load-btn {
-  color: #4caf50;
-  border-color: rgba(76, 175, 80, 0.3);
-}
-
-.load-btn:hover {
-  background: rgba(76, 175, 80, 0.2);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  z-index: 10;
+  pointer-events: none;
 }
 
 .delete-btn {
-  color: #f44336;
-  border-color: rgba(244, 67, 54, 0.3);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  position: relative;
 }
 
 .delete-btn:hover {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+}
+
+/* カスタムXアイコン */
+.delete-btn .material-icons {
+  display: none;
+}
+
+.delete-btn::before,
+.delete-btn::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.delete-btn::before {
+  transform: rotate(45deg);
+}
+
+.delete-btn::after {
+  transform: rotate(-45deg);
+}
+
+/* Abyssalテーマでの編成アイテム */
+.fleet-composer.abyssal .formation-item {
+  background: rgba(244, 143, 177, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.fleet-composer.abyssal .formation-item:hover {
+  background: rgba(244, 143, 177, 0.15);
+  border-color: rgba(244, 143, 177, 0.5);
+}
+
+.fleet-composer.abyssal .formation-drag-icon {
+  color: rgba(244, 143, 177, 0.6);
+}
+
+.fleet-composer.abyssal .formation-name {
+  color: #ffebee;
+}
+
+.fleet-composer.abyssal .delete-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.fleet-composer.abyssal .delete-btn:hover {
   background: rgba(244, 67, 54, 0.2);
+  color: #ff5722;
 }
 
 
@@ -1290,8 +1499,10 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
 /* サイドバーコンテンツ */
 .sidebar-content {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden; /* 個別にスクロール管理するため */
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 育成候補タブ専用スタイル */
@@ -1341,6 +1552,595 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   animation: loading-spin 1s linear infinite;
 }
 
+/* 育成候補カードのスタイル */
+.training-candidate-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(13, 71, 161, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.training-candidate-card:hover {
+  border-color: rgba(100, 181, 246, 0.6);
+  background: rgba(13, 71, 161, 0.15);
+}
+
+.fleet-composer.abyssal .training-candidate-card {
+  background: rgba(136, 14, 79, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.fleet-composer.abyssal .training-candidate-card:hover {
+  border-color: rgba(244, 143, 177, 0.6);
+  background: rgba(136, 14, 79, 0.15);
+}
+
+/* バナー画像エリア */
+.candidate-banner-container {
+  position: relative;
+  height: 80px;
+  overflow: hidden;
+}
+
+.candidate-banner-image {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.candidate-banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 8px;
+}
+
+.candidate-name-badge {
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  backdrop-filter: blur(5px);
+}
+
+.candidate-banner-overlay .remove-candidate-btn {
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  width: 28px;
+  height: 28px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  position: relative;
+}
+
+.candidate-banner-overlay .remove-candidate-btn:hover {
+  background: rgba(244, 67, 54, 0.8);
+  color: #fff;
+}
+
+.candidate-banner-overlay .remove-candidate-btn::before,
+.candidate-banner-overlay .remove-candidate-btn::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.candidate-banner-overlay .remove-candidate-btn::before {
+  transform: rotate(45deg);
+}
+
+.candidate-banner-overlay .remove-candidate-btn::after {
+  transform: rotate(-45deg);
+}
+
+.candidate-banner-overlay .remove-candidate-btn .material-icons {
+  display: none;
+}
+
+/* 詳細エリア */
+.candidate-details {
+  padding: 12px;
+}
+
+/* 現在のステータス */
+.candidate-current-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(100, 181, 246, 0.2);
+}
+
+.fleet-composer.abyssal .candidate-current-stats {
+  border-bottom-color: rgba(244, 143, 177, 0.2);
+}
+
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: rgba(100, 181, 246, 0.8);
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .stat-label {
+  color: rgba(244, 143, 177, 0.8);
+}
+
+.stat-value.current {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .stat-value.current {
+  color: #ffebee;
+}
+
+.improvement {
+  color: #4caf50;
+  font-size: 0.7rem;
+  margin-left: 2px;
+}
+
+/* 目標値設定 */
+.candidate-targets {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.target-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.target-label {
+  font-size: 0.7rem;
+  color: rgba(100, 181, 246, 0.8);
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .target-label {
+  color: rgba(244, 143, 177, 0.8);
+}
+
+.target-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(100, 181, 246, 0.4);
+  border-radius: 4px;
+  color: #e3f2fd;
+  font-size: 0.7rem;
+  padding: 4px 6px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.target-input:focus {
+  outline: none;
+  border-color: rgba(100, 181, 246, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.target-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.6rem;
+}
+
+.fleet-composer.abyssal .target-input {
+  border-color: rgba(244, 143, 177, 0.4);
+  color: #ffebee;
+}
+
+.fleet-composer.abyssal .target-input:focus {
+  border-color: rgba(244, 143, 177, 0.8);
+}
+
+/* 追加日時 */
+.candidate-date {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* コンパクト育成候補カード */
+.training-candidate-compact {
+  background: rgba(13, 71, 161, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  transition: all 0.3s ease;
+}
+
+.training-candidate-compact:hover {
+  border-color: rgba(100, 181, 246, 0.6);
+  background: rgba(13, 71, 161, 0.15);
+}
+
+.fleet-composer.abyssal .training-candidate-compact {
+  background: rgba(136, 14, 79, 0.1);
+  border-color: rgba(244, 143, 177, 0.3);
+}
+
+.fleet-composer.abyssal .training-candidate-compact:hover {
+  border-color: rgba(244, 143, 177, 0.6);
+  background: rgba(136, 14, 79, 0.15);
+}
+
+/* ヘッダー部分 */
+.candidate-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.candidate-avatar {
+  width: 24px;
+  height: 24px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.candidate-name {
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e3f2fd;
+}
+
+.fleet-composer.abyssal .candidate-name {
+  color: #ffebee;
+}
+
+.remove-candidate-btn-compact {
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.remove-candidate-btn-compact:hover {
+  background: rgba(244, 67, 54, 0.8);
+  color: #fff;
+}
+
+.remove-candidate-btn-compact::before,
+.remove-candidate-btn-compact::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.remove-candidate-btn-compact::before {
+  transform: rotate(45deg);
+}
+
+.remove-candidate-btn-compact::after {
+  transform: rotate(-45deg);
+}
+
+.remove-candidate-btn-compact .material-icons {
+  display: none;
+}
+
+/* ステータス行 */
+.candidate-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  color: rgba(100, 181, 246, 0.8);
+  font-weight: 500;
+}
+
+.fleet-composer.abyssal .stat-label {
+  color: rgba(244, 143, 177, 0.8);
+}
+
+.stat-current {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #e3f2fd;
+  text-align: center;
+}
+
+.fleet-composer.abyssal .stat-current {
+  color: #ffebee;
+}
+
+.improvement {
+  color: #4caf50;
+  font-size: 0.6rem;
+  margin-left: 1px;
+}
+
+.target-input-compact {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(100, 181, 246, 0.4);
+  border-radius: 3px;
+  color: #e3f2fd;
+  font-size: 0.6rem;
+  padding: 2px 4px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  height: 20px;
+}
+
+.target-input-compact:focus {
+  outline: none;
+  border-color: rgba(100, 181, 246, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.target-input-compact::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.55rem;
+}
+
+.fleet-composer.abyssal .target-input-compact {
+  border-color: rgba(244, 143, 177, 0.4);
+  color: #ffebee;
+}
+
+.fleet-composer.abyssal .target-input-compact:focus {
+  border-color: rgba(244, 143, 177, 0.8);
+}
+
+/* バナーフル活用育成候補カード */
+.training-candidate-banner {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.training-candidate-banner:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.candidate-banner-full {
+  width: 100%;
+  height: 80px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.candidate-banner-overlay-full {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, 
+    rgba(0, 0, 0, 0.6) 0%, 
+    rgba(0, 0, 0, 0.3) 50%, 
+    rgba(0, 0, 0, 0.8) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px;
+}
+
+/* 上部バー */
+.candidate-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.candidate-name-full {
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.remove-candidate-btn-banner {
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.remove-candidate-btn-banner:hover {
+  background: rgba(244, 67, 54, 0.8);
+  color: #fff;
+}
+
+.remove-candidate-btn-banner::before,
+.remove-candidate-btn-banner::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.remove-candidate-btn-banner::before {
+  transform: rotate(45deg);
+}
+
+.remove-candidate-btn-banner::after {
+  transform: rotate(-45deg);
+}
+
+.remove-candidate-btn-banner .material-icons {
+  display: none;
+}
+
+/* ステータスオーバーレイ */
+.candidate-stats-overlay {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  align-items: end;
+}
+
+.stat-overlay-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+}
+
+.stat-overlay-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-align: center;
+}
+
+.stat-overlay-value {
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-align: center;
+  line-height: 1;
+  margin-bottom: 1px;
+}
+
+.improvement-overlay {
+  color: #4caf50;
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  margin-left: 1px;
+}
+
+.target-overlay-input {
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 3px 4px;
+  text-align: center;
+  width: 100%;
+  max-width: 45px;
+  box-sizing: border-box;
+  height: 22px;
+  backdrop-filter: blur(5px);
+  transition: all 0.2s ease;
+}
+
+.target-overlay-input:focus {
+  outline: none;
+  border-color: rgba(100, 181, 246, 1);
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.05);
+  box-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
+}
+
+.target-overlay-input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.target-overlay-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.55rem;
+  font-weight: 500;
+}
+
+.target-overlay-input::-webkit-outer-spin-button,
+.target-overlay-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.target-overlay-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.fleet-composer.abyssal .target-overlay-input:focus {
+  border-color: rgba(244, 143, 177, 1);
+  box-shadow: 0 0 8px rgba(244, 143, 177, 0.5);
+}
+
 .sidebar-drag-content {
   text-align: center;
   color: rgba(100, 181, 246, 0.9);
@@ -1384,9 +2184,9 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   right: 4px;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: rgba(244, 67, 54, 0.9);
-  color: white;
+  border-radius: 2px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
   border: none;
   cursor: pointer;
   font-size: 10px;
@@ -1396,12 +2196,29 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .remove-button-fleet:hover {
-  background: #f44336;
-  transform: scale(1.1);
+  background: rgba(244, 67, 54, 0.8);
+  color: #fff;
+}
+
+.remove-button-fleet::before,
+.remove-button-fleet::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.remove-button-fleet::before {
+  transform: rotate(45deg);
+}
+
+.remove-button-fleet::after {
+  transform: rotate(-45deg);
 }
 
 /* ===== 育成候補リストサイドバー ===== */
@@ -1469,6 +2286,36 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   flex: 1;
   padding: 16px;
   min-height: 0;
+  max-height: calc(100vh - 200px); /* ヘッダーとタブを除いた高さ */
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+/* スクロールバーのスタイリング */
+.candidates-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.candidates-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.candidates-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 181, 246, 0.5);
+  border-radius: 4px;
+}
+
+.candidates-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 181, 246, 0.7);
+}
+
+.fleet-composer.abyssal .candidates-list::-webkit-scrollbar-thumb {
+  background: rgba(244, 143, 177, 0.5);
+}
+
+.fleet-composer.abyssal .candidates-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(244, 143, 177, 0.7);
 }
 
 .no-candidates {
@@ -1570,19 +2417,41 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
 }
 
 .remove-candidate-btn {
-  background: rgba(244, 67, 54, 0.2);
-  border: 1px solid rgba(244, 67, 54, 0.4);
-  color: #ff6b6b;
-  border-radius: 6px;
-  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .remove-candidate-btn:hover {
-  background: rgba(244, 67, 54, 0.3);
-  transform: scale(1.05);
+  background: rgba(244, 67, 54, 0.8);
+  color: #fff;
+}
+
+.remove-candidate-btn::before,
+.remove-candidate-btn::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.remove-candidate-btn::before {
+  transform: rotate(45deg);
+}
+
+.remove-candidate-btn::after {
+  transform: rotate(-45deg);
 }
 
 /* ドロップゾーン */
