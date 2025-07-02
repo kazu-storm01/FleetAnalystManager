@@ -1049,6 +1049,85 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   }
 }
 
+/* 育成タスクのスタイル */
+.training-task {
+  display: flex;
+  align-items: stretch;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: rgba(0, 50, 100, 0.05);
+  border: 1px solid rgba(100, 181, 246, 0.2);
+  min-height: 80px;
+}
+
+.task-banner {
+  flex-shrink: 0;
+  width: 30%;
+  max-width: 200px;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 6px 0 0 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-banner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.task-content {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 80px;
+}
+
+.training-task .task-content {
+  background: linear-gradient(135deg, rgba(13, 71, 161, 0.1) 0%, rgba(100, 181, 246, 0.05) 100%);
+}
+
+/* 非育成タスクのコンテンツスタイル */
+.task-item:not(.training-task) .task-content {
+  padding: 12px 16px;
+  min-height: auto;
+}
+
+.task-item:not(.training-task) {
+  margin-bottom: 8px;
+}
+
+.training-task {
+  margin-bottom: 8px;
+}
+
+/* 育成タスクのテキストスタイル */
+.training-task .task-text {
+  font-weight: 500;
+  color: inherit;
+}
+
+.training-task .task-text.completed {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* アビサルテーマでの育成タスク */
+[data-theme="abyssal"] .training-task {
+  background-color: rgba(136, 14, 79, 0.05);
+  border-color: rgba(244, 143, 177, 0.2);
+}
+
+[data-theme="abyssal"] .training-task .task-content {
+  background: linear-gradient(135deg, rgba(136, 14, 79, 0.1) 0%, rgba(244, 143, 177, 0.05) 100%);
+}
+
 /* サイドバー開閉ボタン */
 .sidebar-toggle-btn {
   position: fixed;
@@ -2095,14 +2174,14 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 4px;
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 3px 4px;
+  padding: 4px 6px;
   text-align: center;
   width: 100%;
-  max-width: 45px;
+  max-width: 60px;
   box-sizing: border-box;
-  height: 22px;
+  height: 28px;
   backdrop-filter: blur(5px);
   transition: all 0.2s ease;
 }
@@ -2128,12 +2207,13 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
 
 .target-overlay-input::-webkit-outer-spin-button,
 .target-overlay-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
+  -webkit-appearance: auto;
   margin: 0;
+  opacity: 1;
 }
 
 .target-overlay-input[type=number] {
-  -moz-appearance: textfield;
+  -moz-appearance: auto;
 }
 
 .fleet-composer.abyssal .target-overlay-input:focus {
@@ -2148,6 +2228,16 @@ body.dragging-ship .fleet-composer.abyssal .fleet-composition-area {
 
 .fleet-composer.abyssal .sidebar-drag-content {
   color: rgba(244, 143, 177, 0.9);
+}
+
+/* 育成タスクフィルターボタン */
+.training-filter-button.active {
+  background-color: #1890ff;
+  color: white;
+}
+
+.training-filter-button .material-icons {
+  font-size: 18px;
 }
 
 .sidebar-drag-icon {
