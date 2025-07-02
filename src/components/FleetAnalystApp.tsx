@@ -709,7 +709,7 @@ ${applicant.advice}
             disabled={isSelecting || totalApplicants < drawCount}
             className="select-button"
           >
-            {isSelecting ? '⚓ 選出中...' : `🎯 提督を${drawCount}人選出！`}
+            {isSelecting ? <><span className="material-icons">anchor</span> 選出中...</> : `🎯 提督を${drawCount}人選出！`}
           </button>
           <button 
             onClick={() => setSelectedApplicants([])}
@@ -724,7 +724,7 @@ ${applicant.advice}
       {selectedApplicants.length > 0 && (
         <div className="selection-results">
           <div className="results-header">
-            <h2>⚓ 選出された提督たち</h2>
+            <h2><span className="material-icons">anchor</span> 選出された提督たち</h2>
             <div className="results-actions">
               <div className="analysis-progress">
                 分析進捗: {analyzedCount}/{selectedApplicants.length}

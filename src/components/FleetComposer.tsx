@@ -346,6 +346,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>(getTrainingCandidatesFromStorage())
   const [isDroppedOnTrainingCandidates, setIsDroppedOnTrainingCandidates] = useState(false)
   const [sidebarActiveTab, setSidebarActiveTab] = useState<'formations' | 'training'>('formations')
+  const [isDraggingOverTrainingArea, setIsDraggingOverTrainingArea] = useState(false)
+  const [isDraggingShip, setIsDraggingShip] = useState(false)
 
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
@@ -385,6 +387,23 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // 艦娘リストが更新されたときに保存された編成を復元（初回のみ）
   const [hasRestoredComposition, setHasRestoredComposition] = useState(false)
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
+
+  // トースト通知を表示する関数
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+  }
+
+  // トースト通知の自動非表示
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null)
+      }, 3000) // 3秒後に非表示
+      
+      return () => clearTimeout(timer)
+    }
+  }, [toast])
   
   useEffect(() => {
     if (ships.length > 0 && !hasRestoredComposition) {
@@ -523,8 +542,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // ドラッグ開始
   const handleDragStart = (e: React.DragEvent, ship: Ship) => {
+    console.log('🔧 DEBUG: Drag start for ship:', ship.name)
     setDraggedShip(ship)
-    e.dataTransfer.effectAllowed = 'move'
+    setIsDraggingShip(true)
+    setIsDroppedOnTrainingCandidates(false) // 初期化
+    setIsDraggingOverTrainingArea(false)
+    e.dataTransfer.effectAllowed = 'copy' // 'move'から'copy'に変更
     e.dataTransfer.setData('text/plain', ship.id.toString())
     e.dataTransfer.setData('application/json', JSON.stringify(ship))
     document.body.classList.add('dragging-ship')
@@ -561,18 +584,24 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // 画面外ドロップ処理（自動編成）
   const handleDropOutside = () => {
+    console.log('🔧 DEBUG: handleDropOutside called, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
+    
     if (isDroppedOnTrainingCandidates) {
+      console.log('🔧 DEBUG: Skipping auto-placement because dropped on training candidates')
       return
     }
     
     if (draggedShip) {
       const emptySlot = fleetSlots.find(slot => slot.ship === null)
       if (emptySlot) {
+        console.log('🔧 DEBUG: Auto-placing ship:', draggedShip.name)
         setFleetSlots(prev => prev.map(slot => 
           slot.position === emptySlot.position 
             ? { ...slot, ship: draggedShip }
             : slot
         ))
+      } else {
+        console.log('🔧 DEBUG: No empty slot found for auto-placement')
       }
     }
     // 必ずクリーンアップ
@@ -583,24 +612,39 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
 
   // ドラッグ終了
   const handleDragEnd = (e: React.DragEvent) => {
+    console.log('🔧 DEBUG: Drag end started, dropEffect:', e.dataTransfer.dropEffect, 'isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
+    
     setTimeout(() => {
+      console.log('🔧 DEBUG: Drag end timeout, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
+      
+      // 状態リセット
+      setIsDraggingShip(false)
+      setIsDraggingOverTrainingArea(false)
+      
       if (isDroppedOnTrainingCandidates) {
+        console.log('🔧 DEBUG: Resetting training candidates flag')
         setIsDroppedOnTrainingCandidates(false)
       } else if (e.dataTransfer.dropEffect === 'none' && draggedShip) {
+        console.log('🔧 DEBUG: No drop effect detected, calling handleDropOutside')
         handleDropOutside()
+      } else {
+        console.log('🔧 DEBUG: Normal drag end cleanup')
+        setDraggedShip(null)
+        setDragOverSlot(null)
+        document.body.classList.remove('dragging-ship')
       }
-      
-      setDraggedShip(null)
-      setDragOverSlot(null)
-      document.body.classList.remove('dragging-ship')
-    }, 50) // 50ms待つ
+    }, 100) // 100msに延長してイベント順序を確実にする
   }
 
   // 育成候補への追加
   const handleAddToTrainingCandidates = (ship: Ship) => {
+    console.log('🔧 DEBUG: handleAddToTrainingCandidates called for:', ship.name)
+    
     const existing = trainingCandidates.find(c => c.shipId === ship.id)
     if (existing) {
-      alert(`${ship.name} は既に育成候補に登録されています`)
+      // 既に存在する場合でもドロップフラグを設定
+      setIsDroppedOnTrainingCandidates(true)
+      showToast(`${ship.name} は既に育成候補に登録されています`, 'error')
       return
     }
 
@@ -616,8 +660,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     setTrainingCandidates(updatedCandidates)
     saveTrainingCandidatesToStorage(updatedCandidates)
     
+    // ドロップ成功を明示的にマーク
+    setIsDroppedOnTrainingCandidates(true)
+    
     console.log('✅ 育成候補に追加:', ship.name)
-    alert(`${ship.name} を育成候補に追加しました！`)
+    showToast(`${ship.name} を育成候補に追加しました！`)
   }
 
   // 育成候補から削除
@@ -692,7 +739,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       {draggedShip && (
         <div className="drag-hint-overlay">
           <div className="drag-hint-content">
-            <div className="drag-hint-icon">⚓</div>
+            <div className="drag-hint-icon"><span className="material-icons">anchor</span></div>
             <div className="drag-hint-text">
               自動配置
             </div>
@@ -707,17 +754,27 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       <div className="fleet-composition-area"
            onDragOver={(e) => {
              e.preventDefault()
-             e.dataTransfer.dropEffect = 'move'
+             // サイドバーが開いていて育成タブが選択されている場合は、copy効果を維持
+             if (isSidebarOpen && sidebarActiveTab === 'training') {
+               e.dataTransfer.dropEffect = 'copy'
+             } else {
+               e.dataTransfer.dropEffect = 'move'
+             }
            }}
            onDrop={(e) => {
              e.preventDefault()
              
+             console.log('🔧 DEBUG: Drop on fleet-composition-area, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
+             
              if (isDroppedOnTrainingCandidates) {
+               console.log('🔧 DEBUG: Skipping fleet area drop because already dropped on training candidates')
                return
              }
              
-             const isSidebarArea = (e.target as Element).closest('.formation-sidebar, .training-candidates-content, .drop-zone-tab')
+             // サイドバー全体、育成候補エリア、ドロップゾーンを除外
+             const isSidebarArea = (e.target as Element).closest('.formation-sidebar, .training-candidates-content, .drop-zone-tab, .candidates-list, .candidate-item')
              if (!isSidebarArea && (!e.target || !(e.target as Element).closest('.fleet-slot'))) {
+               console.log('🔧 DEBUG: Calling handleDropOutside from fleet-composition-area')
                handleDropOutside()
              }
            }}>
@@ -727,7 +784,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
         <div className="fleet-name-input-area">
           <div className="fleet-name-container">
             <label className="fleet-name-label">
-              <span className="fleet-name-icon">⚓</span>
+              <span className="fleet-name-icon"><span className="material-icons">anchor</span></span>
               編成名
             </label>
             <div className="fleet-name-input-container">
@@ -833,7 +890,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                 <div className="empty-slot-enhanced">
                   <div className="empty-slot-content">
                     <div className="slot-number-enhanced">{slot.position + 1}</div>
-                    <div className="slot-icon">⚓</div>
+                    <div className="slot-icon"><span className="material-icons">anchor</span></div>
                     <div className="slot-text-enhanced">艦娘をドロップ</div>
                     <div className="drop-hint">下から艦娘を<br/>ドラッグしてください</div>
                   </div>
@@ -912,9 +969,18 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           {/* 艦娘一覧（横スクロール） */}
           <div className="ships-horizontal-container" ref={scrollContainerRef}>
             <div className="ships-horizontal-list">
-              {filteredAndSortedShips.length === 0 ? (
+              {!isFullDataLoaded ? (
                 <div className="no-ships-message">
-                  <div className="no-ships-icon">⚓</div>
+                  <div className="no-ships-icon">
+                    <span className="material-icons loading-spin">sync</span>
+                  </div>
+                  <div className="no-ships-text">
+                    艦娘データ読み込み中... {loadingProgress}%
+                  </div>
+                </div>
+              ) : filteredAndSortedShips.length === 0 ? (
+                <div className="no-ships-message">
+                  <div className="no-ships-icon"><span className="material-icons">anchor</span></div>
                   <div className="no-ships-text">
                     {ships.length === 0 
                       ? '艦隊データが読み込まれていません。分析管理で艦隊JSONデータを入力してください。'
@@ -983,22 +1049,39 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
         </div>
       </div>
 
-      {/* フローティングサイドバー開閉アイコン */}
-      <span 
-        className={`floating-sidebar-icon ${isSidebarOpen ? 'open' : 'closed'}`}
+      {/* サイドバー開閉ボタン */}
+      <button 
+        className={`sidebar-toggle-btn ${isSidebarOpen ? 'open' : 'closed'}`}
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+        aria-label={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
       >
-        »
-      </span>
+        <span className="material-icons sidebar-toggle-icon">
+          {isSidebarOpen ? 'close' : 'menu'}
+        </span>
+        <span className="sidebar-toggle-text">
+          {isSidebarOpen ? '閉じる' : '編成管理'}
+        </span>
+      </button>
 
       {/* 統合サイドバー（編成管理 + 育成候補） */}
       <div 
-        className={`formation-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}
+        className={`formation-sidebar ${isSidebarOpen ? 'open' : 'closed'} ${isDraggingShip && sidebarActiveTab === 'training' ? 'drag-over' : ''} ${isDraggingOverTrainingArea ? 'drag-highlight' : ''}`}
         onDragOver={(e) => {
           if (sidebarActiveTab === 'training') {
             e.preventDefault()
+            e.stopPropagation()
             e.dataTransfer.dropEffect = 'copy'
+            setIsDraggingOverTrainingArea(true)
+            console.log('🔧 DEBUG: Drag over formation-sidebar (training mode)')
+          }
+        }}
+        onDragLeave={(e) => {
+          if (sidebarActiveTab === 'training') {
+            const relatedTarget = e.relatedTarget as Element
+            if (!relatedTarget || !relatedTarget.closest('.formation-sidebar')) {
+              setIsDraggingOverTrainingArea(false)
+            }
           }
         }}
         onDrop={(e) => {
@@ -1006,20 +1089,24 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
             e.preventDefault()
             e.stopPropagation()
             
+            console.log('🔧 DEBUG: Drop on formation-sidebar (training tab)');
             setIsDroppedOnTrainingCandidates(true)
             
-            if (draggedShip) {
-              handleAddToTrainingCandidates(draggedShip)
-            } else {
+            let shipToAdd = draggedShip
+            
+            if (!shipToAdd) {
               try {
                 const shipData = e.dataTransfer.getData('application/json')
                 if (shipData) {
-                  const ship = JSON.parse(shipData)
-                  handleAddToTrainingCandidates(ship)
+                  shipToAdd = JSON.parse(shipData)
                 }
               } catch (error) {
                 console.log('❌ dataTransferからの艦娘データ取得に失敗:', error)
               }
+            }
+            
+            if (shipToAdd) {
+              handleAddToTrainingCandidates(shipToAdd)
             }
           }
         }}
@@ -1042,7 +1129,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
             className={`sidebar-tab ${sidebarActiveTab === 'formations' ? 'active' : ''}`}
             onClick={() => setSidebarActiveTab('formations')}
           >
-            ⚓ 編成管理
+            <span className="material-icons">anchor</span> 編成管理
           </button>
           <button 
             className={`sidebar-tab ${sidebarActiveTab === 'training' ? 'active' : ''}`}
@@ -1054,6 +1141,18 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
         
         {/* タブコンテンツ */}
         <div className="sidebar-content">
+          {/* ドラッグ中のオーバーレイヒント */}
+          {isDraggingShip && sidebarActiveTab === 'training' && (
+            <div className="sidebar-drag-overlay">
+              <div className="sidebar-drag-content">
+                <span className="material-icons sidebar-drag-icon">add_circle</span>
+                <div className="sidebar-drag-text">
+                  {draggedShip?.name}を<br/>育成候補に追加
+                </div>
+              </div>
+            </div>
+          )}
+          
           {sidebarActiveTab === 'formations' ? (
             <div className="formation-list">
               {savedFormations.length === 0 ? (
@@ -1097,23 +1196,28 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
               className="training-candidates-content"
               onDragOver={(e) => {
                 e.preventDefault()
+                e.stopPropagation()
                 e.dataTransfer.dropEffect = 'copy'
+                setIsDraggingOverTrainingArea(true)
+                console.log('🔧 DEBUG: Drag over training-candidates-content')
               }}
               onDragEnter={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                setIsDroppedOnTrainingCandidates(true)
+                setIsDraggingOverTrainingArea(true)
+                console.log('🔧 DEBUG: Drag enter training-candidates-content')
               }}
               onDragLeave={(e) => {
                 const relatedTarget = e.relatedTarget as Element
                 if (!relatedTarget || !relatedTarget.closest('.formation-sidebar')) {
+                  console.log('🔧 DEBUG: Drag leave training-candidates-content')
                   setIsDroppedOnTrainingCandidates(false)
                 }
               }}
               onDrop={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('🐛 DEBUG: Drop event on training tab')
+                console.log('🔧 DEBUG: Drop event on training-candidates-content')
                 
                 setIsDroppedOnTrainingCandidates(true)
                 
@@ -1135,35 +1239,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                 }
               }}
             >
-              {/* テストボタン */}
-              <div style={{ padding: '10px', borderBottom: '1px solid rgba(100, 181, 246, 0.3)', marginBottom: '10px' }}>
-                <button 
-                  onClick={() => {
-                    if (ships.length > 0) {
-                      handleAddToTrainingCandidates(ships[0])
-                    } else {
-                      alert('艦娘データが読み込まれていません。先に艦隊データを入力してください。')
-                    }
-                  }}
-                  style={{ 
-                    background: 'rgba(46, 125, 50, 0.3)', 
-                    border: '1px solid rgba(76, 175, 80, 0.5)',
-                    color: '#e8f5e8',
-                    padding: '8px 12px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  ✅ テスト: 最初の艦娘を追加
-                </button>
-              </div>
               
               <div className="candidates-list">
                 {trainingCandidates.length === 0 ? (
                   <div className="no-candidates">
-                    <div className="no-candidates-icon">⚓</div>
+                    <div className="no-candidates-icon"><span className="material-icons">anchor</span></div>
                     <div className="no-candidates-text">
                       育成候補がありません<br/>
                       艦娘をここにドラッグして追加してください
@@ -1200,51 +1280,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                   })
                 )}
               </div>
-              
-              {/* ドロップゾーン */}
-              <div 
-                className="drop-zone-tab"
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  e.dataTransfer.dropEffect = 'copy'
-                }}
-                onDragEnter={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setIsDroppedOnTrainingCandidates(true)
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  
-                  setIsDroppedOnTrainingCandidates(true)
-                  
-                  let shipToAdd = draggedShip
-                  
-                  if (!shipToAdd) {
-                    try {
-                      const shipData = e.dataTransfer.getData('application/json')
-                      if (shipData) {
-                        shipToAdd = JSON.parse(shipData)
-                      }
-                    } catch (error) {
-                      console.log('❌ Failed to parse ship data:', error)
-                    }
-                  }
-                  
-                  if (shipToAdd) {
-                    handleAddToTrainingCandidates(shipToAdd)
-                  }
-                }}
-              >
-                <div className="drop-zone-content">
-                  <div className="drop-zone-icon">📚</div>
-                  <div className="drop-zone-text">
-                    育成したい艦娘を<br/>ここにドロップ
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -1258,6 +1293,13 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
           className="drawer-overlay"
           onClick={() => setIsDrawerOpen(false)}
         />
+      )}
+
+      {/* トースト通知 */}
+      {toast && (
+        <div className={`toast ${toast.type}`}>
+          {toast.message}
+        </div>
       )}
     </div>
   )

@@ -1003,7 +1003,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       {/* ダッシュボードヘッダー */}
       {latestEntry && (
         <div className="dashboard-header">
-          <h2>⚓ {admiralName} のダッシュボード</h2>
+          <h2><span className="material-icons">anchor</span> {admiralName} のダッシュボード</h2>
           
           {/* アクションボタン */}
           <div className="dashboard-actions">
