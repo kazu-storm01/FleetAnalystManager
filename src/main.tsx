@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode> // 一時的に無効化してテスト
     <App />
-  </StrictMode>,
+  // </StrictMode>,
 )
