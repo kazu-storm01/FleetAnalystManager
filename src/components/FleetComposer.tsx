@@ -210,7 +210,8 @@ interface SavedFormation {
 // 育成候補の型定義
 interface TrainingCandidate {
   id: number
-  shipId: number
+  instanceId: number // 固有インスタンスID（同名別艦娘を区別）
+  shipId: number     // マスターデータ参照用
   name: string
   level: number
   addedAt: string
@@ -459,7 +460,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
 
-  // タスク連動のチェック（定期実行）
+  // タスク連動のチェック（定期実行） - 達成チェックと自動削除
   useEffect(() => {
     if (!isFullDataLoaded || trainingCandidates.length === 0) return
     
@@ -468,7 +469,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       const updatedCandidates = trainingCandidates.map(candidate => {
         if (!candidate.mainTaskId) return candidate
         
-        const ship = ships.find(s => s.shipId === candidate.shipId)
+        const ship = ships.find(s => s.id === candidate.instanceId)
         if (!ship) return candidate
         
         // メインタスクが存在するかチェック
@@ -478,26 +479,48 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
         
         if (!taskExists) {
           // メインタスクが削除されているか完了している場合、育成候補も削除
+          console.log(`✅ 育成タスク完了により削除: ${candidate.name}`)
+          // showToast(`${candidate.name}の育成タスクが完了したため、育成候補から削除しました`)
           return null // 削除マーク
         }
         
-        // 目標達成チェック（すべての目標が達成されたらタスク完了）
-        let allTargetsAchieved = false
-        const hasTargets = candidate.targetLevel || candidate.targetHp || candidate.targetAsw || candidate.targetLuck
+        // 目標達成チェック
+        let allTargetsAchieved = true
+        let hasAnyTarget = false
         
-        if (hasTargets) {
-          const levelAchieved = !candidate.targetLevel || ship.level >= candidate.targetLevel
-          const hpAchieved = !candidate.targetHp || ship.currentStats.hp >= candidate.targetHp
-          const aswAchieved = !candidate.targetAsw || ship.currentStats.asw >= candidate.targetAsw
-          const luckAchieved = !candidate.targetLuck || ship.currentStats.luck >= candidate.targetLuck
-          
-          allTargetsAchieved = levelAchieved && hpAchieved && aswAchieved && luckAchieved
+        if (candidate.targetLevel && candidate.targetLevel > ship.level) {
+          allTargetsAchieved = false
+          hasAnyTarget = true
+        }
+        if (candidate.targetHp && candidate.targetHp > ship.currentStats.hp) {
+          allTargetsAchieved = false
+          hasAnyTarget = true
+        }
+        if (candidate.targetAsw && candidate.targetAsw > ship.currentStats.asw) {
+          allTargetsAchieved = false
+          hasAnyTarget = true
+        }
+        if (candidate.targetLuck && candidate.targetLuck > ship.currentStats.luck) {
+          allTargetsAchieved = false
+          hasAnyTarget = true
         }
         
-        if (allTargetsAchieved) {
-          // すべての目標達成時はタスクを完了にマーク
-          markTaskAsCompleted(candidate.mainTaskId)
-          showToast(`${candidate.name}の育成目標を達成しました！`)
+        // 目標がすべて達成されている場合、タスクを完了にして育成候補を削除
+        if (hasAnyTarget && allTargetsAchieved) {
+          // タスクを完了にマーク
+          entries.forEach((entry: any) => {
+            if (entry.tasks) {
+              entry.tasks.forEach((task: any) => {
+                if (task.id === candidate.mainTaskId) {
+                  task.completed = true
+                }
+              })
+            }
+          })
+          saveFleetEntriesToStorage(entries)
+          
+          console.log(`🎯 全目標達成により削除: ${candidate.name}`)
+          // showToast(`${candidate.name}がすべての育成目標を達成したため、育成候補から削除しました`)
           return null // 削除マーク
         }
         
@@ -542,36 +565,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   }, [isSidebarOpen, pendingTaskUpdates, trainingCandidates])
 
 
-  // 目標達成チェック
-  const checkTargetAchieved = (candidate: TrainingCandidate, ship: Ship, targetType: string): boolean => {
-    switch (targetType) {
-      case 'level':
-        return candidate.targetLevel ? ship.level >= candidate.targetLevel : false
-      case 'hp':
-        return candidate.targetHp ? ship.currentStats.hp >= candidate.targetHp : false
-      case 'asw':
-        return candidate.targetAsw ? ship.currentStats.asw >= candidate.targetAsw : false
-      case 'luck':
-        return candidate.targetLuck ? ship.currentStats.luck >= candidate.targetLuck : false
-      default:
-        return false
-    }
-  }
 
-  // タスクを完了にマーク
-  const markTaskAsCompleted = (taskId: number) => {
-    const entries = getFleetEntriesFromStorage()
-    entries.forEach((entry: any) => {
-      if (entry.tasks) {
-        entry.tasks.forEach((task: any) => {
-          if (task.id === taskId) {
-            task.completed = true
-          }
-        })
-      }
-    })
-    saveFleetEntriesToStorage(entries)
-  }
 
   // コンポーネント初期化時にLocalStorageからデータを復元（初回のみ）
   useEffect(() => {
@@ -589,6 +583,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     setSavedFormations(formations)
   }, []) // 初回のみ実行
 
+
   // 艦隊データが変更された時に艦娘リストを更新
   useEffect(() => {
     if (!isFullDataLoaded) return // データが読み込まれていない場合は処理しない
@@ -598,13 +593,20 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       const parsedShips = parseFleetData(currentFleetData, getShipData)
       setShips(parsedShips)
       
+      // 新しいAPIデータが来た場合、育成候補の達成チェックを即座に実行
+      if (fleetData && fleetData !== storedFleetData && trainingCandidates.length > 0) {
+        setTimeout(() => {
+          checkAchievementsForCandidates(parsedShips, trainingCandidates)
+        }, 1000) // 1秒後に達成チェック実行
+      }
+      
       // 新しいAPIデータが来た場合のみ保存
       if (fleetData && fleetData !== storedFleetData) {
         saveFleetDataToStorage(fleetData)
         setStoredFleetData(fleetData)
       }
     }
-  }, [fleetData, isFullDataLoaded]) // getShipDataとstoredFleetDataを除去して無限ループを防止
+  }, [fleetData, isFullDataLoaded, trainingCandidates])
 
   // 艦娘リストが更新されたときに保存された編成を復元（初回のみ）
   const [hasRestoredComposition, setHasRestoredComposition] = useState(false)
@@ -654,6 +656,65 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       return () => clearTimeout(saveTimer)
     }
   }, [fleetSlots, fleetName, hasRestoredComposition]) // shipsを除去して無限ループを防止
+
+  // 育成候補の達成チェック専用関数
+  const checkAchievementsForCandidates = (currentShips: Ship[], currentCandidates: TrainingCandidate[]) => {
+    const entries = getFleetEntriesFromStorage()
+    const updatedCandidates = currentCandidates.map(candidate => {
+      if (!candidate.mainTaskId) return candidate
+      
+      const ship = currentShips.find(s => s.id === candidate.instanceId)
+      if (!ship) return candidate
+      
+      // 目標達成チェック
+      let allTargetsAchieved = true
+      let hasAnyTarget = false
+      
+      if (candidate.targetLevel && candidate.targetLevel > ship.level) {
+        allTargetsAchieved = false
+        hasAnyTarget = true
+      }
+      if (candidate.targetHp && candidate.targetHp > ship.currentStats.hp) {
+        allTargetsAchieved = false
+        hasAnyTarget = true
+      }
+      if (candidate.targetAsw && candidate.targetAsw > ship.currentStats.asw) {
+        allTargetsAchieved = false
+        hasAnyTarget = true
+      }
+      if (candidate.targetLuck && candidate.targetLuck > ship.currentStats.luck) {
+        allTargetsAchieved = false
+        hasAnyTarget = true
+      }
+      
+      // 目標がすべて達成されている場合、タスクを完了にして育成候補を削除
+      if (hasAnyTarget && allTargetsAchieved) {
+        // タスクを完了にマーク
+        entries.forEach((entry: any) => {
+          if (entry.tasks) {
+            entry.tasks.forEach((task: any) => {
+              if (task.id === candidate.mainTaskId) {
+                task.completed = true
+              }
+            })
+          }
+        })
+        saveFleetEntriesToStorage(entries)
+        
+        console.log(`🎯 新APIデータにより全目標達成を検出: ${candidate.name}`)
+        // showToast(`${candidate.name}がすべての育成目標を達成しました！育成候補から削除します`)
+        return null // 削除マーク
+      }
+      
+      return candidate
+    }).filter(candidate => candidate !== null) // 削除マークされたものを除外
+    
+    // 変更があった場合のみ更新
+    if (updatedCandidates.length !== currentCandidates.length) {
+      setTrainingCandidates(updatedCandidates)
+      saveTrainingCandidatesToStorage(updatedCandidates)
+    }
+  }
 
   // ソート関数
   const sortShips = (ships: Ship[], sortType: string): Ship[] => {
@@ -899,7 +960,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const handleAddToTrainingCandidates = (ship: Ship) => {
     console.log('🔧 DEBUG: handleAddToTrainingCandidates called for:', ship.name)
     
-    const existing = trainingCandidates.find(c => c.shipId === ship.shipId)
+    const existing = trainingCandidates.find(c => c.instanceId === ship.id)
     if (existing) {
       // 既に存在する場合でもドロップフラグを設定
       setIsDroppedOnTrainingCandidates(true)
@@ -913,7 +974,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     
     const newCandidate: TrainingCandidate = {
       id: Date.now(),
-      shipId: ship.shipId, // ship.id から ship.shipId に変更
+      instanceId: ship.id, // 固有インスタンスIDを使用
+      shipId: ship.shipId, // マスターデータ参照用
       name: ship.name,
       level: ship.level,
       addedAt: new Date().toISOString(),
@@ -958,10 +1020,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     showToast(`${candidate?.name || '艦娘'}を育成候補から削除し、関連タスクも削除しました`)
   }
 
-  // タスク更新を保留リストに追加
-  const addToPendingTaskUpdates = (candidateId: number) => {
-    setPendingTaskUpdates(prev => new Set([...prev, candidateId]))
-  }
 
   // サイドバーを閉じる処理（タスク更新込み）
   const closeSidebar = () => {
@@ -987,7 +1045,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     const candidate = trainingCandidates.find(c => c.id === candidateId)
     if (!candidate) return
 
-    // まず目標値だけを即座に更新
+    // 目標値だけを更新（タスクは更新しない）
     const updatedCandidates = trainingCandidates.map(existingCandidate => {
       if (existingCandidate.id !== candidateId) return existingCandidate
       return { ...existingCandidate, ...targets }
@@ -995,16 +1053,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     
     setTrainingCandidates(updatedCandidates)
     saveTrainingCandidatesToStorage(updatedCandidates)
-    
-    // タスク更新を保留リストに追加（サイドバーが開いている場合のみ）
-    if (isSidebarOpen && candidate.mainTaskId) {
-      addToPendingTaskUpdates(candidateId)
-    }
   }
 
   // メインタスクテキストを生成
   const createMainTaskText = (candidate: TrainingCandidate): string => {
-    const ship = ships.find(s => s.shipId === candidate.shipId)
+    const ship = ships.find(s => s.id === candidate.instanceId)
     if (!ship) return `${candidate.name}を育成する`
     
     const targets: string[] = []
@@ -1029,37 +1082,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     return `${candidate.name}を育成する（${targets.join('、')}）`
   }
 
-  // タスクテキストを生成
-  const createTaskText = (shipName: string, targetKey: string, targetValue: number, currentValue: number): string => {
-    const labels: { [key: string]: string } = {
-      targetLevel: 'レベル',
-      targetHp: '耐久',
-      targetAsw: '対潜',
-      targetLuck: '運'
-    }
-    
-    const label = labels[targetKey] || targetKey
-    return `${shipName} ${label}${currentValue}→${targetValue}に育成`
-  }
 
-  // 現在値を取得
-  const getCurrentValue = (candidate: TrainingCandidate, targetKey: string): number => {
-    const ship = ships.find(s => s.shipId === candidate.shipId)
-    if (!ship) return candidate.level // フォールバック
-    
-    switch (targetKey) {
-      case 'targetLevel':
-        return ship.level
-      case 'targetHp':
-        return ship.currentStats.hp
-      case 'targetAsw':
-        return ship.currentStats.asw
-      case 'targetLuck':
-        return ship.currentStats.luck
-      default:
-        return 0
-    }
-  }
 
   // スロットクリア
   const clearSlot = (position: number) => {
@@ -1717,7 +1740,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                   </div>
                 ) : (
                   trainingCandidates.map(candidate => {
-                    const ship = ships.find(s => s.shipId === candidate.shipId)
+                    const ship = ships.find(s => s.id === candidate.instanceId)
                     return (
                       <div key={candidate.id} className="training-candidate-banner">
                         <div 
@@ -1745,21 +1768,30 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                               {/* レベル */}
                               <div className="stat-overlay-item">
                                 <div className="stat-overlay-label">Lv</div>
-                                <div className="stat-overlay-value">{ship?.level || candidate.level}</div>
                                 <input 
                                   type="number"
                                   className="target-overlay-input"
                                   placeholder="目標"
-                                  min="1"
-                                  max="180"
-                                  value={candidate.targetLevel || ''}
-                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
-                                    targetLevel: e.target.value ? parseInt(e.target.value) : undefined
-                                  })}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      const nextInput = e.currentTarget.closest('.candidate-stats-overlay')?.querySelector('.stat-overlay-item:nth-child(2) input') as HTMLInputElement
-                                      nextInput?.focus()
+                                  min={ship?.level || candidate.level || 1}
+                                  max="185"
+                                  step="1"
+                                  value={candidate.targetLevel !== undefined ? candidate.targetLevel : (ship?.level || candidate.level || '')}
+                                  onKeyDown={(e) => e.preventDefault()}
+                                  onPaste={(e) => e.preventDefault()}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value)
+                                    const minValue = ship?.level || candidate.level || 1
+                                    if (value >= minValue && value <= 185) {
+                                      updateTrainingCandidateTargets(candidate.id, {
+                                        targetLevel: value
+                                      })
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if (candidate.mainTaskId) {
+                                      const newTaskText = createMainTaskText(candidate)
+                                      updateTaskText(candidate.mainTaskId, newTaskText)
+                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
                                     }
                                   }}
                                 />
@@ -1768,24 +1800,43 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                               {/* 耐久 */}
                               <div className="stat-overlay-item">
                                 <div className="stat-overlay-label">耐久</div>
-                                <div className="stat-overlay-value">
-                                  {ship?.currentStats.hp || '--'}
-                                  {ship?.improvements.hp > 0 && <span className="improvement-overlay">+{ship.improvements.hp}</span>}
-                                </div>
                                 <input 
                                   type="number"
                                   className="target-overlay-input"
                                   placeholder="目標"
-                                  min="0"
-                                  max="99"
-                                  value={candidate.targetHp || ''}
-                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
-                                    targetHp: e.target.value ? parseInt(e.target.value) : undefined
-                                  })}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      const nextInput = e.currentTarget.closest('.candidate-stats-overlay')?.querySelector('.stat-overlay-item:nth-child(3) input') as HTMLInputElement
-                                      nextInput?.focus()
+                                  min={ship?.currentStats.hp || 0}
+                                  max={(() => {
+                                    const currentHp = ship?.currentStats.hp || 0
+                                    const hpImprovement = ship?.improvements?.hp || 0
+                                    const baseHp = currentHp - hpImprovement
+                                    if (baseHp <= 0) return currentHp
+                                    return baseHp + 2 // 耐久は通常+2まで改修可能
+                                  })()}
+                                  step="1"
+                                  value={candidate.targetHp !== undefined ? candidate.targetHp : (ship?.currentStats.hp !== undefined ? ship.currentStats.hp : '')}
+                                  onKeyDown={(e) => e.preventDefault()}
+                                  onPaste={(e) => e.preventDefault()}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value)
+                                    const minValue = ship?.currentStats.hp || 0
+                                    const currentHp = ship?.currentStats.hp || 0
+                                    const hpImprovement = ship?.improvements?.hp || 0
+                                    const baseHp = currentHp - hpImprovement
+                                    let maxValue = currentHp
+                                    if (baseHp > 0) {
+                                      maxValue = baseHp + 2 // 耐久は通常+2まで改修可能
+                                    }
+                                    if (value >= minValue && value <= maxValue) {
+                                      updateTrainingCandidateTargets(candidate.id, {
+                                        targetHp: value
+                                      })
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if (candidate.mainTaskId) {
+                                      const newTaskText = createMainTaskText(candidate)
+                                      updateTaskText(candidate.mainTaskId, newTaskText)
+                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
                                     }
                                   }}
                                 />
@@ -1794,24 +1845,43 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                               {/* 対潜 */}
                               <div className="stat-overlay-item">
                                 <div className="stat-overlay-label">対潜</div>
-                                <div className="stat-overlay-value">
-                                  {ship?.currentStats.asw || '--'}
-                                  {ship?.improvements.asw > 0 && <span className="improvement-overlay">+{ship.improvements.asw}</span>}
-                                </div>
                                 <input 
                                   type="number"
                                   className="target-overlay-input"
                                   placeholder="目標"
-                                  min="0"
-                                  max="200"
-                                  value={candidate.targetAsw || ''}
-                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
-                                    targetAsw: e.target.value ? parseInt(e.target.value) : undefined
-                                  })}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      const nextInput = e.currentTarget.closest('.candidate-stats-overlay')?.querySelector('.stat-overlay-item:nth-child(4) input') as HTMLInputElement
-                                      nextInput?.focus()
+                                  min={ship?.currentStats.asw || 0}
+                                  max={(() => {
+                                    const currentAsw = ship?.currentStats.asw || 0
+                                    const aswImprovement = ship?.improvements?.asw || 0
+                                    const baseAsw = currentAsw - aswImprovement
+                                    if (baseAsw <= 0) return 0
+                                    return baseAsw + 9
+                                  })()}
+                                  step="1"
+                                  value={candidate.targetAsw !== undefined ? candidate.targetAsw : (ship?.currentStats.asw !== undefined ? ship.currentStats.asw : '')}
+                                  onKeyDown={(e) => e.preventDefault()}
+                                  onPaste={(e) => e.preventDefault()}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value)
+                                    const minValue = ship?.currentStats.asw || 0
+                                    const currentAsw = ship?.currentStats.asw || 0
+                                    const aswImprovement = ship?.improvements?.asw || 0
+                                    const baseAsw = currentAsw - aswImprovement
+                                    let maxValue = 0
+                                    if (baseAsw > 0) {
+                                      maxValue = baseAsw + 9
+                                    }
+                                    if (value >= minValue && value <= maxValue) {
+                                      updateTrainingCandidateTargets(candidate.id, {
+                                        targetAsw: value
+                                      })
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if (candidate.mainTaskId) {
+                                      const newTaskText = createMainTaskText(candidate)
+                                      updateTaskText(candidate.mainTaskId, newTaskText)
+                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
                                     }
                                   }}
                                 />
@@ -1820,27 +1890,35 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
                               {/* 運 */}
                               <div className="stat-overlay-item">
                                 <div className="stat-overlay-label">運</div>
-                                <div className="stat-overlay-value">
-                                  {ship?.currentStats.luck || '--'}
-                                  {ship?.improvements.luck > 0 && <span className="improvement-overlay">+{ship.improvements.luck}</span>}
-                                </div>
                                 <input 
                                   type="number"
                                   className="target-overlay-input"
                                   placeholder="目標"
-                                  min="0"
-                                  max="100"
-                                  value={candidate.targetLuck || ''}
-                                  onChange={(e) => updateTrainingCandidateTargets(candidate.id, {
-                                    targetLuck: e.target.value ? parseInt(e.target.value) : undefined
-                                  })}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      // 最後の入力欄なので、次の候補の最初の入力欄にフォーカス
-                                      const nextCandidate = e.currentTarget.closest('.training-candidate-banner')?.nextElementSibling?.querySelector('.stat-overlay-item:first-child input') as HTMLInputElement
-                                      if (nextCandidate) {
-                                        nextCandidate.focus()
-                                      }
+                                  min={ship?.currentStats.luck || 0}
+                                  max={(() => {
+                                    const masterData = getShipData(candidate.shipId)
+                                    return masterData.initialStats.luckMax || 100
+                                  })()}
+                                  step="1"
+                                  value={candidate.targetLuck !== undefined ? candidate.targetLuck : (ship?.currentStats.luck !== undefined ? ship.currentStats.luck : '')}
+                                  onKeyDown={(e) => e.preventDefault()}
+                                  onPaste={(e) => e.preventDefault()}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value)
+                                    const minValue = ship?.currentStats.luck || 0
+                                    const masterData = getShipData(candidate.shipId)
+                                    const maxValue = masterData.initialStats.luckMax || 100
+                                    if (value >= minValue && value <= maxValue) {
+                                      updateTrainingCandidateTargets(candidate.id, {
+                                        targetLuck: value
+                                      })
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if (candidate.mainTaskId) {
+                                      const newTaskText = createMainTaskText(candidate)
+                                      updateTaskText(candidate.mainTaskId, newTaskText)
+                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
                                     }
                                   }}
                                 />

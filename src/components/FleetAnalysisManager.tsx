@@ -55,8 +55,10 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   const [tempUrl, setTempUrl] = useState<string>('')
   const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married' | 'luck' | 'hp' | 'asw'>('exp')
   const [privacyMode, setPrivacyMode] = useState<boolean | null>(null)
+  const [showTrainingTasksOnly, setShowTrainingTasksOnly] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fleetEntriesRef = useRef<FleetEntry[]>([])
   const ITEMS_PER_PAGE = 10
 
 
@@ -175,6 +177,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           // 即座にローカルストレージに保存
           localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
           
+          // 目標達成チェックを実行
+          checkTrainingGoalAchievements(pastedData)
+          
           if (inheritedTasks.length > 0) {
             showToast(theme === 'shipgirl' ? `艦隊データ登録完了！未達成タスク${inheritedTasks.length}件を引き継ぎました` : `艦隊データ登録完了！未達成任務${inheritedTasks.length}件ヲ引キ継ギタ`, 'success')
           } else {
@@ -241,6 +246,26 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       }
     }
 
+    // FleetComposerからのカスタムイベントを監視（即座の同期）
+    const handleFleetEntriesUpdated = (event: CustomEvent) => {
+      console.log('📨 FleetAnalysisManagerでカスタムイベントを受信:', event.detail)
+      try {
+        const { updatedEntries, updatedTaskId } = event.detail
+        if (updatedEntries) {
+          const processedEntries = updatedEntries.map((entry: FleetEntry) => ({
+            ...entry,
+            luckModTotal: entry.luckModTotal ?? 0,
+            hpModTotal: entry.hpModTotal ?? 0,
+            aswModTotal: entry.aswModTotal ?? 0
+          }))
+          setFleetEntries(processedEntries)
+          console.log('🔄 艦隊エントリーがカスタムイベントで即座に更新されました, taskId:', updatedTaskId)
+        }
+      } catch (error) {
+        console.error('カスタムイベント処理に失敗:', error)
+      }
+    }
+
     // 同一タブ内での変更を検知するために定期チェックも追加
     const checkForUpdates = () => {
       const saved = localStorage.getItem(`${admiralName}_fleetEntries`)
@@ -266,14 +291,17 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       }
     }
 
+    console.log('🎧 FleetAnalysisManagerでイベントリスナーを登録, admiral:', admiralName)
     window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
     const interval = setInterval(checkForUpdates, 2000) // 2秒間隔でチェック
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
       clearInterval(interval)
     }
-  }, [admiralName, fleetEntries])
+  }, [admiralName])
 
   // 艦隊エントリーの読み込み
   const loadFleetEntries = (admiral: string) => {
@@ -505,7 +533,131 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   )
   const getPendingTasks = () => {
     const latestEntry = fleetEntries.find(entry => entry.isLatest)
-    return latestEntry ? latestEntry.tasks.filter(task => !task.completed).length : 0
+    if (!latestEntry) return 0
+    const filteredTasks = filterTasksForDisplay(latestEntry.tasks)
+    return filteredTasks.filter(task => !task.completed).length
+  }
+
+  // 育成候補リストのmainTaskIdを取得
+  const getTrainingCandidatesMainTaskIds = (): number[] => {
+    try {
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (!stored) return []
+      
+      const candidates = JSON.parse(stored)
+      return candidates
+        .filter((candidate: any) => candidate.mainTaskId)
+        .map((candidate: any) => candidate.mainTaskId)
+    } catch (error) {
+      console.error('Training candidates data load failed:', error)
+      return []
+    }
+  }
+
+  // 育成候補タスクのフィルタリング
+  const filterTasksForDisplay = (tasks: Task[]): Task[] => {
+    if (!showTrainingTasksOnly) return tasks
+    
+    const trainingTaskIds = getTrainingCandidatesMainTaskIds()
+    return tasks.filter(task => trainingTaskIds.includes(task.id))
+  }
+
+  // 育成タスクかどうかの判定
+  const isTrainingTask = (taskId: number, originalTaskId?: number): boolean => {
+    const trainingTaskIds = getTrainingCandidatesMainTaskIds()
+    return trainingTaskIds.includes(taskId) || 
+           (originalTaskId && trainingTaskIds.includes(originalTaskId))
+  }
+
+  // 育成タスクの艦娘shipIdを取得
+  const getTrainingTaskShipId = (taskId: number, originalTaskId?: number): number | null => {
+    try {
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (!stored) return null
+      
+      const candidates = JSON.parse(stored)
+      // まず現在のtaskIdで検索、見つからなければoriginalTaskIdで検索
+      let candidate = candidates.find((c: any) => c.mainTaskId === taskId)
+      if (!candidate && originalTaskId) {
+        candidate = candidates.find((c: any) => c.mainTaskId === originalTaskId)
+      }
+      return candidate ? candidate.shipId : null
+    } catch (error) {
+      console.error('Training task ship ID retrieval failed:', error)
+      return null
+    }
+  }
+
+  // 育成目標達成チェック機能
+  const checkTrainingGoalAchievements = (jsonData: string) => {
+    try {
+      // 育成候補を取得
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (!stored) return
+      
+      const trainingCandidates = JSON.parse(stored)
+      if (trainingCandidates.length === 0) return
+      
+      // 艦隊データをパース
+      const data = JSON.parse(jsonData)
+      const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
+      
+      let achievedCount = 0
+      
+      trainingCandidates.forEach((candidate: any) => {
+        const ship = ships.find((s: any) => s.api_id === candidate.instanceId || s.id === candidate.instanceId)
+        if (!ship || !candidate.mainTaskId) return
+        
+        // 現在のステータスを取得
+        const level = ship.api_lv || ship.lv || 0
+        const hp = ship.api_maxhp || ship.maxhp || 0
+        const asw = ship.api_taisen?.[0] || ship.taisen?.[0] || 0
+        const luck = ship.api_lucky?.[0] || ship.lucky?.[0] || 0
+        
+        // 目標達成チェック
+        const levelAchieved = !candidate.targetLevel || level >= candidate.targetLevel
+        const hpAchieved = !candidate.targetHp || hp >= candidate.targetHp  
+        const aswAchieved = !candidate.targetAsw || asw >= candidate.targetAsw
+        const luckAchieved = !candidate.targetLuck || luck >= candidate.targetLuck
+        
+        const allTargetsAchieved = levelAchieved && hpAchieved && aswAchieved && luckAchieved
+        
+        if (allTargetsAchieved) {
+          // タスクを完了状態に更新（引き継いだタスクも含む）
+          markTrainingTaskAsCompleted(candidate.mainTaskId)
+          achievedCount++
+        }
+      })
+      
+      // 達成があった場合は通知
+      if (achievedCount > 0) {
+        showToast(theme === 'shipgirl' ? `${achievedCount}件の育成目標を達成しました！` : `${achievedCount}件ノ育成目標ヲ達成シマシタ！`, 'success')
+      }
+      
+    } catch (error) {
+      console.error('Training goal achievement check failed:', error)
+    }
+  }
+
+  // 育成タスクを完了にマーク（引き継いだタスクも含む）
+  const markTrainingTaskAsCompleted = (taskId: number) => {
+    const updatedEntries = fleetEntries.map(entry => {
+      const updatedTasks = entry.tasks.map(task => {
+        // メインタスクの完了
+        if (task.id === taskId) {
+          return { ...task, completed: true }
+        }
+        // 引き継いだタスクの完了（originalTaskIdが一致するもの）
+        else if (task.originalTaskId === taskId) {
+          return { ...task, completed: true }
+        }
+        return task
+      })
+      return { ...entry, tasks: updatedTasks }
+    })
+    
+    setFleetEntries(updatedEntries)
+    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
   }
 
   // 差分計算
@@ -598,11 +750,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
 
 
 
-  // タスク進捗計算
+  // タスク進捗計算（フィルタリング対応）
   const getTaskProgress = (tasks: Task[]) => {
-    if (tasks.length === 0) return { completed: 0, total: 0, percentage: 0 }
-    const completed = tasks.filter(t => t.completed).length
-    const total = tasks.length
+    const filteredTasks = filterTasksForDisplay(tasks)
+    if (filteredTasks.length === 0) return { completed: 0, total: 0, percentage: 0 }
+    const completed = filteredTasks.filter(t => t.completed).length
+    const total = filteredTasks.length
     const percentage = Math.round((completed / total) * 100)
     return { completed, total, percentage }
   }
@@ -1064,6 +1217,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           {/* アクションボタン */}
           <div className="dashboard-actions">
             <button 
+              onClick={() => setShowTrainingTasksOnly(!showTrainingTasksOnly)} 
+              className={`action-button training-filter-button ${showTrainingTasksOnly ? 'active' : ''}`}
+              title={theme === 'shipgirl' ? (showTrainingTasksOnly ? '全タスク表示' : '育成タスクのみ表示') : (showTrainingTasksOnly ? '全任務表示' : '育成任務ノミ表示')}
+            >
+              <span className="material-icons">{showTrainingTasksOnly ? 'filter_list_off' : 'filter_list'}</span>
+            </button>
+            <button 
               onClick={() => setPrivacyMode(!privacyMode)} 
               className={`action-button privacy-button ${privacyMode === true ? 'active' : ''}`}
               title={theme === 'shipgirl' ? (privacyMode === true ? 'プライバシーモード解除' : 'プライバシーモード') : (privacyMode === true ? 'プライバシーモード解除' : 'プライバシーモード')}
@@ -1360,24 +1520,48 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                     </div>
                   </div>
                   <div className="tasks-list">
-                    {latestEntry.tasks.map(task => (
-                      <div key={task.id} className="task-item">
-                        <label className="task-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={task.completed}
-                            onChange={() => toggleTask(latestEntry.id, task.id)}
-                          />
-                          <span className={task.completed ? 'completed' : ''}>{task.text}</span>
-                        </label>
-                        <button 
-                          onClick={() => deleteTask(latestEntry.id, task.id)}
-                          className="delete-task-btn"
+                    {filterTasksForDisplay(latestEntry.tasks).map(task => {
+                      const isTraining = isTrainingTask(task.id, task.originalTaskId)
+                      const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId) : null
+                      return (
+                        <div 
+                          key={task.id} 
+                          className={`task-item ${isTraining ? 'training-task' : ''}`}
                         >
-                          <span className="material-icons">close</span>
-                        </button>
-                      </div>
-                    ))}
+                          {isTraining && shipId && (
+                            <div className="task-banner">
+                              <img 
+                                src={`/FleetAnalystManager/images/banner/${shipId}.png`}
+                                alt=""
+                                className="task-banner-image"
+                              />
+                            </div>
+                          )}
+                          <div className="task-content">
+                            {isTraining ? (
+                              <span className={`task-text ${task.completed ? 'completed' : ''}`}>{task.text}</span>
+                            ) : (
+                              <label className="task-checkbox">
+                                <input
+                                  type="checkbox"
+                                  checked={task.completed}
+                                  onChange={() => toggleTask(latestEntry.id, task.id)}
+                                />
+                                <span className={task.completed ? 'completed' : ''}>{task.text}</span>
+                              </label>
+                            )}
+                            {!isTraining && (
+                              <button 
+                                onClick={() => deleteTask(latestEntry.id, task.id)}
+                                className="delete-task-btn"
+                              >
+                                <span className="material-icons">close</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
         </div>
       )}
@@ -1540,19 +1724,41 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                       </div>
                     </div>
                     <div className="tasks-list">
-                      {entry.tasks.map(task => (
-                        <div key={task.id} className="task-item">
-                          <label className="task-checkbox">
-                            <input
-                              type="checkbox"
-                              checked={task.completed}
-                              onChange={() => toggleTask(entry.id, task.id)}
-                              disabled={true} // 過去エントリーは編集不可
-                            />
-                            <span className={task.completed ? 'completed' : ''}>{task.text}</span>
-                          </label>
-                        </div>
-                      ))}
+                      {filterTasksForDisplay(entry.tasks).map(task => {
+                        const isTraining = isTrainingTask(task.id, task.originalTaskId)
+                        const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId) : null
+                        return (
+                          <div 
+                            key={task.id} 
+                            className={`task-item ${isTraining ? 'training-task' : ''}`}
+                          >
+                            {isTraining && shipId && (
+                              <div className="task-banner">
+                                <img 
+                                  src={`/FleetAnalystManager/images/banner/${shipId}.png`}
+                                  alt=""
+                                  className="task-banner-image"
+                                />
+                              </div>
+                            )}
+                            <div className="task-content">
+                              {isTraining ? (
+                                <span className={`task-text ${task.completed ? 'completed' : ''}`}>{task.text}</span>
+                              ) : (
+                                <label className="task-checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={task.completed}
+                                    onChange={() => toggleTask(entry.id, task.id)}
+                                    disabled={true} // 過去エントリーは編集不可
+                                  />
+                                  <span className={task.completed ? 'completed' : ''}>{task.text}</span>
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
