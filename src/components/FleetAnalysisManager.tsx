@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 // 型定義
 interface Task {
@@ -56,6 +56,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married' | 'luck' | 'hp' | 'asw'>('exp')
   const [privacyMode, setPrivacyMode] = useState<boolean | null>(null)
   const [showTrainingTasksOnly, setShowTrainingTasksOnly] = useState<boolean>(false)
+  const [forceUpdate, setForceUpdate] = useState<number>(0)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fleetEntriesRef = useRef<FleetEntry[]>([])
@@ -116,37 +117,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   }
 
   // ペースト時の自動登録処理
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
     // ペーストされたデータを取得
     const pastedData = e.clipboardData.getData('text')
     
+    console.log('🔧 ペースト処理開始, データ長:', pastedData.length, '提督名:', admiralName)
+    
     // 少し遅延してから処理（ペーストデータがstateに反映されるのを待つ）
     setTimeout(() => {
+      console.log('🔧 遅延処理実行')
       if (pastedData.trim() && admiralName.trim()) {
+        console.log('🔧 条件チェック通過')
         try {
           const stats = calculateFleetStats(pastedData)
+          console.log('🔧 統計計算完了:', stats)
           
-          // 以前のエントリーをlatestではなくする
-          const updatedEntries = fleetEntries.map(entry => ({ ...entry, isLatest: false }))
-
-          // 前回の未達成タスクを取得
-          const previousLatestEntry = fleetEntries.find(entry => entry.isLatest)
-          const inheritedTasks: Task[] = []
-          
-          if (previousLatestEntry) {
-            const incompleteTasks = previousLatestEntry.tasks.filter(task => !task.completed)
-            incompleteTasks.forEach(task => {
-              inheritedTasks.push({
-                id: Date.now() + Math.random(),
-                text: task.text,
-                completed: false,
-                createdAt: new Date().toISOString(),
-                inheritedFrom: previousLatestEntry.id,
-                originalTaskId: task.originalTaskId || task.id
-              })
-            })
-          }
-
+          // シンプルな新エントリー作成
           const newEntry: FleetEntry = {
             id: Date.now(),
             totalExp: stats.totalExp,
@@ -155,36 +141,34 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
             luckModTotal: stats.luckModTotal,
             hpModTotal: stats.hpModTotal,
             aswModTotal: stats.aswModTotal,
-            tasks: inheritedTasks,
+            tasks: [],
             url: undefined,
             createdAt: new Date().toISOString(),
             admiralName,
             isLatest: true
           }
 
-          const newEntries = [...updatedEntries, newEntry]
-          
-          // 100件制限
-          if (newEntries.length > 100) {
-            newEntries.splice(0, newEntries.length - 100)
-          }
-
-          setFleetEntries(newEntries)
+          // 関数型更新で確実に状態更新
+          setFleetEntries(prev => {
+            console.log('🔧 関数型更新 - 前:', prev.length, '件')
+            const updated = prev.map(entry => ({ ...entry, isLatest: false }))
+            const newEntries = [...updated, newEntry]
+            console.log('🔧 関数型更新 - 後:', newEntries.length, '件')
+            
+            // LocalStorage更新
+            localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
+            return newEntries
+          })
           
           // フォームリセット
           setFleetData('')
           
-          // 即座にローカルストレージに保存
-          localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
+          // 強制更新
+          setForceUpdate(prev => prev + 1)
           
-          // 目標達成チェックを実行
-          checkTrainingGoalAchievements(pastedData)
+          console.log('🔧 シンプル処理完了')
           
-          if (inheritedTasks.length > 0) {
-            showToast(theme === 'shipgirl' ? `艦隊データ登録完了！未達成タスク${inheritedTasks.length}件を引き継ぎました` : `艦隊データ登録完了！未達成任務${inheritedTasks.length}件ヲ引キ継ギタ`, 'success')
-          } else {
-            showToast(theme === 'shipgirl' ? '艦隊データ登録完了！' : '艦隊データ登録完了！', 'success')
-          }
+          showToast(theme === 'shipgirl' ? '艦隊データ登録完了！' : '艦隊データ登録完了！', 'success')
         } catch (error) {
           showToast(`エラー: ${error}`, 'error')
         }
@@ -192,7 +176,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
         showToast(theme === 'shipgirl' ? '提督名を設定してください' : '司令官名ヲ設定シテクダサイ', 'error')
       }
     }, 100)
-  }
+  }, [admiralName, theme])
 
   // 初期化処理
   useEffect(() => {
@@ -292,23 +276,39 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     }
 
     console.log('🎧 FleetAnalysisManagerでイベントリスナーを登録, admiral:', admiralName)
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
-    const interval = setInterval(checkForUpdates, 2000) // 2秒間隔でチェック
+    // window.addEventListener('storage', handleStorageChange) // 一時的に無効化
+    // window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener) // 一時的に無効化
+    // const interval = setInterval(checkForUpdates, 2000) // 一時的に無効化
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
-      clearInterval(interval)
+      // window.removeEventListener('storage', handleStorageChange) // 一時的に無効化
+      // window.removeEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener) // 一時的に無効化
+      // clearInterval(interval)
     }
   }, [admiralName])
 
+  // fleetEntriesの変更を監視
+  useEffect(() => {
+    console.log('🔄 fleetEntries状態更新:', fleetEntries.length, '件')
+  }, [fleetEntries])
+
   // 艦隊エントリーの読み込み
   const loadFleetEntries = (admiral: string) => {
+    console.log('📥 loadFleetEntries呼び出し, admiral:', admiral)
     const saved = localStorage.getItem(`${admiral}_fleetEntries`)
+    console.log('📥 LocalStorageから読み込み:', saved ? `${saved.length}文字` : 'なし')
+    console.log('📥 LocalStorageの実際の内容:', saved)
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
+        console.log('📥 パースしたエントリー数:', parsed.length)
+        
+        // 空の配列の場合は現在の状態をチェック
+        if (parsed.length === 0 && fleetEntries.length > 0) {
+          console.log('📥 空データのため読み込みスキップ（現在:', fleetEntries.length, '件）')
+          return
+        }
+        
         // 後方互換性のため、改修合計値が未定義の場合は0に設定
         const updatedEntries = parsed.map((entry: FleetEntry) => ({
           ...entry,
@@ -316,11 +316,17 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           hpModTotal: entry.hpModTotal ?? 0,
           aswModTotal: entry.aswModTotal ?? 0
         }))
+        console.log('📥 setFleetEntriesで設定:', updatedEntries.length, '件')
         setFleetEntries(updatedEntries)
       } catch (error) {
         console.error('Failed to load fleet entries:', error)
+        console.log('📥 破損データを削除します')
+        localStorage.removeItem(`${admiral}_fleetEntries`)
+        console.log('📥 エラーのため空配列を設定')
         setFleetEntries([])
       }
+    } else {
+      console.log('📥 保存データなし')
     }
   }
 
@@ -527,7 +533,10 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   }
 
   // 統計情報計算
-  const getTotalEntries = () => fleetEntries.length
+  const getTotalEntries = () => {
+    console.log('📊 getTotalEntries呼び出し:', fleetEntries.length, 'entries:', fleetEntries.map(e => e.id))
+    return fleetEntries.length
+  }
   const getTotalCompletedTasks = () => fleetEntries.reduce((total, entry) => 
     total + entry.tasks.filter(task => task.completed).length, 0
   )
@@ -566,7 +575,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   const isTrainingTask = (taskId: number, originalTaskId?: number): boolean => {
     const trainingTaskIds = getTrainingCandidatesMainTaskIds()
     return trainingTaskIds.includes(taskId) || 
-           (originalTaskId && trainingTaskIds.includes(originalTaskId))
+           (originalTaskId !== undefined && trainingTaskIds.includes(originalTaskId))
   }
 
   // 育成タスクの艦娘shipIdを取得
@@ -1257,7 +1266,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                 <span className="material-icons overview-icon">trending_up</span>
                 <div className="overview-text">
                   <span className="overview-label">{theme === 'shipgirl' ? '総記録数' : '総記録数'}</span>
-                  <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalEntries().toString().length) : getTotalEntries()}</span>
+                  <span className="overview-value" key={`${fleetEntries.length}-${forceUpdate}`}>{privacyMode === true ? '*'.repeat(getTotalEntries().toString().length) : getTotalEntries()}</span>
                 </div>
               </div>
               <div className="overview-item">
