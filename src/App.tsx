@@ -66,7 +66,7 @@ function App() {
 
   const getCurrentViewIcon = () => {
     if (currentView === 'analysis-manager') return '👥'
-    if (currentView === 'analyst') return '⚓'
+    if (currentView === 'analyst') return <span className="material-icons">anchor</span>
     return '📊'
   }
 
@@ -80,7 +80,7 @@ function App() {
       {/* テーマ切り替えボタン（右上） */}
       <div className="theme-toggle-container">
         <button onClick={toggleTheme} className="theme-toggle-button">
-          {theme === 'shipgirl' ? '🌊 海色' : '⚓ 深海'}
+          {theme === 'shipgirl' ? '🌊 海色' : <><span className="material-icons">anchor</span> 深海</>}
         </button>
       </div>
       
