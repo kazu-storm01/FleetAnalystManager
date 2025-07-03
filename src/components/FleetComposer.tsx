@@ -84,7 +84,6 @@ interface FleetSlot {
 }
 
 interface FleetComposerProps {
-  theme: 'shipgirl' | 'abyssal'
   fleetData?: string // JSONデータを受け取る
 }
 
@@ -465,7 +464,7 @@ const deleteFormationFromStorage = (formationId: string) => {
   }
 }
 
-const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
+const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<string>('all')
   const [sortType, setSortType] = useState<'level' | 'id' | 'shipId' | 'shipType'>('level')
@@ -1201,21 +1200,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
   const stats = calculateFleetStats()
 
   return (
-    <div className={`fleet-composer ${theme}`}>
-      {/* ドラッグ中のヒント表示 */}
-      {draggedShip && (
-        <div className="drag-hint-overlay">
-          <div className="drag-hint-content">
-            <div className="drag-hint-icon"><span className="material-icons">anchor</span></div>
-            <div className="drag-hint-text">
-              自動配置
-            </div>
-            <div className="drag-hint-ship">
-              {draggedShip.name} を編成中...
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="fleet-composer shipgirl">
 
       {/* メインエリア：艦隊編成画面 */}
       <div className="fleet-composition-area"

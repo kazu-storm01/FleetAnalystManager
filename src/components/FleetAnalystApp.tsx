@@ -22,72 +22,12 @@ interface FormApplicant {
   note: string
 }
 
-type Theme = 'shipgirl' | 'abyssal'
 
-// 深海モード用のカタカナ変換関数
-const convertToKatakana = (text: string): string => {
-  return text
-    .replace(/あ/g, 'ア').replace(/い/g, 'イ').replace(/う/g, 'ウ').replace(/え/g, 'エ').replace(/お/g, 'オ')
-    .replace(/か/g, 'カ').replace(/き/g, 'キ').replace(/く/g, 'ク').replace(/け/g, 'ケ').replace(/こ/g, 'コ')
-    .replace(/が/g, 'ガ').replace(/ぎ/g, 'ギ').replace(/ぐ/g, 'グ').replace(/げ/g, 'ゲ').replace(/ご/g, 'ゴ')
-    .replace(/さ/g, 'サ').replace(/し/g, 'シ').replace(/す/g, 'ス').replace(/せ/g, 'セ').replace(/そ/g, 'ソ')
-    .replace(/ざ/g, 'ザ').replace(/じ/g, 'ジ').replace(/ず/g, 'ズ').replace(/ぜ/g, 'ゼ').replace(/ぞ/g, 'ゾ')
-    .replace(/た/g, 'タ').replace(/ち/g, 'チ').replace(/つ/g, 'ツ').replace(/て/g, 'テ').replace(/と/g, 'ト')
-    .replace(/だ/g, 'ダ').replace(/ぢ/g, 'ヂ').replace(/づ/g, 'ヅ').replace(/で/g, 'デ').replace(/ど/g, 'ド')
-    .replace(/な/g, 'ナ').replace(/に/g, 'ニ').replace(/ぬ/g, 'ヌ').replace(/ね/g, 'ネ').replace(/の/g, 'ノ')
-    .replace(/は/g, 'ハ').replace(/ひ/g, 'ヒ').replace(/ふ/g, 'フ').replace(/へ/g, 'ヘ').replace(/ほ/g, 'ホ')
-    .replace(/ば/g, 'バ').replace(/び/g, 'ビ').replace(/ぶ/g, 'ブ').replace(/べ/g, 'ベ').replace(/ぼ/g, 'ボ')
-    .replace(/ぱ/g, 'パ').replace(/ぴ/g, 'ピ').replace(/ぷ/g, 'プ').replace(/ぺ/g, 'ペ').replace(/ぽ/g, 'ポ')
-    .replace(/ま/g, 'マ').replace(/み/g, 'ミ').replace(/む/g, 'ム').replace(/め/g, 'メ').replace(/も/g, 'モ')
-    .replace(/や/g, 'ヤ').replace(/ゆ/g, 'ユ').replace(/よ/g, 'ヨ')
-    .replace(/ら/g, 'ラ').replace(/り/g, 'リ').replace(/る/g, 'ル').replace(/れ/g, 'レ').replace(/ろ/g, 'ロ')
-    .replace(/わ/g, 'ワ').replace(/ゐ/g, 'ヰ').replace(/ゑ/g, 'ヱ').replace(/を/g, 'ヲ').replace(/ん/g, 'ン')
-    .replace(/ゃ/g, 'ャ').replace(/ゅ/g, 'ュ').replace(/ょ/g, 'ョ')
-    .replace(/っ/g, 'ッ')
-}
-
-// 深海棲艦風文体変換関数
-const convertTextToAbyssalStyle = (text: string): string => {
-  // ひらがなをカタカナに変換
-  let converted = convertToKatakana(text)
-  
-  // 敵対的で不満げな語尾に変換
-  converted = converted
-    .replace(/です$|です。/g, 'ダ...')
-    .replace(/である$|である。/g, 'デアル...')
-    .replace(/だ$|だ。/g, 'ダ...')
-    .replace(/ます$|ます。/g, 'マス...')
-    .replace(/します$|します。/g, 'スル...')
-    .replace(/ください$|ください。/g, 'ナサイ...')
-    .replace(/でしょう$|でしょう。/g, 'ダロウ...')
-    .replace(/かもしれません$|かもしれません。/g, 'カモシレナイ...')
-    .replace(/思います$|思います。/g, 'オモウ...')
-    .replace(/くらい$|くらい。/g, 'グライ...')
-    .replace(/みたい$|みたい。/g, 'ミタイ...')
-    .replace(/そう$|そう。/g, 'ソウ...')
-    .replace(/ようだ$|ようだ。/g, 'ヨウダ...')
-    .replace(/らしい$|らしい。/g, 'ラシイ...')
-    .replace(/だろう$|だろう。/g, 'ダロウ...')
-    .replace(/でしょ$|でしょ。/g, 'デショ...')
-    .replace(/よね$|よね。/g, 'ヨネ...')
-    .replace(/よ$|よ。/g, 'ヨ...')
-    .replace(/ね$|ね。/g, 'ネ...')
-    .replace(/な$|な。/g, 'ナ...')
-    .replace(/か$|か。/g, 'カ...')
-    .replace(/の$|の。/g, 'ノ...')
-    .replace(/ダ$|ダ。/g, 'ダロウ...')
-    .replace(/デアル$|デアル。/g, 'デアル...')
-    .replace(/ル$|ル。/g, 'ルダロウ...')
-    .replace(/ダロウ$|ダロウ。/g, 'ダロウ...')
-  
-  return converted
-}
 
 interface FleetAnalystAppProps {
-  theme: Theme
 }
 
-const FleetAnalystApp: React.FC<FleetAnalystAppProps> = ({ theme }) => {
+const FleetAnalystApp: React.FC<FleetAnalystAppProps> = () => {
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [selectedApplicants, setSelectedApplicants] = useState<SelectedApplicant[]>([])
   const [isSelecting, setIsSelecting] = useState(false)
@@ -118,7 +58,7 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = ({ theme }) => {
         body: JSON.stringify({
           prompt: "テスト用プロンプト",
           text: "これはAPI接続テストです。簡潔に応答してください。",
-          isAbyssal: theme === 'abyssal'
+          isAbyssal: false
         })
       })
       
@@ -271,9 +211,9 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = ({ theme }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: `次の艦隊分析報告書を、${theme === 'abyssal' ? '深海棲艦の視点から敵対的で不満げに' : '軍事的で洗練された表現に'}改善してください。`,
+          prompt: `次の艦隊分析報告書を、軍事的で洗練された表現に改善してください。`,
           text: applicant.advice,
-          isAbyssal: theme === 'abyssal'
+          isAbyssal: false
         })
       })
 
@@ -281,9 +221,6 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = ({ theme }) => {
         const result = await response.json()
         
         let suggestion = result.suggestion
-        if (theme === 'abyssal') {
-          suggestion = convertTextToAbyssalStyle(suggestion)
-        }
         
         setSelectedApplicants(prev => prev.map((app, i) => 
           i === index ? { 
@@ -299,9 +236,7 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = ({ theme }) => {
       console.error('AI分析エラー:', error)
       
       // フォールバック応答
-      const fallbackMessage = theme === 'abyssal' 
-        ? 'チッ... AI ガ ツカエナイ... シカタナク ジブン デ カンガエルンダナ...'
-        : '申し訳ございません。現在AI機能が利用できません。手動で改善をお願いいたします。'
+      const fallbackMessage = '申し訳ございません。現在AI機能が利用できません。手動で改善をお願いいたします。'
       
       setSelectedApplicants(prev => prev.map((app, i) => 
         i === index ? { 
@@ -497,7 +432,7 @@ ${applicant.advice}
   const analyzedCount = selectedApplicants.filter(a => a.isAnalyzed).length
 
   return (
-    <div className={`fleet-analysis-app ${theme}`}>
+    <div className="fleet-analysis-app shipgirl">
       <div className="theme-toggle">
         <button onClick={() => setShowApiSettings(!showApiSettings)} className="theme-button">
           ⚙️ API設定
@@ -505,17 +440,10 @@ ${applicant.advice}
       </div>
 
       <div className="app-logo animate-fadeInUp">
-        {theme === 'shipgirl' ? (
-          <>
-            <span className="logo-main">艦隊分析マネージャー</span>
-            <span className="logo-sub">-Fleet Analyst Manager-</span>
-          </>
-        ) : (
-          <>
-            <span className="logo-main">深海艦隊分析司令部</span>
-            <span className="logo-sub">-Abyssal Fleet Analysis HQ-</span>
-          </>
-        )}
+        <>
+          <span className="logo-main">艦隊分析マネージャー</span>
+          <span className="logo-sub">-Fleet Analyst Manager-</span>
+        </>
       </div>
 
       {/* API設定セクション */}
@@ -789,7 +717,7 @@ ${applicant.advice}
                       >
                         {applicant.isAiAnalyzing ? (
                           <>⏳ 分析中...</>
-                        ) : theme === 'abyssal' ? (
+                        ) : false ? (
                           <><span className="material-icons">psychology</span> 深海添削</>
                         ) : (
                           <><span className="material-icons">edit_note</span> 報告書添削</>
@@ -799,7 +727,7 @@ ${applicant.advice}
                       {applicant.aiSuggestion && (
                         <div className="ai-suggestion">
                           <label>
-                            {theme === 'abyssal' ? '深海棲艦による敵対的添削:' : 'AI改善提案:'}
+                            {false ? '深海棲艦による敵対的添削:' : 'AI改善提案:'}
                           </label>
                           <div className="ai-suggestion-text">
                             {applicant.aiSuggestion}
@@ -896,7 +824,7 @@ ${applicant.advice}
             <li>選出された提督が順番に表示されます</li>
             <li>分析完了チェックボックスで進捗管理</li>
             <li>分析報告欄に提督の特徴や推奨配置を記入</li>
-            <li>{theme === 'abyssal' ? '「深海添削」ボタンで深海棲艦による敵対的な添削を実行' : '「報告書添削」ボタンで分析報告の表現を改善'}</li>
+            <li>{false ? '「深海添削」ボタンで深海棲艦による敵対的な添削を実行' : '「報告書添削」ボタンで分析報告の表現を改善'}</li>
             <li>「分析結果エクスポート」で結果を保存</li>
             <li>分析結果XLSXを読み込めば前回の状態から再開可能</li>
           </ol>

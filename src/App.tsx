@@ -4,25 +4,15 @@ import FleetAnalysisManager from './components/FleetAnalysisManager'
 import FleetComposer from './components/FleetComposer'
 import './App.css'
 
-type Theme = 'shipgirl' | 'abyssal'
 type CurrentView = 'analysis-manager' | 'analyst' | 'fleet-composer'
 
 function App() {
-  const [theme, setTheme] = useState<Theme | null>(null)
   const [currentView, setCurrentView] = useState<CurrentView | null>(null)
   const [sharedFleetData, setSharedFleetData] = useState<string>('')
 
-  // テーマとビューの初期化
+  // ビューの初期化
   useEffect(() => {
-    const savedTheme = localStorage.getItem('fleetAnalysisTheme') as Theme
     const savedView = localStorage.getItem('fleetAnalysisCurrentView') as CurrentView
-    
-    // テーマの復元
-    if (savedTheme && (savedTheme === 'shipgirl' || savedTheme === 'abyssal')) {
-      setTheme(savedTheme)
-    } else {
-      setTheme('shipgirl') // デフォルト値
-    }
     
     // ビューの復元
     if (savedView && (savedView === 'analysis-manager' || savedView === 'analyst' || savedView === 'fleet-composer')) {
@@ -32,23 +22,12 @@ function App() {
     }
   }, [])
 
-  // テーマの永続化
-  useEffect(() => {
-    if (theme !== null) {
-      localStorage.setItem('fleetAnalysisTheme', theme)
-    }
-  }, [theme])
-
   // ビューの永続化
   useEffect(() => {
     if (currentView !== null) {
       localStorage.setItem('fleetAnalysisCurrentView', currentView)
     }
   }, [currentView])
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'shipgirl' ? 'abyssal' : 'shipgirl')
-  }
 
   const cycleView = () => {
     setCurrentView(prev => {
@@ -71,23 +50,16 @@ function App() {
   }
 
   // 初期化中は何も表示しない
-  if (theme === null || currentView === null) {
+  if (currentView === null) {
     return <div>Loading...</div>
   }
 
   return (
-    <div className={`app-container ${theme}`}>
-      {/* テーマ切り替えボタン（右上） */}
-      <div className="theme-toggle-container">
-        <button onClick={toggleTheme} className="theme-toggle-button">
-          {theme === 'shipgirl' ? '🌊 海色' : <><span className="material-symbols-outlined">anchor</span> 深海</>}
-        </button>
-      </div>
-      
+    <div className="app-container shipgirl">
       {/* 機能切り替えボタン（右下） */}
       <button 
         onClick={cycleView} 
-        className={`floating-action-button ${theme}`}
+        className="floating-action-button shipgirl"
         title={`${getNextViewTitle()}に切り替え`}
       >
         <span className="fab-icon">
@@ -101,14 +73,12 @@ function App() {
       {/* メインコンテンツ */}
       {currentView === 'analysis-manager' ? (
         <FleetAnalysisManager 
-          theme={theme} 
           onFleetDataChange={setSharedFleetData}
         />
       ) : currentView === 'analyst' ? (
-        <FleetAnalystApp theme={theme} />
+        <FleetAnalystApp />
       ) : (
         <FleetComposer 
-          theme={theme} 
           fleetData={sharedFleetData}
         />
       )}
