@@ -627,9 +627,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       
       // 新しいAPIデータが来た場合、育成候補の達成チェックを即座に実行
       if (fleetData && fleetData !== storedFleetData && trainingCandidates.length > 0) {
-        setTimeout(() => {
-          checkAchievementsForCandidates(parsedShips, trainingCandidates)
-        }, 1000) // 1秒後に達成チェック実行
+        checkAchievementsForCandidates(parsedShips, trainingCandidates)
       }
       
       // 新しいAPIデータが来た場合のみ保存

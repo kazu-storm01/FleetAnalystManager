@@ -117,6 +117,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     }
   }
 
+  
+
   // ペースト時の自動登録処理
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
     // ペーストされたデータを取得
@@ -137,18 +139,57 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           setFleetEntries(prev => {
             console.log('🔧 関数型更新 - 前:', prev.length, '件')
             
-            // 未達成タスクを引き継ぎ
+            // 現在のエントリーの達成済みタスクを完了状態に変更
             const currentLatest = prev.find(entry => entry.isLatest)
-            const inheritedTasks = currentLatest ? 
-              currentLatest.tasks
+            let updatedCurrentLatest = currentLatest
+            
+            if (currentLatest) {
+              console.log('🔍 現在のエントリーのタスク数:', currentLatest.tasks.length)
+              const updatedTasks = currentLatest.tasks.map(task => {
+                if (!task.completed) {
+                  const isTraining = isTrainingTask(task.text)
+                  console.log('🔍 タスクチェック:', task.text, '育成タスク:', isTraining)
+                  
+                  if (isTraining) {
+                    const isAchieved = isTrainingTaskAchieved(task.text)
+                    console.log('🔍 達成チェック結果:', isAchieved, 'タスク:', task.text)
+                    if (isAchieved) {
+                      console.log('🎯 現在のエントリーで達成済みタスクを完了状態に変更:', task.text)
+                      return { ...task, completed: true }
+                    }
+                  }
+                }
+                return task
+              })
+              
+              updatedCurrentLatest = { ...currentLatest, tasks: updatedTasks }
+              console.log('🔍 更新後のタスク数:', updatedTasks.length, '完了数:', updatedTasks.filter(t => t.completed).length)
+            }
+
+            // 未達成タスクを引き継ぎ（引き継ぎ前に達成チェック）
+            const inheritedTasks = updatedCurrentLatest ? 
+              updatedCurrentLatest.tasks
                 .filter(task => !task.completed)
+                .filter(task => {
+                  // 育成タスクの場合は、引き継ぎ前に達成チェック
+                  const isTraining = isTrainingTask(task.text)
+                  
+                  if (isTraining) {
+                    const isAchieved = isTrainingTaskAchieved(task.text)
+                    if (isAchieved) {
+                      console.log('🎯 達成済みタスクを引き継ぎ対象から除外:', task.text)
+                    }
+                    return !isAchieved
+                  }
+                  return true
+                })
                 .map(task => {
                   const newTaskId = Date.now() + Math.random()
                   const originalTaskId = task.originalTaskId || task.id
                   
                   // 育成タスクの場合は最新の目標値でテキストを更新
                   let updatedText = task.text
-                  if (isTrainingTask(task.id, originalTaskId, currentLatest.id)) {
+                  if (isTrainingTask(task.text)) {
                     const newText = createUpdatedTaskText(task.id, originalTaskId, pastedData)
                     if (newText) {
                       updatedText = newText
@@ -160,7 +201,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                     ...task,
                     id: newTaskId,
                     text: updatedText,
-                    inheritedFrom: currentLatest.id,
+                    inheritedFrom: updatedCurrentLatest!.id,
                     originalTaskId: originalTaskId,
                     createdAt: new Date().toISOString()
                   }
@@ -183,10 +224,24 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
               admiralName,
               isLatest: true
             }
+            
+            console.log('🔧 新エントリー作成:', newEntry.id, '統計:', {
+              totalExp: newEntry.totalExp,
+              shipCount: newEntry.shipCount,
+              marriedCount: newEntry.marriedCount
+            })
 
-            const updated = prev.map(entry => ({ ...entry, isLatest: false }))
+            const updated = prev.map(entry => {
+              if (entry.isLatest && updatedCurrentLatest && entry.id === updatedCurrentLatest.id) {
+                // 現在のエントリーを過去のエントリーにする（達成済みタスクは完了状態）
+                return { ...updatedCurrentLatest, isLatest: false }
+              }
+              return { ...entry, isLatest: false }
+            })
             const newEntries = [...updated, newEntry]
             console.log('🔧 関数型更新 - 後:', newEntries.length, '件')
+            console.log('🔧 最新エントリー:', newEntries.find(e => e.isLatest)?.id)
+            console.log('🔧 過去エントリー数:', newEntries.filter(e => !e.isLatest).length)
             
             // LocalStorage更新
             localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(newEntries))
@@ -200,6 +255,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           setForceUpdate(prev => prev + 1)
           
           console.log('🔧 シンプル処理完了')
+          
+          // 育成目標達成チェック（即座実行）
+          checkTrainingGoalAchievements(pastedData)
           
           showToast(theme === 'shipgirl' ? '艦隊データ登録完了！' : '艦隊データ登録完了！', 'success')
         } catch (error) {
@@ -319,7 +377,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   // fleetEntriesの変更を監視
   useEffect(() => {
     console.log('🔄 fleetEntries状態更新:', fleetEntries.length, '件')
-  }, [fleetEntries])
+    
+    // 育成リストとタスクの同期チェック
+    if (fleetEntries.length > 0 && admiralName) {
+      syncTrainingListAndTasks()
+    }
+  }, [fleetEntries, admiralName])
 
   // 艦隊エントリーの読み込み
   const loadFleetEntries = (admiral: string) => {
@@ -592,6 +655,39 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     }
   }
 
+  // 育成リストとタスクの整合性をチェックし、修正する
+  const syncTrainingListAndTasks = () => {
+    const latestEntry = fleetEntries.find(entry => entry.isLatest)
+    if (!latestEntry) return
+
+    const trainingTaskIds = getTrainingCandidatesMainTaskIds()
+    console.log('🔄 育成リスト同期チェック - 育成ID:', trainingTaskIds)
+
+    // 育成リストにないタスクを削除
+    const syncedTasks = latestEntry.tasks.filter(task => {
+      const isTrainingTask = task.text.includes('を育成する')
+      if (isTrainingTask) {
+        const hasTrainingCandidate = trainingTaskIds.includes(task.id) || 
+                                   (task.originalTaskId && trainingTaskIds.includes(task.originalTaskId))
+        if (!hasTrainingCandidate) {
+          console.log('🗑️ 育成リストにないタスクを削除:', task.text)
+          return false
+        }
+      }
+      return true
+    })
+
+    // タスクが変更された場合、更新
+    if (syncedTasks.length !== latestEntry.tasks.length) {
+      const updatedEntries = fleetEntries.map(entry => 
+        entry.isLatest ? { ...entry, tasks: syncedTasks } : entry
+      )
+      setFleetEntries(updatedEntries)
+      localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
+      console.log('🔄 育成リストとタスクの同期完了')
+    }
+  }
+
   // 育成候補タスクのフィルタリング
   const filterTasksForDisplay = (tasks: Task[]): Task[] => {
     if (!showTrainingTasksOnly) return tasks
@@ -600,20 +696,20 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     return tasks.filter(task => trainingTaskIds.includes(task.id))
   }
 
-  // 育成タスクかどうかの判定（最新エントリーのタスクのみ対象）
-  const isTrainingTask = (taskId: number, originalTaskId?: number, entryId?: number): boolean => {
+  // 育成タスクかどうかの判定（シンプル版）
+  const isTrainingTask = (taskText: string): boolean => {
+    return taskText.includes('を育成する')
+  }
+
+  // 育成タスクが達成されているかチェック（シンプル版）
+  const isTrainingTaskAchieved = (taskText: string): boolean => {
+    // 育成候補リストが空の場合、目標値未設定とみなして達成済みとする
     const trainingTaskIds = getTrainingCandidatesMainTaskIds()
-    
-    // 最新エントリーのタスクの場合のみ育成タスクとして判定
-    const latestEntry = fleetEntries.find(entry => entry.isLatest)
-    const isFromLatestEntry = !entryId || (latestEntry && latestEntry.id === entryId)
-    
-    if (!isFromLatestEntry) {
-      return false // 過去のエントリーのタスクは育成タスクとして扱わない
+    if (trainingTaskIds.length === 0 && taskText.includes('を育成する')) {
+      console.log('🎯 育成候補リストが空のため達成済みと判定:', taskText)
+      return true
     }
-    
-    return trainingTaskIds.includes(taskId) || 
-           (originalTaskId !== undefined && trainingTaskIds.includes(originalTaskId))
+    return false
   }
 
   // 育成タスクの艦娘shipIdを取得（最新エントリーのタスクのみ対象）
@@ -745,6 +841,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
       
       let achievedCount = 0
+      const candidatesToRemove: number[] = []
       
       trainingCandidates.forEach((candidate: any) => {
         const ship = ships.find((s: any) => s.api_id === candidate.instanceId || s.id === candidate.instanceId)
@@ -768,8 +865,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           // タスクを完了状態に更新（引き継いだタスクも含む）
           markTrainingTaskAsCompleted(candidate.mainTaskId)
           achievedCount++
+          // 育成候補から削除対象に追加
+          candidatesToRemove.push(candidate.id)
         }
       })
+      
+      // 達成した候補を育成候補リストから削除
+      if (candidatesToRemove.length > 0) {
+        const updatedCandidates = trainingCandidates.filter((candidate: any) => 
+          !candidatesToRemove.includes(candidate.id)
+        )
+        localStorage.setItem('fleetComposer_trainingCandidates', JSON.stringify(updatedCandidates))
+      }
       
       // 達成があった場合は通知
       if (achievedCount > 0) {
@@ -1663,7 +1770,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                   </div>
                   <div className="tasks-list">
                     {filterTasksForDisplay(latestEntry.tasks).map(task => {
-                      const isTraining = isTrainingTask(task.id, task.originalTaskId, latestEntry.id)
+                      const isTraining = isTrainingTask(task.text)
                       const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId, latestEntry.id) : null
                       return (
                         <div 
@@ -1867,7 +1974,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                     </div>
                     <div className="tasks-list">
                       {filterTasksForDisplay(entry.tasks).map(task => {
-                        const isTraining = isTrainingTask(task.id, task.originalTaskId, entry.id)
+                        const isTraining = isTrainingTask(task.text)
                         const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId, entry.id) : null
                         return (
                           <div 
