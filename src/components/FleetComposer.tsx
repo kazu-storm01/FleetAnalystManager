@@ -324,26 +324,58 @@ const addTaskToLatestFleetEntry = (taskText: string): number => {
 
 const removeTaskFromFleetEntry = (taskId: number) => {
   const entries = getFleetEntriesFromStorage()
-  entries.forEach((entry: any) => {
-    if (entry.tasks) {
-      entry.tasks = entry.tasks.filter((task: any) => task.id !== taskId)
-    }
-  })
+  let removedCount = 0
+  
+  // 最新エントリーのみを対象とする
+  const latestEntry = entries.find((entry: any) => entry.isLatest)
+  
+  if (latestEntry && latestEntry.tasks) {
+    const originalLength = latestEntry.tasks.length
+    // 最新エントリーで、元のタスクIDまたは引き継がれたタスクのoriginalTaskIdが一致する場合に削除
+    latestEntry.tasks = latestEntry.tasks.filter((task: any) => {
+      const shouldRemove = task.id === taskId || task.originalTaskId === taskId
+      if (shouldRemove) {
+        console.log('🔧 最新エントリーのタスク削除:', task.id, '(originalTaskId:', task.originalTaskId, ') text:', task.text)
+      }
+      return !shouldRemove
+    })
+    removedCount = originalLength - latestEntry.tasks.length
+  }
+  
+  console.log('🔧 削除されたタスク数:', removedCount, '(最新エントリーのみ、過去の履歴は保持)')
   saveFleetEntriesToStorage(entries)
+  
+  // FleetAnalysisManagerの状態も即座に同期
+  window.dispatchEvent(new CustomEvent('fleetEntriesUpdated', {
+    detail: { updatedEntries: entries, removedTaskId: taskId }
+  }))
 }
 
 const updateTaskText = (taskId: number, newText: string) => {
   const entries = getFleetEntriesFromStorage()
-  entries.forEach((entry: any) => {
-    if (entry.tasks) {
-      entry.tasks.forEach((task: any) => {
-        if (task.id === taskId) {
-          task.text = newText
-        }
-      })
-    }
-  })
+  let updatedCount = 0
+  
+  // 最新エントリーのみを対象とする
+  const latestEntry = entries.find((entry: any) => entry.isLatest)
+  
+  if (latestEntry && latestEntry.tasks) {
+    latestEntry.tasks.forEach((task: any) => {
+      // 最新エントリーの未達成タスクで、元のタスクIDまたは引き継がれたタスクのoriginalTaskIdが一致する場合のみ更新
+      if (!task.completed && (task.id === taskId || task.originalTaskId === taskId)) {
+        task.text = newText
+        updatedCount++
+        console.log('🔧 最新エントリーの未達成タスクを更新:', task.id, '(originalTaskId:', task.originalTaskId, ') →', newText)
+      }
+    })
+  }
+  
+  console.log('🔧 更新されたタスク数:', updatedCount, '(最新エントリーの未達成タスクのみ)')
   saveFleetEntriesToStorage(entries)
+  
+  // FleetAnalysisManagerの状態も即座に同期
+  window.dispatchEvent(new CustomEvent('fleetEntriesUpdated', {
+    detail: { updatedEntries: entries, updatedTaskId: taskId }
+  }))
 }
 
 // LocalStorageユーティリティ関数
