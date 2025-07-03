@@ -31,20 +31,32 @@ function App() {
 
   const cycleView = () => {
     setCurrentView(prev => {
-      if (prev === 'analysis-manager') return 'analyst'
+      if (prev === 'analysis-manager') return 'fleet-composer'
+      if (prev === 'fleet-composer') return 'analysis-manager'
+      // 分析者管理からは艦隊編成へ
       if (prev === 'analyst') return 'fleet-composer'
       return 'analysis-manager'
     })
   }
 
+  const switchToAnalyst = () => {
+    setCurrentView('analyst')
+  }
+
+  const switchToAnalysisManager = () => {
+    setCurrentView('analysis-manager')
+  }
+
   const getNextViewTitle = () => {
-    if (currentView === 'analysis-manager') return '分析者管理'
+    if (currentView === 'analysis-manager') return '艦隊編成'
+    if (currentView === 'fleet-composer') return '分析管理'
     if (currentView === 'analyst') return '艦隊編成'
     return '分析管理'
   }
 
   const getCurrentViewIcon = () => {
-    if (currentView === 'analysis-manager') return <span className="material-symbols-outlined">group</span>
+    if (currentView === 'analysis-manager') return <span className="material-symbols-outlined">anchor</span>
+    if (currentView === 'fleet-composer') return <span className="material-symbols-outlined">analytics</span>
     if (currentView === 'analyst') return <span className="material-symbols-outlined">anchor</span>
     return <span className="material-symbols-outlined">analytics</span>
   }
@@ -74,9 +86,12 @@ function App() {
       {currentView === 'analysis-manager' ? (
         <FleetAnalysisManager 
           onFleetDataChange={setSharedFleetData}
+          onSwitchToAnalyst={switchToAnalyst}
         />
       ) : currentView === 'analyst' ? (
-        <FleetAnalystApp />
+        <FleetAnalystApp 
+          onSwitchToAnalysisManager={switchToAnalysisManager}
+        />
       ) : (
         <FleetComposer 
           fleetData={sharedFleetData}

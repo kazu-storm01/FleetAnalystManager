@@ -12,8 +12,6 @@ interface SelectedApplicant extends Applicant {
   selectedAt: Date
   isAnalyzed: boolean
   advice: string
-  aiSuggestion?: string
-  isAiAnalyzing?: boolean
 }
 
 interface FormApplicant {
@@ -25,9 +23,10 @@ interface FormApplicant {
 
 
 interface FleetAnalystAppProps {
+  onSwitchToAnalysisManager?: () => void
 }
 
-const FleetAnalystApp: React.FC<FleetAnalystAppProps> = () => {
+const FleetAnalystApp: React.FC<FleetAnalystAppProps> = ({ onSwitchToAnalysisManager }) => {
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [selectedApplicants, setSelectedApplicants] = useState<SelectedApplicant[]>([])
   const [isSelecting, setIsSelecting] = useState(false)
@@ -37,41 +36,8 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = () => {
   const [formApplicants, setFormApplicants] = useState<FormApplicant[]>([
     { name: '', url: '', note: '' }
   ])
-  const [showApiSettings, setShowApiSettings] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // API キーの状態を確認
-  const getApiKeyStatus = () => {
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-    if (!apiKey) return { status: 'missing', message: '未設定' }
-    if (apiKey === 'your_claude_api_key_here') return { status: 'placeholder', message: 'サンプル値' }
-    if (apiKey.length < 20) return { status: 'invalid', message: '無効' }
-    return { status: 'valid', message: '設定済み' }
-  }
-
-  // APIテスト機能
-  const testApiConnection = async () => {
-    try {
-      const response = await fetch('/api/ai-analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: "テスト用プロンプト",
-          text: "これはAPI接続テストです。簡潔に応答してください。",
-          isAbyssal: false
-        })
-      })
-      
-      if (response.ok) {
-        const result = await response.json()
-        alert(`✅ API接続成功!\n応答: ${result.suggestion}`)
-      } else {
-        alert(`❌ APIエラー: ${response.status} ${response.statusText}`)
-      }
-    } catch (error) {
-      alert(`❌ 接続エラー: ${error}`)
-    }
-  }
 
   // XLSXファイルを読み込む（応募者リスト）
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,9 +101,7 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = () => {
             isAnalyzed: String(rowData['分析完了']).toLowerCase() === 'true' || 
                         String(rowData['分析完了']) === '完了' ||
                         String(rowData['分析完了']) === '✓',
-            advice: String(rowData['分析報告'] || rowData['アドバイス'] || ''),
-            aiSuggestion: undefined,
-            isAiAnalyzing: false
+            advice: String(rowData['分析報告'] || rowData['アドバイス'] || '')
           }
         })
         
@@ -167,9 +131,7 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = () => {
         ...applicant,
         selectedAt: new Date(),
         isAnalyzed: false,
-        advice: '',
-        aiSuggestion: undefined,
-        isAiAnalyzing: false
+        advice: ''
       }))
       
       setSelectedApplicants(selected)
@@ -191,83 +153,6 @@ const FleetAnalystApp: React.FC<FleetAnalystAppProps> = () => {
     ))
   }
 
-  // AI分析機能
-  const analyzeWithAI = async (index: number) => {
-    const applicant = selectedApplicants[index]
-    if (!applicant.advice.trim()) {
-      alert('分析報告を入力してから添削を実行してください。')
-      return
-    }
-
-    // 分析中状態に設定
-    setSelectedApplicants(prev => prev.map((app, i) => 
-      i === index ? { ...app, isAiAnalyzing: true } : app
-    ))
-
-    try {
-      const response = await fetch('/api/ai-analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: `次の艦隊分析報告書を、軍事的で洗練された表現に改善してください。`,
-          text: applicant.advice,
-          isAbyssal: false
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        
-        let suggestion = result.suggestion
-        
-        setSelectedApplicants(prev => prev.map((app, i) => 
-          i === index ? { 
-            ...app, 
-            aiSuggestion: suggestion,
-            isAiAnalyzing: false 
-          } : app
-        ))
-      } else {
-        throw new Error(`API Error: ${response.status}`)
-      }
-    } catch (error) {
-      console.error('AI分析エラー:', error)
-      
-      // フォールバック応答
-      const fallbackMessage = '申し訳ございません。現在AI機能が利用できません。手動で改善をお願いいたします。'
-      
-      setSelectedApplicants(prev => prev.map((app, i) => 
-        i === index ? { 
-          ...app, 
-          aiSuggestion: fallbackMessage,
-          isAiAnalyzing: false 
-        } : app
-      ))
-    }
-  }
-
-  // AI提案を採用
-  const adoptAiSuggestion = (index: number) => {
-    const applicant = selectedApplicants[index]
-    if (applicant.aiSuggestion) {
-      setSelectedApplicants(prev => prev.map((app, i) => 
-        i === index ? { 
-          ...app, 
-          advice: applicant.aiSuggestion!,
-          aiSuggestion: undefined 
-        } : app
-      ))
-    }
-  }
-
-  // AI提案を却下
-  const dismissAiSuggestion = (index: number) => {
-    setSelectedApplicants(prev => prev.map((app, i) => 
-      i === index ? { ...app, aiSuggestion: undefined } : app
-    ))
-  }
 
   // XLSX形式でエクスポート
   const exportToXLSX = () => {
@@ -434,9 +319,11 @@ ${applicant.advice}
   return (
     <div className="fleet-analysis-app shipgirl">
       <div className="theme-toggle">
-        <button onClick={() => setShowApiSettings(!showApiSettings)} className="theme-button">
-          ⚙️ API設定
-        </button>
+        {onSwitchToAnalysisManager && (
+          <button onClick={onSwitchToAnalysisManager} className="theme-button">
+            📊 ダッシュボード
+          </button>
+        )}
       </div>
 
       <div className="app-logo animate-fadeInUp">
@@ -446,61 +333,6 @@ ${applicant.advice}
         </>
       </div>
 
-      {/* API設定セクション */}
-      {showApiSettings && (
-        <div className="api-settings-section">
-          <div className="api-settings-header">
-            <h2>AI機能設定</h2>
-            <button 
-              onClick={() => setShowApiSettings(false)} 
-              className="api-settings-toggle"
-            >
-              閉じる
-            </button>
-          </div>
-          <div className="api-settings-content">
-            <div className="api-status">
-              <div className="status-item">
-                <span>API設定状況:</span>
-                <span className={`status-badge ${getApiKeyStatus().status}`}>
-                  {getApiKeyStatus().message}
-                </span>
-              </div>
-              <div className="status-item">
-                <span>使用モデル:</span>
-                <span className="api-model-info">Claude 3 Haiku</span>
-              </div>
-              {getApiKeyStatus().status === 'valid' && (
-                <div className="api-key-info">
-                  API キー設定済み (先頭8文字: {import.meta.env.VITE_ANTHROPIC_API_KEY?.substring(0, 8)}...)
-                </div>
-              )}
-              <button onClick={testApiConnection} className="api-test-button">
-                🔧 API接続テスト
-              </button>
-            </div>
-            
-            <div className="api-instructions">
-              <h4>🔧 API設定方法</h4>
-              <ol>
-                <li>
-                  <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">
-                    Anthropic Console
-                  </a> でAPIキーを取得してください
-                </li>
-                <li>プロジェクトルートに .env ファイルを作成</li>
-                <li>以下の形式で追記してください:</li>
-              </ol>
-              <div className="code-block">
-                <code>VITE_ANTHROPIC_API_KEY=your_api_key_here</code>
-              </div>
-              <div className="api-warning">
-                ⚠️ 注意: APIキーは秘密情報です。他人と共有せず、GitHubなどに公開しないでください。
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       
       <div className="file-upload-section">
         <h2><span className="material-icons">folder</span> ファイル管理</h2>
@@ -708,47 +540,6 @@ ${applicant.advice}
                       />
                     </div>
 
-                    {/* AI分析セクション */}
-                    <div className="ai-analysis-section">
-                      <button 
-                        onClick={() => analyzeWithAI(index)}
-                        disabled={applicant.isAiAnalyzing || !applicant.advice.trim()}
-                        className="ai-analyze-button"
-                      >
-                        {applicant.isAiAnalyzing ? (
-                          <>⏳ 分析中...</>
-                        ) : false ? (
-                          <><span className="material-icons">psychology</span> 深海添削</>
-                        ) : (
-                          <><span className="material-icons">edit_note</span> 報告書添削</>
-                        )}
-                      </button>
-
-                      {applicant.aiSuggestion && (
-                        <div className="ai-suggestion">
-                          <label>
-                            {false ? '深海棲艦による敵対的添削:' : 'AI改善提案:'}
-                          </label>
-                          <div className="ai-suggestion-text">
-                            {applicant.aiSuggestion}
-                          </div>
-                          <div className="ai-suggestion-actions">
-                            <button 
-                              onClick={() => adoptAiSuggestion(index)}
-                              className="adopt-suggestion-button"
-                            >
-                              ✅ 採用
-                            </button>
-                            <button 
-                              onClick={() => dismissAiSuggestion(index)}
-                              className="dismiss-suggestion-button"
-                            >
-                              ❌ 却下
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
 
                     <button 
                       onClick={() => exportIndividualReport(applicant)}
@@ -824,7 +615,6 @@ ${applicant.advice}
             <li>選出された提督が順番に表示されます</li>
             <li>分析完了チェックボックスで進捗管理</li>
             <li>分析報告欄に提督の特徴や推奨配置を記入</li>
-            <li>{false ? '「深海添削」ボタンで深海棲艦による敵対的な添削を実行' : '「報告書添削」ボタンで分析報告の表現を改善'}</li>
             <li>「分析結果エクスポート」で結果を保存</li>
             <li>分析結果XLSXを読み込めば前回の状態から再開可能</li>
           </ol>

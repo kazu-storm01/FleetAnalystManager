@@ -30,9 +30,10 @@ interface FleetEntry {
 
 interface FleetAnalysisManagerProps {
   onFleetDataChange?: (data: string) => void
+  onSwitchToAnalyst?: () => void
 }
 
-const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetDataChange }) => {
+const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetDataChange, onSwitchToAnalyst }) => {
   const [admiralName, setAdmiralName] = useState<string>('')
   const [isFirstSetup, setIsFirstSetup] = useState<boolean>(true)
   const [tempAdmiralName, setTempAdmiralName] = useState<string>('')
@@ -1526,6 +1527,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
             >
               <span className="material-symbols-outlined">settings</span>
             </button>
+            {onSwitchToAnalyst && (
+              <button 
+                onClick={onSwitchToAnalyst} 
+                className="action-button analyst-switch-button"
+                title={'分析者管理に切り替え'}
+              >
+                <span className="material-symbols-outlined">group</span>
+              </button>
+            )}
           </div>
         </div>
       )}
