@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { StatIcon } from './ShipStatusDisplay'
+import { getShipName } from '../data/shipMasterDataCore'
 
 // 型定義
 interface Task {
@@ -9,6 +10,34 @@ interface Task {
   createdAt: string
   inheritedFrom?: number
   originalTaskId?: number
+  completedAt?: string        // 完了日時（履歴用）
+  achievedInEntry?: number    // 達成されたエントリーID（履歴用）
+}
+
+// 育成履歴レコード
+interface TrainingHistoryRecord {
+  id: string
+  shipId: number
+  shipName: string
+  taskText: string
+  targetLevel?: number
+  targetHp?: number
+  targetAsw?: number
+  targetLuck?: number
+  createdAt: string
+  completedAt?: string
+  achievedInEntry?: number
+  status: 'active' | 'completed' | 'cancelled'
+  progress?: {
+    startLevel?: number
+    startHp?: number
+    startAsw?: number
+    startLuck?: number
+    currentLevel?: number
+    currentHp?: number
+    currentAsw?: number
+    currentLuck?: number
+  }
 }
 
 interface FleetEntry {
@@ -58,6 +87,10 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   const [privacyMode, setPrivacyMode] = useState<boolean | null>(null)
   const [showTrainingTasksOnly, setShowTrainingTasksOnly] = useState<boolean>(false)
   const [forceUpdate, setForceUpdate] = useState<number>(0)
+  
+  // 育成履歴関連の状態
+  const [trainingHistory, setTrainingHistory] = useState<TrainingHistoryRecord[]>([])
+  const [showTrainingHistory, setShowTrainingHistory] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fleetEntriesRef = useRef<FleetEntry[]>([])
@@ -117,7 +150,65 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     }
   }
 
-  
+  // 育成履歴の読み込み
+  useEffect(() => {
+    if (admiralName) {
+      const storedHistory = localStorage.getItem(`${admiralName}_trainingHistory`)
+      if (storedHistory) {
+        try {
+          setTrainingHistory(JSON.parse(storedHistory))
+        } catch (error) {
+          console.error('育成履歴の読み込みに失敗:', error)
+        }
+      }
+    }
+  }, [admiralName])
+
+  // 育成履歴の保存
+  const saveTrainingHistory = useCallback((history: TrainingHistoryRecord[]) => {
+    setTrainingHistory(history)
+    if (admiralName) {
+      localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(history))
+    }
+  }, [admiralName])
+
+  // 育成履歴レコードの作成
+  const createTrainingHistoryRecord = useCallback((
+    shipId: number, 
+    taskText: string, 
+    targets: any,
+    initialProgress?: any
+  ): TrainingHistoryRecord => {
+    return {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      shipId,
+      shipName: getShipName(shipId),
+      taskText,
+      targetLevel: targets?.targetLevel,
+      targetHp: targets?.targetHp,
+      targetAsw: targets?.targetAsw,
+      targetLuck: targets?.targetLuck,
+      createdAt: new Date().toISOString(),
+      status: 'active',
+      progress: initialProgress
+    }
+  }, [])
+
+  // 育成履歴レコードの更新
+  const updateTrainingHistoryRecord = useCallback((
+    recordId: string, 
+    updates: Partial<TrainingHistoryRecord>
+  ) => {
+    setTrainingHistory(prev => {
+      const updated = prev.map(record => 
+        record.id === recordId ? { ...record, ...updates } : record
+      )
+      if (admiralName) {
+        localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
+      }
+      return updated
+    })
+  }, [admiralName])
 
   // ペースト時の自動登録処理
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -151,11 +242,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                   console.log('🔍 タスクチェック:', task.text, '育成タスク:', isTraining)
                   
                   if (isTraining) {
-                    const isAchieved = isTrainingTaskAchieved(task.text)
+                    const isAchieved = isTrainingTaskAchieved(task.text, pastedData)
                     console.log('🔍 達成チェック結果:', isAchieved, 'タスク:', task.text)
                     if (isAchieved) {
                       console.log('🎯 現在のエントリーで達成済みタスクを完了状態に変更:', task.text)
-                      return { ...task, completed: true }
+                      return { 
+                        ...task, 
+                        completed: true,
+                        completedAt: new Date().toISOString(),
+                        achievedInEntry: currentLatest.id
+                      }
                     }
                   }
                 }
@@ -166,18 +262,25 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
               console.log('🔍 更新後のタスク数:', updatedTasks.length, '完了数:', updatedTasks.filter(t => t.completed).length)
             }
 
-            // 未達成タスクを引き継ぎ（引き継ぎ前に達成チェック）
+            // タスクを引き継ぎ（達成済み育成タスクも履歴として継承）
             const inheritedTasks = updatedCurrentLatest ? 
               updatedCurrentLatest.tasks
-                .filter(task => !task.completed)
                 .filter(task => {
-                  // 育成タスクの場合は、引き継ぎ前に達成チェック
+                  // 達成済み育成タスクは履歴として継承する
+                  if (task.completed && task.achievedInEntry && isTrainingTask(task.text)) {
+                    console.log('🏆 達成済み育成タスクを履歴として継承:', task.text)
+                    return true
+                  }
+                  // その他の完了済みタスクは継承しない
+                  if (task.completed) {
+                    return false
+                  }
+                  // 未完了タスクの場合は達成チェック
                   const isTraining = isTrainingTask(task.text)
-                  
                   if (isTraining) {
-                    const isAchieved = isTrainingTaskAchieved(task.text)
+                    const isAchieved = isTrainingTaskAchieved(task.text, pastedData)
                     if (isAchieved) {
-                      console.log('🎯 達成済みタスクを引き継ぎ対象から除外:', task.text)
+                      console.log('🎯 達成済みタスクを継承対象から除外:', task.text)
                     }
                     return !isAchieved
                   }
@@ -366,11 +469,81 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       }
     }
 
+    // 育成履歴レコード作成イベントのハンドラー
+    const handleTrainingHistoryRecordCreated = (event: CustomEvent) => {
+      const { record } = event.detail
+      console.log('🎧 育成履歴レコード作成イベント受信:', record.shipName)
+      
+      setTrainingHistory(prev => {
+        const updated = [...prev, record]
+        if (admiralName) {
+          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
+        }
+        return updated
+      })
+    }
+
+    // 育成履歴目標値更新イベントのハンドラー
+    const handleTrainingHistoryTargetsUpdated = (event: CustomEvent) => {
+      const { shipId, shipName, targets } = event.detail
+      console.log('🎧 育成履歴目標値更新イベント受信:', shipName)
+      
+      setTrainingHistory(prev => {
+        const updated = prev.map(record => {
+          if (record.shipId === shipId && record.shipName === shipName && record.status === 'active') {
+            return {
+              ...record,
+              targetLevel: targets.targetLevel,
+              targetHp: targets.targetHp,
+              targetAsw: targets.targetAsw,
+              targetLuck: targets.targetLuck
+            }
+          }
+          return record
+        })
+        
+        if (admiralName) {
+          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
+        }
+        return updated
+      })
+    }
+
+    // 育成履歴レコードキャンセルイベントのハンドラー
+    const handleTrainingHistoryRecordCancelled = (event: CustomEvent) => {
+      const { shipId, shipName } = event.detail
+      console.log('🎧 育成履歴レコードキャンセルイベント受信:', shipName)
+      
+      setTrainingHistory(prev => {
+        const updated = prev.map(record => {
+          if (record.shipId === shipId && record.shipName === shipName && record.status === 'active') {
+            return {
+              ...record,
+              status: 'cancelled' as const,
+              completedAt: new Date().toISOString()
+            }
+          }
+          return record
+        })
+        
+        if (admiralName) {
+          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
+        }
+        return updated
+      })
+    }
+
     console.log('🎧 FleetAnalysisManagerでイベントリスナーを登録, admiral:', admiralName)
     window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
+    window.addEventListener('trainingHistoryRecordCreated', handleTrainingHistoryRecordCreated as EventListener)
+    window.addEventListener('trainingHistoryTargetsUpdated', handleTrainingHistoryTargetsUpdated as EventListener)
+    window.addEventListener('trainingHistoryRecordCancelled', handleTrainingHistoryRecordCancelled as EventListener)
 
     return () => {
       window.removeEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
+      window.removeEventListener('trainingHistoryRecordCreated', handleTrainingHistoryRecordCreated as EventListener)
+      window.removeEventListener('trainingHistoryTargetsUpdated', handleTrainingHistoryTargetsUpdated as EventListener)
+      window.removeEventListener('trainingHistoryRecordCancelled', handleTrainingHistoryRecordCancelled as EventListener)
     }
   }, [admiralName])
 
@@ -494,9 +667,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   const toggleTask = (entryId: number, taskId: number) => {
     const updatedEntries = fleetEntries.map(entry => {
       if (entry.id === entryId) {
-        const updatedTasks = entry.tasks.map(task => 
-          task.id === taskId ? { ...task, completed: !task.completed } : task
-        )
+        const updatedTasks = entry.tasks.map(task => {
+          if (task.id === taskId) {
+            const isCompleting = !task.completed
+            return { 
+              ...task, 
+              completed: isCompleting,
+              completedAt: isCompleting ? new Date().toISOString() : undefined,
+              achievedInEntry: isCompleting ? entryId : undefined
+            }
+          }
+          return task
+        })
         
         // 100%達成チェック
         const completedCount = updatedTasks.filter(t => t.completed).length
@@ -693,7 +875,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     if (!showTrainingTasksOnly) return tasks
     
     const trainingTaskIds = getTrainingCandidatesMainTaskIds()
-    return tasks.filter(task => trainingTaskIds.includes(task.id))
+    return tasks.filter(task => {
+      // 現在の育成候補リストにあるタスク
+      if (trainingTaskIds.includes(task.id) || 
+          (task.originalTaskId && trainingTaskIds.includes(task.originalTaskId))) {
+        return true
+      }
+      
+      // 達成済み育成タスクは育成候補リストの状態に関係なく表示
+      if (task.completed && task.achievedInEntry && isTrainingTask(task.text)) {
+        console.log('🏆 達成済み育成タスクを履歴として表示:', task.text)
+        return true
+      }
+      
+      return false
+    })
   }
 
   // 育成タスクかどうかの判定（シンプル版）
@@ -701,15 +897,82 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     return taskText.includes('を育成する')
   }
 
-  // 育成タスクが達成されているかチェック（シンプル版）
-  const isTrainingTaskAchieved = (taskText: string): boolean => {
-    // 育成候補リストが空の場合、目標値未設定とみなして達成済みとする
-    const trainingTaskIds = getTrainingCandidatesMainTaskIds()
-    if (trainingTaskIds.length === 0 && taskText.includes('を育成する')) {
-      console.log('🎯 育成候補リストが空のため達成済みと判定:', taskText)
-      return true
+  // 育成タスクが達成されているかチェック（実際の艦隊データベース版）
+  const isTrainingTaskAchieved = (taskText: string, fleetJsonData?: string): boolean => {
+    if (!taskText.includes('を育成する')) {
+      return false
     }
-    return false
+    
+    // 艦隊データがない場合は達成判定できない
+    if (!fleetJsonData) {
+      console.log('🔍 艦隊データがないため達成判定スキップ:', taskText)
+      return false
+    }
+    
+    // 育成候補リストが空の場合は達成判定できない
+    const trainingTaskIds = getTrainingCandidatesMainTaskIds()
+    if (trainingTaskIds.length === 0) {
+      console.log('🔍 育成候補リストが空のため達成判定スキップ:', taskText)
+      return false
+    }
+    
+    try {
+      // 艦隊データを解析
+      const data = JSON.parse(fleetJsonData)
+      const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
+      
+      // 育成候補データを取得
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (!stored) return false
+      
+      const candidates = JSON.parse(stored)
+      
+      // タスクテキストから艦娘を特定（簡易版）
+      const taskMatch = taskText.match(/(.+?)を育成する/)
+      if (!taskMatch) return false
+      
+      const shipNameInTask = taskMatch[1]
+      
+      // 育成候補の中から該当する艦娘を探して達成チェック
+      for (const candidate of candidates) {
+        const ship = ships.find((s: any) => 
+          s.api_id === candidate.instanceId || s.id === candidate.instanceId
+        )
+        
+        if (!ship) continue
+        
+        // 現在のステータスを取得
+        const currentLevel = ship.api_lv || ship.lv || 0
+        const currentHp = ship.api_maxhp || ship.maxhp || 0
+        const currentAsw = ship.api_taisen?.[0] || ship.taisen?.[0] || 0
+        const currentLuck = ship.api_lucky?.[0] || ship.lucky?.[0] || 0
+        
+        // 各目標の達成チェック
+        const levelAchieved = !candidate.targetLevel || currentLevel >= candidate.targetLevel
+        const hpAchieved = !candidate.targetHp || currentHp >= candidate.targetHp
+        const aswAchieved = !candidate.targetAsw || currentAsw >= candidate.targetAsw
+        const luckAchieved = !candidate.targetLuck || currentLuck >= candidate.targetLuck
+        
+        const allTargetsAchieved = levelAchieved && hpAchieved && aswAchieved && luckAchieved
+        
+        if (allTargetsAchieved) {
+          console.log('🎯 育成目標達成:', {
+            shipName: shipNameInTask,
+            instanceId: candidate.instanceId,
+            level: currentLevel,
+            hp: currentHp,
+            asw: currentAsw,
+            luck: currentLuck
+          })
+          return true
+        }
+      }
+      
+      return false
+    } catch (error) {
+      console.error('育成達成判定エラー:', error)
+      return false
+    }
   }
 
   // 育成タスクの艦娘shipIdを取得（最新エントリーのタスクのみ対象）
@@ -890,15 +1153,30 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
 
   // 育成タスクを完了にマーク（引き継いだタスクも含む）
   const markTrainingTaskAsCompleted = (taskId: number) => {
+    const completionTime = new Date().toISOString()
+    let completedTaskText = ''
+    
     const updatedEntries = fleetEntries.map(entry => {
       const updatedTasks = entry.tasks.map(task => {
         // メインタスクの完了
         if (task.id === taskId) {
-          return { ...task, completed: true }
+          completedTaskText = task.text
+          return { 
+            ...task, 
+            completed: true,
+            completedAt: completionTime,
+            achievedInEntry: entry.id
+          }
         }
         // 引き継いだタスクの完了（originalTaskIdが一致するもの）
         else if (task.originalTaskId === taskId) {
-          return { ...task, completed: true }
+          if (!completedTaskText) completedTaskText = task.text
+          return { 
+            ...task, 
+            completed: true,
+            completedAt: completionTime,
+            achievedInEntry: entry.id
+          }
         }
         return task
       })
@@ -907,6 +1185,27 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     
     setFleetEntries(updatedEntries)
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
+    
+    // 育成履歴レコードを完了状態に更新
+    if (completedTaskText) {
+      setTrainingHistory(prev => {
+        const updated = prev.map(record => {
+          if (record.taskText === completedTaskText && record.status === 'active') {
+            return {
+              ...record,
+              status: 'completed' as const,
+              completedAt: completionTime
+            }
+          }
+          return record
+        })
+        
+        if (admiralName) {
+          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
+        }
+        return updated
+      })
+    }
   }
 
   // 差分計算
@@ -1489,6 +1788,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
               </button>
             )}
             <button 
+              onClick={() => setShowTrainingHistory(true)} 
+              className="action-button history-button"
+              title={theme === 'shipgirl' ? '育成履歴表示' : '育成履歴表示'}
+            >
+              <span className="material-symbols-outlined">history_edu</span>
+            </button>
+            <button 
               onClick={() => setShowBackup(!showBackup)} 
               className="action-button backup-button"
               title={theme === 'shipgirl' ? 'バックアップ' : 'バックアップ'}
@@ -1799,6 +2105,19 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                                 <span className={task.completed ? 'completed' : ''}>{task.text}</span>
                               </label>
                             )}
+                            {/* 完了履歴情報 */}
+                            {task.completed && task.completedAt && (
+                              <div className="task-completion-info">
+                                <span className="completion-date">
+                                  {theme === 'shipgirl' ? '完了' : '完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
+                                </span>
+                                {task.achievedInEntry && (
+                                  <span className="completion-entry">
+                                    {theme === 'shipgirl' ? 'エントリー' : 'エントリー'}: #{task.achievedInEntry}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             {!isTraining && (
                               <button 
                                 onClick={() => deleteTask(latestEntry.id, task.id)}
@@ -2004,6 +2323,19 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                                   <span className={task.completed ? 'completed' : ''}>{task.text}</span>
                                 </label>
                               )}
+                              {/* 完了履歴情報 */}
+                              {task.completed && task.completedAt && (
+                                <div className="task-completion-info">
+                                  <span className="completion-date">
+                                    {theme === 'shipgirl' ? '完了' : '完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
+                                  </span>
+                                  {task.achievedInEntry && (
+                                    <span className="completion-entry">
+                                      {theme === 'shipgirl' ? 'エントリー' : 'エントリー'}: #{task.achievedInEntry}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
@@ -2067,6 +2399,106 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       )}
 
       {/* トースト通知 */}
+      {/* 育成履歴モーダル */}
+      {showTrainingHistory && (
+        <div className="modal-overlay" onClick={() => setShowTrainingHistory(false)}>
+          <div className="modal-content training-history-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{theme === 'shipgirl' ? '育成履歴' : '育成履歴'}</h3>
+              <button 
+                onClick={() => setShowTrainingHistory(false)}
+                className="modal-close-btn"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              {trainingHistory.length === 0 ? (
+                <div className="empty-state">
+                  <span className="material-symbols-outlined">history_edu</span>
+                  <p>{theme === 'shipgirl' ? '育成履歴がありません' : '育成履歴ガアリマセン'}</p>
+                </div>
+              ) : (
+                <div className="training-history-list">
+                  {trainingHistory.map(record => (
+                    <div key={record.id} className={`training-history-item ${record.status}`}>
+                      <div className="history-ship-info">
+                        <img 
+                          src={`/FleetAnalystManager/images/banner/${record.shipId}.png`}
+                          alt={record.shipName}
+                          className="history-ship-banner"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                        <div className="ship-details">
+                          <h4>{record.shipName}</h4>
+                          <p className="task-text">{record.taskText}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="history-details">
+                        <div className="targets">
+                          {record.targetLevel && (
+                            <span className="target-item">
+                              <span className="target-label">Lv</span>
+                              <span className="target-value">{record.targetLevel}</span>
+                            </span>
+                          )}
+                          {record.targetHp && (
+                            <span className="target-item">
+                              <span className="target-label">HP</span>
+                              <span className="target-value">{record.targetHp}</span>
+                            </span>
+                          )}
+                          {record.targetAsw && (
+                            <span className="target-item">
+                              <span className="target-label">対潜</span>
+                              <span className="target-value">{record.targetAsw}</span>
+                            </span>
+                          )}
+                          {record.targetLuck && (
+                            <span className="target-item">
+                              <span className="target-label">運</span>
+                              <span className="target-value">{record.targetLuck}</span>
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="timeline">
+                          <div className="timeline-item">
+                            <span className="timeline-label">開始:</span>
+                            <span className="timeline-date">
+                              {new Date(record.createdAt).toLocaleString('ja-JP')}
+                            </span>
+                          </div>
+                          {record.completedAt && (
+                            <div className="timeline-item">
+                              <span className="timeline-label">完了:</span>
+                              <span className="timeline-date">
+                                {new Date(record.completedAt).toLocaleString('ja-JP')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className={`status-badge ${record.status}`}>
+                          {record.status === 'active' && (theme === 'shipgirl' ? '育成中' : '育成中')}
+                          {record.status === 'completed' && (theme === 'shipgirl' ? '完了' : '完了')}
+                          {record.status === 'cancelled' && (theme === 'shipgirl' ? '中止' : '中止')}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div className={`toast ${toast.type}`}>
           {toast.message}

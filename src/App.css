@@ -12158,3 +12158,218 @@ h4 .material-icons {
 .fleet-composer.abyssal .stat-value {
   color: #ffebee;
 }
+/* タスク完了履歴情報 */
+.task-completion-info {
+  font-size: 0.8rem;
+  color: rgba(225, 245, 254, 0.7);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.fleet-analysis-manager.abyssal .task-completion-info {
+  color: rgba(211, 211, 211, 0.7);
+}
+
+.task-completion-info .completion-date {
+  margin-right: 8px;
+}
+
+.task-completion-info .completion-entry {
+  color: rgba(225, 245, 254, 0.5);
+}
+
+.fleet-analysis-manager.abyssal .task-completion-info .completion-entry {
+  color: rgba(211, 211, 211, 0.5);
+}
+
+/* 育成履歴モーダル */
+.training-history-modal {
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.training-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.training-history-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.training-history-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.fleet-analysis-manager.abyssal .training-history-item:hover {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.history-ship-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.history-ship-banner {
+  width: 60px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.ship-details h4 {
+  margin: 0 0 4px 0;
+  color: #e1f5fe;
+  font-size: 1rem;
+}
+
+.fleet-analysis-manager.abyssal .ship-details h4 {
+  color: #ffebee;
+}
+
+.ship-details .task-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(225, 245, 254, 0.8);
+  font-style: italic;
+}
+
+.fleet-analysis-manager.abyssal .ship-details .task-text {
+  color: rgba(255, 235, 238, 0.8);
+}
+
+.history-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.target-item {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+.fleet-analysis-manager.abyssal .target-item {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.target-label {
+  color: rgba(225, 245, 254, 0.7);
+  margin-right: 4px;
+}
+
+.fleet-analysis-manager.abyssal .target-label {
+  color: rgba(255, 235, 238, 0.7);
+}
+
+.target-value {
+  color: #00d4ff;
+  font-weight: bold;
+}
+
+.fleet-analysis-manager.abyssal .target-value {
+  color: #ff6b6b;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.timeline-label {
+  color: rgba(225, 245, 254, 0.7);
+  min-width: 40px;
+}
+
+.fleet-analysis-manager.abyssal .timeline-label {
+  color: rgba(255, 235, 238, 0.7);
+}
+
+.timeline-date {
+  color: #e1f5fe;
+}
+
+.fleet-analysis-manager.abyssal .timeline-date {
+  color: #ffebee;
+}
+
+.status-badge {
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-badge.active {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.completed {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.cancelled {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: rgba(225, 245, 254, 0.6);
+}
+
+.fleet-analysis-manager.abyssal .empty-state {
+  color: rgba(255, 235, 238, 0.6);
+}
+
+.empty-state .material-symbols-outlined {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.action-button.history-button {
+  background: rgba(156, 39, 176, 0.1);
+  border-color: rgba(156, 39, 176, 0.3);
+  color: #9c27b0;
+}
+
+.action-button.history-button:hover {
+  background: rgba(156, 39, 176, 0.2);
+  border-color: rgba(156, 39, 176, 0.5);
+}
