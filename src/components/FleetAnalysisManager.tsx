@@ -132,25 +132,57 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           const stats = calculateFleetStats(pastedData)
           console.log('🔧 統計計算完了:', stats)
           
-          // シンプルな新エントリー作成
-          const newEntry: FleetEntry = {
-            id: Date.now(),
-            totalExp: stats.totalExp,
-            shipCount: stats.shipCount,
-            marriedCount: stats.marriedCount,
-            luckModTotal: stats.luckModTotal,
-            hpModTotal: stats.hpModTotal,
-            aswModTotal: stats.aswModTotal,
-            tasks: [],
-            url: undefined,
-            createdAt: new Date().toISOString(),
-            admiralName,
-            isLatest: true
-          }
-
-          // 関数型更新で確実に状態更新
+          // 関数型更新で確実に状態更新（タスク引き継ぎも含む）
           setFleetEntries(prev => {
             console.log('🔧 関数型更新 - 前:', prev.length, '件')
+            
+            // 未達成タスクを引き継ぎ
+            const currentLatest = prev.find(entry => entry.isLatest)
+            const inheritedTasks = currentLatest ? 
+              currentLatest.tasks
+                .filter(task => !task.completed)
+                .map(task => {
+                  const newTaskId = Date.now() + Math.random()
+                  const originalTaskId = task.originalTaskId || task.id
+                  
+                  // 育成タスクの場合は最新の目標値でテキストを更新
+                  let updatedText = task.text
+                  if (isTrainingTask(task.id, originalTaskId, currentLatest.id)) {
+                    const newText = createUpdatedTaskText(task.id, originalTaskId, pastedData)
+                    if (newText) {
+                      updatedText = newText
+                      console.log('🔧 育成タスクテキスト更新:', task.text, '→', newText)
+                    }
+                  }
+                  
+                  return {
+                    ...task,
+                    id: newTaskId,
+                    text: updatedText,
+                    inheritedFrom: currentLatest.id,
+                    originalTaskId: originalTaskId,
+                    createdAt: new Date().toISOString()
+                  }
+                }) : []
+
+            console.log('🔧 引き継ぎタスク数:', inheritedTasks.length)
+
+            // シンプルな新エントリー作成
+            const newEntry: FleetEntry = {
+              id: Date.now(),
+              totalExp: stats.totalExp,
+              shipCount: stats.shipCount,
+              marriedCount: stats.marriedCount,
+              luckModTotal: stats.luckModTotal,
+              hpModTotal: stats.hpModTotal,
+              aswModTotal: stats.aswModTotal,
+              tasks: inheritedTasks,
+              url: undefined,
+              createdAt: new Date().toISOString(),
+              admiralName,
+              isLatest: true
+            }
+
             const updated = prev.map(entry => ({ ...entry, isLatest: false }))
             const newEntries = [...updated, newEntry]
             console.log('🔧 関数型更新 - 後:', newEntries.length, '件')
@@ -276,14 +308,10 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     }
 
     console.log('🎧 FleetAnalysisManagerでイベントリスナーを登録, admiral:', admiralName)
-    // window.addEventListener('storage', handleStorageChange) // 一時的に無効化
-    // window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener) // 一時的に無効化
-    // const interval = setInterval(checkForUpdates, 2000) // 一時的に無効化
+    window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
 
     return () => {
-      // window.removeEventListener('storage', handleStorageChange) // 一時的に無効化
-      // window.removeEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener) // 一時的に無効化
-      // clearInterval(interval)
+      window.removeEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
     }
   }, [admiralName])
 
@@ -571,16 +599,33 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     return tasks.filter(task => trainingTaskIds.includes(task.id))
   }
 
-  // 育成タスクかどうかの判定
-  const isTrainingTask = (taskId: number, originalTaskId?: number): boolean => {
+  // 育成タスクかどうかの判定（最新エントリーのタスクのみ対象）
+  const isTrainingTask = (taskId: number, originalTaskId?: number, entryId?: number): boolean => {
     const trainingTaskIds = getTrainingCandidatesMainTaskIds()
+    
+    // 最新エントリーのタスクの場合のみ育成タスクとして判定
+    const latestEntry = fleetEntries.find(entry => entry.isLatest)
+    const isFromLatestEntry = !entryId || (latestEntry && latestEntry.id === entryId)
+    
+    if (!isFromLatestEntry) {
+      return false // 過去のエントリーのタスクは育成タスクとして扱わない
+    }
+    
     return trainingTaskIds.includes(taskId) || 
            (originalTaskId !== undefined && trainingTaskIds.includes(originalTaskId))
   }
 
-  // 育成タスクの艦娘shipIdを取得
-  const getTrainingTaskShipId = (taskId: number, originalTaskId?: number): number | null => {
+  // 育成タスクの艦娘shipIdを取得（最新エントリーのタスクのみ対象）
+  const getTrainingTaskShipId = (taskId: number, originalTaskId?: number, entryId?: number): number | null => {
     try {
+      // 最新エントリーのタスクの場合のみ育成タスクとして扱う
+      const latestEntry = fleetEntries.find(entry => entry.isLatest)
+      const isFromLatestEntry = !entryId || (latestEntry && latestEntry.id === entryId)
+      
+      if (!isFromLatestEntry) {
+        return null // 過去のエントリーのタスクは育成タスクとして扱わない
+      }
+      
       const stored = localStorage.getItem('fleetComposer_trainingCandidates')
       if (!stored) return null
       
@@ -594,6 +639,93 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     } catch (error) {
       console.error('Training task ship ID retrieval failed:', error)
       return null
+    }
+  }
+
+  // 育成候補の情報を取得
+  const getTrainingCandidate = (taskId: number, originalTaskId?: number): any | null => {
+    try {
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (!stored) return null
+      
+      const candidates = JSON.parse(stored)
+      // まず現在のtaskIdで検索、見つからなければoriginalTaskIdで検索
+      let candidate = candidates.find((c: any) => c.mainTaskId === taskId)
+      if (!candidate && originalTaskId) {
+        candidate = candidates.find((c: any) => c.mainTaskId === originalTaskId)
+      }
+      return candidate || null
+    } catch (error) {
+      console.error('Training candidate retrieval failed:', error)
+      return null
+    }
+  }
+
+  // 最新の目標値でタスクテキストを生成（FleetComposerのcreateMainTaskTextと同等）
+  const createUpdatedTaskText = (taskId: number, originalTaskId?: number, currentFleetData?: string): string => {
+    try {
+      const candidate = getTrainingCandidate(taskId, originalTaskId)
+      if (!candidate) return '' // 育成候補が見つからない場合は元のテキストを保持
+      
+      // 現在の艦船データを取得
+      let currentStats = null
+      if (currentFleetData) {
+        try {
+          const data = JSON.parse(currentFleetData)
+          const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
+          const ship = ships.find((s: any) => s.api_id === candidate.instanceId || s.id === candidate.instanceId)
+          if (ship) {
+            currentStats = {
+              level: ship.api_lv || ship.lv || 0,
+              hp: ship.api_maxhp || ship.maxhp || 0,
+              asw: ship.api_taisen?.[0] || ship.taisen?.[0] || 0,
+              luck: ship.api_lucky?.[0] || ship.lucky?.[0] || 0
+            }
+          }
+        } catch (error) {
+          console.error('Failed to parse fleet data for task text update:', error)
+        }
+      }
+      
+      const targets: string[] = []
+      
+      if (candidate.targetLevel && (!currentStats || candidate.targetLevel > currentStats.level)) {
+        if (currentStats) {
+          targets.push(`Lv${currentStats.level}→${candidate.targetLevel}`)
+        } else {
+          targets.push(`Lv目標${candidate.targetLevel}`)
+        }
+      }
+      if (candidate.targetHp && (!currentStats || candidate.targetHp > currentStats.hp)) {
+        if (currentStats) {
+          targets.push(`耐久${currentStats.hp}→${candidate.targetHp}`)
+        } else {
+          targets.push(`耐久目標${candidate.targetHp}`)
+        }
+      }
+      if (candidate.targetAsw && (!currentStats || candidate.targetAsw > currentStats.asw)) {
+        if (currentStats) {
+          targets.push(`対潜${currentStats.asw}→${candidate.targetAsw}`)
+        } else {
+          targets.push(`対潜目標${candidate.targetAsw}`)
+        }
+      }
+      if (candidate.targetLuck && (!currentStats || candidate.targetLuck > currentStats.luck)) {
+        if (currentStats) {
+          targets.push(`運${currentStats.luck}→${candidate.targetLuck}`)
+        } else {
+          targets.push(`運目標${candidate.targetLuck}`)
+        }
+      }
+      
+      if (targets.length === 0) {
+        return `${candidate.name}を育成する`
+      }
+      
+      return `${candidate.name}を育成する（${targets.join('、')}）`
+    } catch (error) {
+      console.error('Task text generation failed:', error)
+      return '' // エラーの場合は元のテキストを保持
     }
   }
 
@@ -1530,8 +1662,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                   </div>
                   <div className="tasks-list">
                     {filterTasksForDisplay(latestEntry.tasks).map(task => {
-                      const isTraining = isTrainingTask(task.id, task.originalTaskId)
-                      const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId) : null
+                      const isTraining = isTrainingTask(task.id, task.originalTaskId, latestEntry.id)
+                      const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId, latestEntry.id) : null
                       return (
                         <div 
                           key={task.id} 
@@ -1734,8 +1866,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                     </div>
                     <div className="tasks-list">
                       {filterTasksForDisplay(entry.tasks).map(task => {
-                        const isTraining = isTrainingTask(task.id, task.originalTaskId)
-                        const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId) : null
+                        const isTraining = isTrainingTask(task.id, task.originalTaskId, entry.id)
+                        const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId, entry.id) : null
                         return (
                           <div 
                             key={task.id} 
