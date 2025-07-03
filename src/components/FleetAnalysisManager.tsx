@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { StatIcon } from './ShipStatusDisplay'
 
 // 型定義
 interface Task {
@@ -1124,21 +1125,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                   className={`graph-tab ${activeGraphTab === 'luck' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('luck')}
                 >
-                  <span className="material-icons">stars</span>
+                  <StatIcon icon="luck" className="graph-tab-icon" />
                   {theme === 'shipgirl' ? '運改修' : '運改修'}
                 </button>
                 <button 
                   className={`graph-tab ${activeGraphTab === 'hp' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('hp')}
                 >
-                  <span className="material-icons">health_and_safety</span>
+                  <StatIcon icon="hp" className="graph-tab-icon" />
                   {theme === 'shipgirl' ? '耐久改修' : '耐久改修'}
                 </button>
                 <button 
                   className={`graph-tab ${activeGraphTab === 'asw' ? 'active' : ''}`}
                   onClick={() => setActiveGraphTab('asw')}
                 >
-                  <span className="material-icons">radar</span>
+                  <StatIcon icon="asw" className="graph-tab-icon" />
                   {theme === 'shipgirl' ? '対潜改修' : '対潜改修'}
                 </button>
               </div>
@@ -1362,14 +1363,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
               className={`action-button training-filter-button ${showTrainingTasksOnly ? 'active' : ''}`}
               title={theme === 'shipgirl' ? (showTrainingTasksOnly ? '全タスク表示' : '育成タスクのみ表示') : (showTrainingTasksOnly ? '全任務表示' : '育成任務ノミ表示')}
             >
-              <span className="material-icons">{showTrainingTasksOnly ? 'filter_list_off' : 'filter_list'}</span>
+              <span className="material-symbols-outlined">{showTrainingTasksOnly ? 'filter_list_off' : 'filter_list'}</span>
             </button>
             <button 
               onClick={() => setPrivacyMode(!privacyMode)} 
               className={`action-button privacy-button ${privacyMode === true ? 'active' : ''}`}
               title={theme === 'shipgirl' ? (privacyMode === true ? 'プライバシーモード解除' : 'プライバシーモード') : (privacyMode === true ? 'プライバシーモード解除' : 'プライバシーモード')}
             >
-              <span className="material-icons">{privacyMode === true ? 'visibility' : 'visibility_off'}</span>
+              <span className="material-symbols-outlined">{privacyMode === true ? 'visibility' : 'visibility_off'}</span>
             </button>
             {fleetEntries.length >= 2 && (
               <button 
@@ -1377,7 +1378,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                 className="action-button chart-button"
                 title={theme === 'shipgirl' ? '分析推移表示' : '分析推移表示'}
               >
-                <span className="material-icons">analytics</span>
+                <span className="material-symbols-outlined">analytics</span>
               </button>
             )}
             <button 
@@ -1385,7 +1386,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
               className="action-button backup-button"
               title={theme === 'shipgirl' ? 'バックアップ' : 'バックアップ'}
             >
-              <span className="material-icons">settings</span>
+              <span className="material-symbols-outlined">settings</span>
             </button>
           </div>
         </div>

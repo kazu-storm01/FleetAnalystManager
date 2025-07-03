@@ -253,4 +253,5 @@ const ShipStatusDisplay: React.FC<ShipStatusDisplayProps> = ({
   );
 };
 
+export { StatIcon };
 export default ShipStatusDisplay;
