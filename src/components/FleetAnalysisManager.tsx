@@ -314,23 +314,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   useEffect(() => {
     if (!admiralName) return
 
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `${admiralName}_fleetEntries` && e.newValue) {
-        try {
-          const updatedEntries = JSON.parse(e.newValue)
-          const processedEntries = updatedEntries.map((entry: FleetEntry) => ({
-            ...entry,
-            luckModTotal: entry.luckModTotal ?? 0,
-            hpModTotal: entry.hpModTotal ?? 0,
-            aswModTotal: entry.aswModTotal ?? 0
-          }))
-          setFleetEntries(processedEntries)
-          console.log('🔄 艦隊エントリーがリアルタイム更新されました')
-        } catch (error) {
-          console.error('LocalStorage更新の処理に失敗:', error)
-        }
-      }
-    }
 
     // FleetComposerからのカスタムイベントを監視（即座の同期）
     const handleFleetEntriesUpdated = (event: CustomEvent) => {
@@ -352,30 +335,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       }
     }
 
-    // 同一タブ内での変更を検知するために定期チェックも追加
-    const checkForUpdates = () => {
-      const saved = localStorage.getItem(`${admiralName}_fleetEntries`)
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          const currentSerialized = JSON.stringify(fleetEntries)
-          const newSerialized = JSON.stringify(parsed)
-          
-          if (currentSerialized !== newSerialized) {
-            const processedEntries = parsed.map((entry: FleetEntry) => ({
-              ...entry,
-              luckModTotal: entry.luckModTotal ?? 0,
-              hpModTotal: entry.hpModTotal ?? 0,
-              aswModTotal: entry.aswModTotal ?? 0
-            }))
-            setFleetEntries(processedEntries)
-            console.log('🔄 艦隊エントリーが定期チェックで更新されました')
-          }
-        } catch (error) {
-          console.error('定期チェックの処理に失敗:', error)
-        }
-      }
-    }
 
     console.log('🎧 FleetAnalysisManagerでイベントリスナーを登録, admiral:', admiralName)
     window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
