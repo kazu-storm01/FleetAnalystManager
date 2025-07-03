@@ -467,7 +467,7 @@ const deleteFormationFromStorage = (formationId: string) => {
 const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<string>('all')
-  const [sortType, setSortType] = useState<'level' | 'id' | 'shipId' | 'shipType'>('level')
+  const [sortType, setSortType] = useState<'level' | 'id' | 'shipId'>('level')
   const [fleetSlots, setFleetSlots] = useState<FleetSlot[]>(
     Array.from({ length: 6 }, (_, i) => ({ position: i, ship: null }))
   )
@@ -755,40 +755,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           return a.id - b.id // 入手順(ID順)
         case 'shipId':
           return a.shipId - b.shipId // 艦種ID順
-        case 'shipType':
-          // 艦種で並び替え（駆逐艦→軽巡→重巡→戦艦→空母の順）
-          const getShipTypePriority = (type: string): number => {
-            const priorities: { [key: string]: number } = {
-              'destroyer': 1,
-              'escort': 2,
-              'light_cruiser': 3,
-              'torpedo_cruiser': 4,
-              'heavy_cruiser': 5,
-              'training_cruiser': 6,
-              'aviation_cruiser': 7,
-              'battleship': 8,
-              'fast_battleship': 9,
-              'aviation_battleship': 10,
-              'light_carrier': 11,
-              'carrier': 12,
-              'armored_carrier': 13,
-              'submarine': 14,
-              'submarine_carrier': 15,
-              'submarine_tender': 16,
-              'seaplane_tender': 17,
-              'supply_ship': 18,
-              'repair_ship': 19,
-              'landing_ship': 20
-            }
-            return priorities[type] || 999
-          }
-          const priorityA = getShipTypePriority(a.type)
-          const priorityB = getShipTypePriority(b.type)
-          if (priorityA !== priorityB) {
-            return priorityA - priorityB
-          }
-          // 同じ艦種内ではレベル順
-          return b.level - a.level
         default:
           return 0
       }
@@ -1433,7 +1399,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
 
           {/* ソート選択 */}
           <div className="sort-controls">
-            <span className="sort-label">ソート:</span>
             <button
               className={`sort-button ${sortType === 'level' ? 'active' : ''}`}
               onClick={() => setSortType('level')}
@@ -1449,12 +1414,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             <button
               className={`sort-button ${sortType === 'shipId' ? 'active' : ''}`}
               onClick={() => setSortType('shipId')}
-            >
-              艦種ID順
-            </button>
-            <button
-              className={`sort-button ${sortType === 'shipType' ? 'active' : ''}`}
-              onClick={() => setSortType('shipType')}
             >
               艦種順
             </button>
