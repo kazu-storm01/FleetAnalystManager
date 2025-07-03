@@ -23,7 +23,6 @@ interface FleetEntry {
   hpModTotal: number      // 自動算出: 耐久改修合計値
   aswModTotal: number     // 自動算出: 対潜改修合計値
   tasks: Task[]
-  url?: string           // 任意: 関連URLリンク
   createdAt: string
   admiralName: string
   isLatest: boolean
@@ -47,23 +46,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }, [fleetData, onFleetDataChange])
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
-  const [currentPage, setCurrentPage] = useState<number>(0)
   const [showWelcome, setShowWelcome] = useState<boolean>(false)
   const [showBackup, setShowBackup] = useState<boolean>(false)
   const [newTaskText, setNewTaskText] = useState<string>('')
-  const [newUrl, setNewUrl] = useState<string>('')
   const [showGraphModal, setShowGraphModal] = useState<boolean>(false)
   const [showAdmiralModal, setShowAdmiralModal] = useState<boolean>(false)
-  const [editingUrl, setEditingUrl] = useState<boolean>(false)
-  const [tempUrl, setTempUrl] = useState<string>('')
   const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married' | 'luck' | 'hp' | 'asw'>('exp')
   const [privacyMode, setPrivacyMode] = useState<boolean | null>(null)
   const [showTrainingTasksOnly, setShowTrainingTasksOnly] = useState<boolean>(false)
   const [forceUpdate, setForceUpdate] = useState<number>(0)
+  const [showTaskHistoryModal, setShowTaskHistoryModal] = useState<boolean>(false)
+  const [showPendingTasksModal, setShowPendingTasksModal] = useState<boolean>(false)
+  const [showCompletedTasksModal, setShowCompletedTasksModal] = useState<boolean>(false)
+  const [showFleetRecordsModal, setShowFleetRecordsModal] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const fleetEntriesRef = useRef<FleetEntry[]>([])
-  const ITEMS_PER_PAGE = 10
 
 
   // JSON艦隊データ解析エンジン（最適化版）
@@ -233,7 +230,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               hpModTotal: stats.hpModTotal,
               aswModTotal: stats.aswModTotal,
               tasks: inheritedTasks,
-              url: undefined,
               createdAt: new Date().toISOString(),
               admiralName,
               isLatest: true
@@ -470,7 +466,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setTempAdmiralName('')
       setFleetEntries([])
       setFleetData('')
-      setCurrentPage(0)
       setIsFirstSetup(true)
       setShowWelcome(true)
       setShowAdmiralModal(false)
@@ -590,54 +585,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   }
 
 
-  // URL編集開始
-  const startEditUrl = (currentUrl: string) => {
-    setTempUrl(currentUrl || '')
-    setEditingUrl(true)
-  }
-
-  // URL編集保存
-  const saveEditUrl = () => {
-    // URL形式チェック（簡易）
-    if (tempUrl.trim()) {
-      try {
-        new URL(tempUrl.trim())
-      } catch {
-        showToast('有効なURLを入力してください', 'error')
-        return
-      }
-    }
-
-    const latestEntry = fleetEntries.find(entry => entry.isLatest)
-    if (!latestEntry) {
-      showToast('最新エントリーが見つかりません', 'error')
-      return
-    }
-
-    const updatedEntries = fleetEntries.map(entry => 
-      entry.id === latestEntry.id 
-        ? { ...entry, url: tempUrl.trim() || undefined }
-        : entry
-    )
-    
-    setFleetEntries(updatedEntries)
-    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
-    
-    setEditingUrl(false)
-    setTempUrl('')
-    
-    if (tempUrl.trim()) {
-      showToast('URLを更新しました', 'success')
-    } else {
-      showToast('URLを削除しました', 'success')
-    }
-  }
-
-  // URL編集キャンセル
-  const cancelEditUrl = () => {
-    setEditingUrl(false)
-    setTempUrl('')
-  }
 
   // トースト通知表示
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -1038,14 +985,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
   }
 
-  // 差分計算
-  const getDifference = (current: FleetEntry, field: keyof Pick<FleetEntry, 'totalExp' | 'shipCount' | 'marriedCount' | 'luckModTotal' | 'hpModTotal' | 'aswModTotal'>) => {
-    const currentIndex = fleetEntries.findIndex(e => e.id === current.id)
-    if (currentIndex <= 0) return 0
-    
-    const previous = fleetEntries[currentIndex - 1]
-    return (current[field] || 0) - (previous[field] || 0)
-  }
 
   // プライバシーモード用の値マスク関数
   const maskValue = (value: number) => {
@@ -1186,13 +1125,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     reader.readAsText(file)
   }
 
-  // ページング計算
-  const pastEntries = fleetEntries.filter(entry => !entry.isLatest).reverse()
-  const totalPages = Math.ceil(pastEntries.length / ITEMS_PER_PAGE)
-  const paginatedEntries = pastEntries.slice(
-    currentPage * ITEMS_PER_PAGE,
-    (currentPage + 1) * ITEMS_PER_PAGE
-  )
 
   // 初回セットアップ画面
   if (isFirstSetup) {
@@ -1467,7 +1399,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                         <th>運改修</th>
                         <th>耐久改修</th>
                         <th>対潜改修</th>
-                        <th>URL</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1529,21 +1460,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                                 <span className={`table-diff ${(entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) === 0 ? 'neutral' : (entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0) > 0 ? 'positive' : 'negative'}`}>
                                   {maskDiffValue((entry.aswModTotal || 0) - (prevEntry.aswModTotal || 0))}
                                 </span>
-                              )}
-                            </td>
-                            <td>
-                              {entry.url ? (
-                                <a
-                                  href={entry.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="url-link"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <span className="material-icons">link</span>
-                                </a>
-                              ) : (
-                                <span>-</span>
                               )}
                             </td>
                           </tr>
@@ -1617,26 +1533,57 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       {/* 統計概要カード */}
       {latestEntry && (
         <div className="stats-overview">
-              <div className="overview-item">
-                <span className="material-icons overview-icon">trending_up</span>
-                <div className="overview-text">
-                  <span className="overview-label">{'総記録数'}</span>
-                  <span className="overview-value" key={`${fleetEntries.length}-${forceUpdate}`}>{privacyMode === true ? '*'.repeat(getTotalEntries().toString().length) : getTotalEntries()}</span>
-                </div>
+              <div className="overview-item overview-clickable">
+                <button
+                  onClick={() => setShowFleetRecordsModal(true)}
+                  className="overview-button"
+                  title="艦隊記録を表示"
+                >
+                  <span className="material-icons overview-icon">trending_up</span>
+                  <div className="overview-text">
+                    <span className="overview-label">{'総記録数'}</span>
+                    <span className="overview-value" key={`${fleetEntries.length}-${forceUpdate}`}>{privacyMode === true ? '*'.repeat(getTotalEntries().toString().length) : getTotalEntries()}</span>
+                  </div>
+                </button>
               </div>
-              <div className="overview-item">
-                <span className="material-icons overview-icon">task_alt</span>
-                <div className="overview-text">
-                  <span className="overview-label">{'累計達成タスク'}</span>
-                  <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalCompletedTasks().toString().length) : getTotalCompletedTasks()}</span>
-                </div>
+              <div className="overview-item overview-clickable">
+                <button
+                  onClick={() => setShowCompletedTasksModal(true)}
+                  className="overview-button"
+                  title="達成タスクを表示"
+                >
+                  <span className="material-icons overview-icon">task_alt</span>
+                  <div className="overview-text">
+                    <span className="overview-label">{'累計達成タスク'}</span>
+                    <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalCompletedTasks().toString().length) : getTotalCompletedTasks()}</span>
+                  </div>
+                </button>
               </div>
-              <div className="overview-item">
-                <span className="material-icons overview-icon">assignment</span>
-                <div className="overview-text">
-                  <span className="overview-label">{'未達成タスク'}</span>
-                  <span className="overview-value">{privacyMode === true ? '*'.repeat(getPendingTasks().toString().length) : getPendingTasks()}</span>
-                </div>
+              <div className="overview-item overview-clickable">
+                <button
+                  onClick={() => setShowPendingTasksModal(true)}
+                  className="overview-button"
+                  title="未達成タスクを表示"
+                >
+                  <span className="material-icons overview-icon">assignment</span>
+                  <div className="overview-text">
+                    <span className="overview-label">{'未達成タスク'}</span>
+                    <span className="overview-value">{privacyMode === true ? '*'.repeat(getPendingTasks().toString().length) : getPendingTasks()}</span>
+                  </div>
+                </button>
+              </div>
+              <div className="overview-item task-history-trigger">
+                <button
+                  onClick={() => setShowTaskHistoryModal(true)}
+                  className="task-history-button"
+                  title="タスク履歴を表示"
+                >
+                  <span className="material-icons overview-icon">history</span>
+                  <div className="overview-text">
+                    <span className="overview-label">{'タスク履歴'}</span>
+                    <span className="overview-value">{'一覧表示'}</span>
+                  </div>
+                </button>
               </div>
         </div>
       )}
@@ -1656,65 +1603,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                       minute: '2-digit'
                     })}</span>
                     <span className="latest-badge">{'最新'}</span>
-                    {!latestEntry.url && (
-                      <input
-                        type="text"
-                        value={newUrl}
-                        onChange={(e) => setNewUrl(e.target.value)}
-                        onPaste={(e) => {
-                          // ペーストされたデータを取得
-                          const pastedData = e.clipboardData.getData('text')
-                          
-                          // 少し遅延してから処理（ペーストデータがstateに反映されるのを待つ）
-                          setTimeout(() => {
-                            if (pastedData.trim()) {
-                              // URL形式チェック（簡易）
-                              try {
-                                new URL(pastedData.trim())
-                                // 有効なURLの場合、自動登録
-                                const latestEntry = fleetEntries.find(entry => entry.isLatest)
-                                if (latestEntry) {
-                                  const updatedEntries = fleetEntries.map(entry => 
-                                    entry.id === latestEntry.id 
-                                      ? { ...entry, url: pastedData.trim() }
-                                      : entry
-                                  )
-                                  setFleetEntries(updatedEntries)
-                                  localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
-                                  setNewUrl('')
-                                  showToast('URLを登録しました', 'success')
-                                }
-                              } catch {
-                                // 無効なURLの場合は何もしない（通常の入力として扱う）
-                              }
-                            }
-                          }, 100)
-                        }}
-                        placeholder={'URL貼り付け'}
-                        className="url-input-compact"
-                        style={{
-                          marginLeft: '0.5rem',
-                          padding: '0.25rem 0.5rem',
-                          fontSize: '0.875rem',
-                          borderRadius: '4px',
-                          border: '1px solid #ddd',
-                          width: '400px'
-                        }}
-                      />
-                    )}
                   </div>
                 </div>
                 <div className="entry-actions">
-                  {latestEntry.url && (
-                    <a
-                      href={latestEntry.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="url-link"
-                    >
-                      <span className="material-icons">link</span> {'開く'}
-                    </a>
-                  )}
                   <button
                     onClick={() => deleteEntry(latestEntry.id)}
                     className="delete-btn"
@@ -1830,42 +1721,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                 </div>
               </div>
 
-              {/* URL表示・編集 */}
-              {latestEntry.url && (
-                <div className="url-display">
-                  {editingUrl ? (
-                    <div className="url-edit-form">
-                      <input
-                        type="text"
-                        value={tempUrl}
-                        onChange={(e) => setTempUrl(e.target.value)}
-                        placeholder={'URLを入力してください...'}
-                        className="url-edit-input"
-                        autoFocus
-                      />
-                      <div className="url-edit-actions">
-                        <button onClick={saveEditUrl} className="save-btn">
-                          <span className="material-icons">check</span>
-                        </button>
-                        <button onClick={cancelEditUrl} className="cancel-btn">
-                          <span className="material-icons">close</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="url-text-container">
-                      <span className="url-text">{latestEntry.url}</span>
-                      <button 
-                        onClick={() => startEditUrl(latestEntry.url || '')}
-                        className="edit-url-btn"
-                        title={'URLを編集'}
-                      >
-                        <span className="material-icons">edit</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
 
         </div>
       )}
@@ -1971,182 +1826,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         </div>
       )}
 
-      {/* 過去エントリー */}
-      {pastEntries.length > 0 && (
-        <div className="history-section" style={{marginTop: '5rem'}}>
-          <h2 style={{textAlign: 'left'}}>{'分析履歴'}</h2>
-          
-          {/* ページング */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
-                className="page-btn"
-              >
-                {'← 前'}
-              </button>
-              <span className="page-info">
-                {currentPage + 1} / {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                disabled={currentPage === totalPages - 1}
-                className="page-btn"
-              >
-                {'次 →'}
-              </button>
-            </div>
-          )}
-
-          <div className="entries-list">
-            {paginatedEntries.map(entry => (
-              <div key={entry.id} className="entry-card past">
-                <div className="entry-header">
-                  <div className="entry-info">
-                    <h3 className="entry-title">{new Date(entry.createdAt).toLocaleString('ja-JP', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</h3>
-                  </div>
-                  <div className="entry-actions">
-                    {entry.url && (
-                      <a
-                        href={entry.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="url-link"
-                      >
-                        <span className="material-icons">link</span> {'開く'}
-                      </a>
-                    )}
-                    <button
-                      onClick={() => deleteEntry(entry.id)}
-                      className="delete-btn"
-                    >
-                      <span className="material-icons">close</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="entry-stats">
-                  <div className="stat-badge">
-                    <span className="stat-label">現在経験値</span>
-                    <span className="stat-value">{maskValue(entry.totalExp)}</span>
-                    <span className={`diff ${getDifference(entry, 'totalExp') === 0 ? 'neutral' : getDifference(entry, 'totalExp') > 0 ? 'positive' : 'negative'}`}>
-                      ({maskDiffValue(getDifference(entry, 'totalExp'))})
-                    </span>
-                  </div>
-                  <div className="stat-badge">
-                    <span className="stat-label">保有艦数</span>
-                    <span className="stat-value">{maskValue(entry.shipCount)}</span>
-                    <span className={`diff ${getDifference(entry, 'shipCount') === 0 ? 'neutral' : getDifference(entry, 'shipCount') > 0 ? 'positive' : 'negative'}`}>
-                      ({maskDiffValue(getDifference(entry, 'shipCount'))})
-                    </span>
-                  </div>
-                  <div className="stat-badge">
-                    <span className="stat-label">ケッコン艦</span>
-                    <span className="stat-value">{maskValue(entry.marriedCount)}</span>
-                    <span className={`diff ${getDifference(entry, 'marriedCount') === 0 ? 'neutral' : getDifference(entry, 'marriedCount') > 0 ? 'positive' : 'negative'}`}>
-                      ({maskDiffValue(getDifference(entry, 'marriedCount'))})
-                    </span>
-                  </div>
-                  <div className="stat-badge">
-                    <span className="stat-label">運改修合計</span>
-                    <span className="stat-value">{maskValue(entry.luckModTotal || 0)}</span>
-                    <span className={`diff ${getDifference(entry, 'luckModTotal') === 0 ? 'neutral' : getDifference(entry, 'luckModTotal') > 0 ? 'positive' : 'negative'}`}>
-                      ({maskDiffValue(getDifference(entry, 'luckModTotal'))})
-                    </span>
-                  </div>
-                  <div className="stat-badge">
-                    <span className="stat-label">耐久改修合計</span>
-                    <span className="stat-value">{maskValue(entry.hpModTotal || 0)}</span>
-                    <span className={`diff ${getDifference(entry, 'hpModTotal') === 0 ? 'neutral' : getDifference(entry, 'hpModTotal') > 0 ? 'positive' : 'negative'}`}>
-                      ({maskDiffValue(getDifference(entry, 'hpModTotal'))})
-                    </span>
-                  </div>
-                  <div className="stat-badge">
-                    <span className="stat-label">対潜改修合計</span>
-                    <span className="stat-value">{maskValue(entry.aswModTotal || 0)}</span>
-                    <span className={`diff ${getDifference(entry, 'aswModTotal') === 0 ? 'neutral' : getDifference(entry, 'aswModTotal') > 0 ? 'positive' : 'negative'}`}>
-                      ({maskDiffValue(getDifference(entry, 'aswModTotal'))})
-                    </span>
-                  </div>
-                </div>
-
-                {entry.url && (
-                  <div className="url-display">
-                    <span className="url-text">{entry.url}</span>
-                  </div>
-                )}
-
-                {entry.tasks.length > 0 && (
-                  <div className="tasks-section">
-                    <div className="task-header">
-                      <h4>タスク ({getTaskProgress(entry.tasks).completed}/{getTaskProgress(entry.tasks).total})</h4>
-                      <div className="progress-bar">
-                        <div 
-                          className={`progress-fill ${getTaskProgress(entry.tasks).percentage === 100 ? 'completed' : ''}`}
-                          style={{ width: `${getTaskProgress(entry.tasks).percentage}%` }}
-                        ></div>
-                        <span className="progress-text">{getTaskProgress(entry.tasks).percentage}%</span>
-                      </div>
-                    </div>
-                    <div className="tasks-list">
-                      {filterTasksForDisplay(entry.tasks).map(task => {
-                        const isTraining = isTrainingTask(task.text)
-                        const shipId = isTraining ? getTrainingTaskShipId(task.id, task.originalTaskId, entry.id) : null
-                        return (
-                          <div 
-                            key={task.id} 
-                            className={`task-item ${isTraining ? 'training-task' : ''}`}
-                          >
-                            {isTraining && shipId && (
-                              <div className="task-banner">
-                                <img 
-                                  src={`/FleetAnalystManager/images/banner/${shipId}.png`}
-                                  alt=""
-                                  className="task-banner-image"
-                                />
-                              </div>
-                            )}
-                            <div className="task-content">
-                              {isTraining ? (
-                                <span className={`task-text ${task.completed ? 'completed' : ''}`}>{task.text}</span>
-                              ) : (
-                                <label className="task-checkbox">
-                                  <input
-                                    type="checkbox"
-                                    checked={task.completed}
-                                    onChange={() => toggleTask(entry.id, task.id)}
-                                    disabled={true} // 過去エントリーは編集不可
-                                  />
-                                  <span className={task.completed ? 'completed' : ''}>{task.text}</span>
-                                </label>
-                              )}
-                              {/* 完了履歴情報 */}
-                              {task.completed && task.completedAt && (
-                                <div className="task-completion-info">
-                                  <span className="completion-date">
-                                    {'完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
 
 
@@ -2191,6 +1870,214 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                 >
                   {'データを削除して変更'}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* タスク履歴モーダル */}
+      {showTaskHistoryModal && (
+        <div className="modal-overlay">
+          <div className="modal-content task-history-modal">
+            <div className="modal-header">
+              <h3>タスク履歴</h3>
+              <button
+                onClick={() => setShowTaskHistoryModal(false)}
+                className="modal-close-btn"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="task-history-list">
+                {[...fleetEntries].reverse().map(entry => {
+                  const entryTasks = entry.tasks
+                  if (entryTasks.length === 0) return null
+                  
+                  return (
+                    <div key={entry.id} className="task-history-entry">
+                      <div className="task-history-header">
+                        <h4>{new Date(entry.createdAt).toLocaleString('ja-JP')}</h4>
+                        <span className="task-count">
+                          {getTaskProgress(entryTasks).completed}/{getTaskProgress(entryTasks).total}
+                        </span>
+                      </div>
+                      <div className="task-history-tasks">
+                        {entryTasks.map(task => (
+                          <div key={task.id} className={`task-history-item ${task.completed ? 'completed' : 'pending'}`}>
+                            <div className="task-status">
+                              {task.completed ? (
+                                <span className="material-icons">check_circle</span>
+                              ) : (
+                                <span className="material-icons">radio_button_unchecked</span>
+                              )}
+                            </div>
+                            <div className="task-text">{task.text}</div>
+                            {task.completed && task.completedAt && (
+                              <div className="task-completion-date">
+                                {new Date(task.completedAt).toLocaleDateString('ja-JP')}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 未達成タスクモーダル */}
+      {showPendingTasksModal && (
+        <div className="modal-overlay">
+          <div className="modal-content task-modal">
+            <div className="modal-header">
+              <h3>未達成タスク一覧</h3>
+              <button
+                onClick={() => setShowPendingTasksModal(false)}
+                className="modal-close-btn"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="task-list">
+                {[...fleetEntries].reverse().map(entry => {
+                  const pendingTasks = entry.tasks.filter(task => !task.completed)
+                  if (pendingTasks.length === 0) return null
+                  
+                  return (
+                    <div key={entry.id} className="task-group">
+                      <div className="task-group-header">
+                        <h4>{new Date(entry.createdAt).toLocaleString('ja-JP')}</h4>
+                        <span className="task-count pending-count">
+                          {pendingTasks.length}件
+                        </span>
+                      </div>
+                      <div className="task-items">
+                        {pendingTasks.map(task => (
+                          <div key={task.id} className="task-item pending">
+                            <div className="task-status">
+                              <span className="material-icons">radio_button_unchecked</span>
+                            </div>
+                            <div className="task-text">{task.text}</div>
+                            <div className="task-created-date">
+                              {new Date(task.createdAt).toLocaleDateString('ja-JP')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 達成タスクモーダル */}
+      {showCompletedTasksModal && (
+        <div className="modal-overlay">
+          <div className="modal-content task-modal">
+            <div className="modal-header">
+              <h3>達成タスク一覧</h3>
+              <button
+                onClick={() => setShowCompletedTasksModal(false)}
+                className="modal-close-btn"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="task-list">
+                {[...fleetEntries].reverse().map(entry => {
+                  const completedTasks = entry.tasks.filter(task => task.completed)
+                  if (completedTasks.length === 0) return null
+                  
+                  return (
+                    <div key={entry.id} className="task-group">
+                      <div className="task-group-header">
+                        <h4>{new Date(entry.createdAt).toLocaleString('ja-JP')}</h4>
+                        <span className="task-count completed-count">
+                          {completedTasks.length}件
+                        </span>
+                      </div>
+                      <div className="task-items">
+                        {completedTasks.map(task => (
+                          <div key={task.id} className="task-item completed">
+                            <div className="task-status">
+                              <span className="material-icons">check_circle</span>
+                            </div>
+                            <div className="task-text">{task.text}</div>
+                            <div className="task-completion-date">
+                              {task.completedAt ? new Date(task.completedAt).toLocaleDateString('ja-JP') : ''}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 艦隊記録モーダル */}
+      {showFleetRecordsModal && (
+        <div className="modal-overlay">
+          <div className="modal-content fleet-records-modal">
+            <div className="modal-header">
+              <h3>艦隊記録一覧</h3>
+              <button
+                onClick={() => setShowFleetRecordsModal(false)}
+                className="modal-close-btn"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="fleet-records-list">
+                {[...fleetEntries].reverse().map(entry => (
+                  <div key={entry.id} className="fleet-record-entry">
+                    <div className="fleet-record-header">
+                      <h4>{new Date(entry.createdAt).toLocaleString('ja-JP')}</h4>
+                      {entry.isLatest && <span className="latest-badge">最新</span>}
+                    </div>
+                    <div className="fleet-record-stats">
+                      <div className="stat-item">
+                        <span className="stat-label">総経験値</span>
+                        <span className="stat-value">{entry.totalExp.toLocaleString()}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">艦船数</span>
+                        <span className="stat-value">{entry.shipCount}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">ケッコン艦</span>
+                        <span className="stat-value">{entry.marriedCount}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">運改修</span>
+                        <span className="stat-value">{entry.luckModTotal}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">耐久改修</span>
+                        <span className="stat-value">{entry.hpModTotal}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">対潜改修</span>
+                        <span className="stat-value">{entry.aswModTotal}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

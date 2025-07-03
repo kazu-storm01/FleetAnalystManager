@@ -23,6 +23,392 @@
 
 /* アビサルテーマでの調整 */
 
+/* ===== モーダル基本スタイル ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  position: relative;
+  color: white;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background-color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.modal-close-btn .material-icons {
+  font-size: 20px;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(90vh - 100px);
+}
+
+/* ===== タスク履歴モーダル ===== */
+.task-history-modal {
+  max-width: 800px;
+  max-height: 90vh;
+  width: 90%;
+}
+
+.task-history-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.task-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-history-entry {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.task-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.task-history-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #e1f5fe;
+}
+
+.task-count {
+  background: #00d4ff;
+  color: #1e3c72;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.task-history-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.task-history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.task-history-item.completed {
+  background-color: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.task-history-item.pending {
+  background-color: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.task-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.task-status .material-icons {
+  font-size: 20px;
+}
+
+.task-history-item.completed .task-status .material-icons {
+  color: #4caf50;
+}
+
+.task-history-item.pending .task-status .material-icons {
+  color: #ffc107;
+}
+
+.task-text {
+  flex: 1;
+  text-align: left;
+  color: #e1f5fe;
+}
+
+.task-completion-date {
+  font-size: 0.875rem;
+  color: #b3e5fc;
+  margin-left: auto;
+}
+
+.task-history-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.task-history-button:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.task-history-trigger {
+  cursor: pointer;
+}
+
+/* 概要項目ボタン */
+.overview-clickable {
+  cursor: pointer;
+}
+
+.overview-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+}
+
+.overview-button:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* タスク・艦隊記録モーダル */
+.task-modal, .fleet-records-modal {
+  max-width: 900px;
+  max-height: 90vh;
+  width: 90%;
+}
+
+.task-modal .modal-body, .fleet-records-modal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.task-list, .fleet-records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-group {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.task-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.task-group-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #e1f5fe;
+}
+
+.pending-count {
+  background: #ffc107;
+  color: #1e3c72;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.completed-count {
+  background: #4caf50;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.task-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.task-item.completed {
+  background-color: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.task-item.pending {
+  background-color: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.task-created-date {
+  font-size: 0.875rem;
+  color: #b3e5fc;
+  margin-left: auto;
+}
+
+/* 艦隊記録モーダル */
+.fleet-record-entry {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.fleet-record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.fleet-record-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #e1f5fe;
+}
+
+.latest-badge {
+  background: #00d4ff;
+  color: #1e3c72;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.fleet-record-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #b3e5fc;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #00d4ff;
+}
+
+.fleet-record-url {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.fleet-record-url a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #81d4fa;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.fleet-record-url a:hover {
+  text-decoration: underline;
+  color: #4fc3f7;
+}
+
 /* ===== 艦隊編成機能のスタイル ===== */
 
 /* ドラッグヒントオーバーレイ（シンプル版） */
@@ -1048,7 +1434,7 @@ body.dragging-ship .fleet-composition-area {
 }
 
 .sidebar-header h3 {
-  color: #90caf9;
+  color: white;
   margin: 0;
   font-size: 1.1rem;
 }
@@ -2029,7 +2415,7 @@ body.dragging-ship .fleet-composition-area {
 .training-candidates-sidebar .sidebar-header h3 {
   margin: 0;
   font-size: 1.2rem;
-  color: #e3f2fd;
+  color: white;
   font-weight: 600;
 }
 
@@ -5189,7 +5575,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .privacy-notice h3 {
-  color: #4caf50;
+  color: white;
   margin-bottom: 10px;
   font-size: 1.1rem;
 }
@@ -5208,7 +5594,7 @@ body.dragging-ship .drawer-overlay {
 }
 
 .admiral-setup h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 20px;
 }
 
@@ -5692,7 +6078,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .data-input-section h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 12px;
   font-size: 1.1rem;
   font-weight: bold;
@@ -5815,7 +6201,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .growth-chart h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 12px;
   font-size: 1.1rem;
   text-align: center;
@@ -5973,7 +6359,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .backup-section h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 12px;
   font-size: 1.1rem;
 }
@@ -7499,7 +7885,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .privacy-notice h3 {
-  color: #4caf50;
+  color: white;
   margin-bottom: 10px;
   font-size: 1.1rem;
 }
@@ -7518,7 +7904,7 @@ body.dragging-ship .drawer-overlay {
 }
 
 .admiral-setup h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 20px;
 }
 
@@ -8002,7 +8388,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .data-input-section h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 12px;
   font-size: 1.1rem;
   font-weight: bold;
@@ -8125,7 +8511,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .growth-chart h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 12px;
   font-size: 1.1rem;
   text-align: center;
@@ -8283,7 +8669,7 @@ body.dragging-ship .drawer-overlay {
 
 
 .backup-section h3 {
-  color: #00d4ff;
+  color: white;
   margin-bottom: 12px;
   font-size: 1.1rem;
 }
@@ -8392,7 +8778,7 @@ body.dragging-ship .drawer-overlay {
 
 .backup-popup-header h2 {
   margin: 0;
-  color: #ffd700;
+  color: white;
   font-size: 1.5rem;
   font-weight: bold;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
@@ -8774,7 +9160,7 @@ h4 .material-icons {
 
 .graph-modal-header h2 {
   margin: 0;
-  color: #00d4ff;
+  color: white;
   font-size: 1.5rem;
 }
 
@@ -8790,7 +9176,7 @@ h4 .material-icons {
 }
 
 .modal-chart-section h3 {
-  color: #e1f5fe;
+  color: white;
   margin-bottom: 16px;
   font-size: 1.2rem;
 }
@@ -8811,7 +9197,7 @@ h4 .material-icons {
 
 /* データテーブル */
 .modal-table-section h3 {
-  color: #e1f5fe;
+  color: white;
   margin-bottom: 16px;
   font-size: 1.2rem;
 }
@@ -9729,7 +10115,7 @@ h4 .material-icons {
 .modal-chart-section h3 {
   text-align: center;
   margin-bottom: 20px;
-  color: #e1f5fe;
+  color: white;
   font-size: 1.3rem;
 }
 
@@ -10055,6 +10441,24 @@ h4 .material-icons {
   border-radius: 15px;
   padding: 25px;
   max-width: 500px;
+}
+
+.modal-content.fleet-records-modal {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 900px;
+  width: 90%;
+  border: 2px solid rgba(79, 172, 254, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease;
+}
+
+.modal-content.task-history-modal {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 800px;
   width: 90%;
   border: 2px solid rgba(79, 172, 254, 0.3);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
