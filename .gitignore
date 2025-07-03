@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env
+.env.example
+
+# Claude/一時ファイル
+.claude/
+CLAUDE.md
+
+# ローカルデータ/生成物
+applicants.xlsx
+test_report.md
+
+# テスト・一時スクリプト（任意で）
+create_*.cjs
+create_*.js
+kancolle*
+
+# Node系
+node_modules/
+dist/
+fleethub-develop
+kc-web-main
