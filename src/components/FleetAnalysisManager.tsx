@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { StatIcon } from './ShipStatusDisplay'
-import { getShipName } from '../data/shipMasterDataCore'
 
 // 型定義
 interface Task {
@@ -14,31 +13,6 @@ interface Task {
   achievedInEntry?: number    // 達成されたエントリーID（履歴用）
 }
 
-// 育成履歴レコード
-interface TrainingHistoryRecord {
-  id: string
-  shipId: number
-  shipName: string
-  taskText: string
-  targetLevel?: number
-  targetHp?: number
-  targetAsw?: number
-  targetLuck?: number
-  createdAt: string
-  completedAt?: string
-  achievedInEntry?: number
-  status: 'active' | 'completed' | 'cancelled'
-  progress?: {
-    startLevel?: number
-    startHp?: number
-    startAsw?: number
-    startLuck?: number
-    currentLevel?: number
-    currentHp?: number
-    currentAsw?: number
-    currentLuck?: number
-  }
-}
 
 interface FleetEntry {
   id: number
@@ -87,10 +61,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
   const [privacyMode, setPrivacyMode] = useState<boolean | null>(null)
   const [showTrainingTasksOnly, setShowTrainingTasksOnly] = useState<boolean>(false)
   const [forceUpdate, setForceUpdate] = useState<number>(0)
-  
-  // 育成履歴関連の状態
-  const [trainingHistory, setTrainingHistory] = useState<TrainingHistoryRecord[]>([])
-  const [showTrainingHistory, setShowTrainingHistory] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fleetEntriesRef = useRef<FleetEntry[]>([])
@@ -150,65 +120,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     }
   }
 
-  // 育成履歴の読み込み
-  useEffect(() => {
-    if (admiralName) {
-      const storedHistory = localStorage.getItem(`${admiralName}_trainingHistory`)
-      if (storedHistory) {
-        try {
-          setTrainingHistory(JSON.parse(storedHistory))
-        } catch (error) {
-          console.error('育成履歴の読み込みに失敗:', error)
-        }
-      }
-    }
-  }, [admiralName])
-
-  // 育成履歴の保存
-  const saveTrainingHistory = useCallback((history: TrainingHistoryRecord[]) => {
-    setTrainingHistory(history)
-    if (admiralName) {
-      localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(history))
-    }
-  }, [admiralName])
-
-  // 育成履歴レコードの作成
-  const createTrainingHistoryRecord = useCallback((
-    shipId: number, 
-    taskText: string, 
-    targets: any,
-    initialProgress?: any
-  ): TrainingHistoryRecord => {
-    return {
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      shipId,
-      shipName: getShipName(shipId),
-      taskText,
-      targetLevel: targets?.targetLevel,
-      targetHp: targets?.targetHp,
-      targetAsw: targets?.targetAsw,
-      targetLuck: targets?.targetLuck,
-      createdAt: new Date().toISOString(),
-      status: 'active',
-      progress: initialProgress
-    }
-  }, [])
-
-  // 育成履歴レコードの更新
-  const updateTrainingHistoryRecord = useCallback((
-    recordId: string, 
-    updates: Partial<TrainingHistoryRecord>
-  ) => {
-    setTrainingHistory(prev => {
-      const updated = prev.map(record => 
-        record.id === recordId ? { ...record, ...updates } : record
-      )
-      if (admiralName) {
-        localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
-      }
-      return updated
-    })
-  }, [admiralName])
 
   // ペースト時の自動登録処理
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -246,6 +157,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                     console.log('🔍 達成チェック結果:', isAchieved, 'タスク:', task.text)
                     if (isAchieved) {
                       console.log('🎯 現在のエントリーで達成済みタスクを完了状態に変更:', task.text)
+
                       return { 
                         ...task, 
                         completed: true,
@@ -469,81 +381,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       }
     }
 
-    // 育成履歴レコード作成イベントのハンドラー
-    const handleTrainingHistoryRecordCreated = (event: CustomEvent) => {
-      const { record } = event.detail
-      console.log('🎧 育成履歴レコード作成イベント受信:', record.shipName)
-      
-      setTrainingHistory(prev => {
-        const updated = [...prev, record]
-        if (admiralName) {
-          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
-        }
-        return updated
-      })
-    }
-
-    // 育成履歴目標値更新イベントのハンドラー
-    const handleTrainingHistoryTargetsUpdated = (event: CustomEvent) => {
-      const { shipId, shipName, targets } = event.detail
-      console.log('🎧 育成履歴目標値更新イベント受信:', shipName)
-      
-      setTrainingHistory(prev => {
-        const updated = prev.map(record => {
-          if (record.shipId === shipId && record.shipName === shipName && record.status === 'active') {
-            return {
-              ...record,
-              targetLevel: targets.targetLevel,
-              targetHp: targets.targetHp,
-              targetAsw: targets.targetAsw,
-              targetLuck: targets.targetLuck
-            }
-          }
-          return record
-        })
-        
-        if (admiralName) {
-          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
-        }
-        return updated
-      })
-    }
-
-    // 育成履歴レコードキャンセルイベントのハンドラー
-    const handleTrainingHistoryRecordCancelled = (event: CustomEvent) => {
-      const { shipId, shipName } = event.detail
-      console.log('🎧 育成履歴レコードキャンセルイベント受信:', shipName)
-      
-      setTrainingHistory(prev => {
-        const updated = prev.map(record => {
-          if (record.shipId === shipId && record.shipName === shipName && record.status === 'active') {
-            return {
-              ...record,
-              status: 'cancelled' as const,
-              completedAt: new Date().toISOString()
-            }
-          }
-          return record
-        })
-        
-        if (admiralName) {
-          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
-        }
-        return updated
-      })
-    }
-
     console.log('🎧 FleetAnalysisManagerでイベントリスナーを登録, admiral:', admiralName)
     window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
-    window.addEventListener('trainingHistoryRecordCreated', handleTrainingHistoryRecordCreated as EventListener)
-    window.addEventListener('trainingHistoryTargetsUpdated', handleTrainingHistoryTargetsUpdated as EventListener)
-    window.addEventListener('trainingHistoryRecordCancelled', handleTrainingHistoryRecordCancelled as EventListener)
 
     return () => {
       window.removeEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
-      window.removeEventListener('trainingHistoryRecordCreated', handleTrainingHistoryRecordCreated as EventListener)
-      window.removeEventListener('trainingHistoryTargetsUpdated', handleTrainingHistoryTargetsUpdated as EventListener)
-      window.removeEventListener('trainingHistoryRecordCancelled', handleTrainingHistoryRecordCancelled as EventListener)
     }
   }, [admiralName])
 
@@ -1128,16 +970,26 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
           // タスクを完了状態に更新（引き継いだタスクも含む）
           markTrainingTaskAsCompleted(candidate.mainTaskId)
           achievedCount++
-          // 育成候補から削除対象に追加
+          
+          // 育成候補に完了フラグを追加（削除はしない）
+          candidate.isCompleted = true
+          candidate.completedAt = new Date().toISOString()
           candidatesToRemove.push(candidate.id)
         }
       })
       
-      // 達成した候補を育成候補リストから削除
+      // 達成した候補の完了状態を更新（削除ではなく）
       if (candidatesToRemove.length > 0) {
-        const updatedCandidates = trainingCandidates.filter((candidate: any) => 
-          !candidatesToRemove.includes(candidate.id)
-        )
+        const updatedCandidates = trainingCandidates.map((candidate: any) => {
+          if (candidatesToRemove.includes(candidate.id)) {
+            return {
+              ...candidate,
+              isCompleted: true,
+              completedAt: new Date().toISOString()
+            }
+          }
+          return candidate
+        })
         localStorage.setItem('fleetComposer_trainingCandidates', JSON.stringify(updatedCandidates))
       }
       
@@ -1185,27 +1037,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
     
     setFleetEntries(updatedEntries)
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
-    
-    // 育成履歴レコードを完了状態に更新
-    if (completedTaskText) {
-      setTrainingHistory(prev => {
-        const updated = prev.map(record => {
-          if (record.taskText === completedTaskText && record.status === 'active') {
-            return {
-              ...record,
-              status: 'completed' as const,
-              completedAt: completionTime
-            }
-          }
-          return record
-        })
-        
-        if (admiralName) {
-          localStorage.setItem(`${admiralName}_trainingHistory`, JSON.stringify(updated))
-        }
-        return updated
-      })
-    }
   }
 
   // 差分計算
@@ -1788,13 +1619,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
               </button>
             )}
             <button 
-              onClick={() => setShowTrainingHistory(true)} 
-              className="action-button history-button"
-              title={theme === 'shipgirl' ? '育成履歴表示' : '育成履歴表示'}
-            >
-              <span className="material-symbols-outlined">history_edu</span>
-            </button>
-            <button 
               onClick={() => setShowBackup(!showBackup)} 
               className="action-button backup-button"
               title={theme === 'shipgirl' ? 'バックアップ' : 'バックアップ'}
@@ -2111,11 +1935,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                                 <span className="completion-date">
                                   {theme === 'shipgirl' ? '完了' : '完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
                                 </span>
-                                {task.achievedInEntry && (
-                                  <span className="completion-entry">
-                                    {theme === 'shipgirl' ? 'エントリー' : 'エントリー'}: #{task.achievedInEntry}
-                                  </span>
-                                )}
                               </div>
                             )}
                             {!isTraining && (
@@ -2329,11 +2148,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
                                   <span className="completion-date">
                                     {theme === 'shipgirl' ? '完了' : '完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
                                   </span>
-                                  {task.achievedInEntry && (
-                                    <span className="completion-entry">
-                                      {theme === 'shipgirl' ? 'エントリー' : 'エントリー'}: #{task.achievedInEntry}
-                                    </span>
-                                  )}
                                 </div>
                               )}
                             </div>
@@ -2399,105 +2213,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ theme, onFl
       )}
 
       {/* トースト通知 */}
-      {/* 育成履歴モーダル */}
-      {showTrainingHistory && (
-        <div className="modal-overlay" onClick={() => setShowTrainingHistory(false)}>
-          <div className="modal-content training-history-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{theme === 'shipgirl' ? '育成履歴' : '育成履歴'}</h3>
-              <button 
-                onClick={() => setShowTrainingHistory(false)}
-                className="modal-close-btn"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            
-            <div className="modal-body">
-              {trainingHistory.length === 0 ? (
-                <div className="empty-state">
-                  <span className="material-symbols-outlined">history_edu</span>
-                  <p>{theme === 'shipgirl' ? '育成履歴がありません' : '育成履歴ガアリマセン'}</p>
-                </div>
-              ) : (
-                <div className="training-history-list">
-                  {trainingHistory.map(record => (
-                    <div key={record.id} className={`training-history-item ${record.status}`}>
-                      <div className="history-ship-info">
-                        <img 
-                          src={`/FleetAnalystManager/images/banner/${record.shipId}.png`}
-                          alt={record.shipName}
-                          className="history-ship-banner"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                        <div className="ship-details">
-                          <h4>{record.shipName}</h4>
-                          <p className="task-text">{record.taskText}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="history-details">
-                        <div className="targets">
-                          {record.targetLevel && (
-                            <span className="target-item">
-                              <span className="target-label">Lv</span>
-                              <span className="target-value">{record.targetLevel}</span>
-                            </span>
-                          )}
-                          {record.targetHp && (
-                            <span className="target-item">
-                              <span className="target-label">HP</span>
-                              <span className="target-value">{record.targetHp}</span>
-                            </span>
-                          )}
-                          {record.targetAsw && (
-                            <span className="target-item">
-                              <span className="target-label">対潜</span>
-                              <span className="target-value">{record.targetAsw}</span>
-                            </span>
-                          )}
-                          {record.targetLuck && (
-                            <span className="target-item">
-                              <span className="target-label">運</span>
-                              <span className="target-value">{record.targetLuck}</span>
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="timeline">
-                          <div className="timeline-item">
-                            <span className="timeline-label">開始:</span>
-                            <span className="timeline-date">
-                              {new Date(record.createdAt).toLocaleString('ja-JP')}
-                            </span>
-                          </div>
-                          {record.completedAt && (
-                            <div className="timeline-item">
-                              <span className="timeline-label">完了:</span>
-                              <span className="timeline-date">
-                                {new Date(record.completedAt).toLocaleString('ja-JP')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className={`status-badge ${record.status}`}>
-                          {record.status === 'active' && (theme === 'shipgirl' ? '育成中' : '育成中')}
-                          {record.status === 'completed' && (theme === 'shipgirl' ? '完了' : '完了')}
-                          {record.status === 'cancelled' && (theme === 'shipgirl' ? '中止' : '中止')}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {toast && (
         <div className={`toast ${toast.type}`}>

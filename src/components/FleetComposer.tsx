@@ -1016,32 +1016,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     setTrainingCandidates(updatedCandidates)
     saveTrainingCandidatesToStorage(updatedCandidates)
     
-    // 育成履歴レコードを作成
-    if (mainTaskId !== -1) {
-      const trainingHistoryRecord = {
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        shipId: ship.shipId,
-        shipName: ship.name,
-        taskText: mainTaskText,
-        createdAt: new Date().toISOString(),
-        status: 'active' as const,
-        progress: {
-          startLevel: ship.level,
-          startHp: ship.currentStats.hp,
-          startAsw: ship.currentStats.asw,
-          startLuck: ship.currentStats.luck,
-          currentLevel: ship.level,
-          currentHp: ship.currentStats.hp,
-          currentAsw: ship.currentStats.asw,
-          currentLuck: ship.currentStats.luck
-        }
-      }
-      
-      // FleetAnalysisManagerに育成履歴レコード作成を通知
-      window.dispatchEvent(new CustomEvent('trainingHistoryRecordCreated', {
-        detail: { record: trainingHistoryRecord }
-      }))
-    }
     
     // ドロップ成功を明示的にマーク
     setIsDroppedOnTrainingCandidates(true)
@@ -1070,15 +1044,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
       removeTaskFromFleetEntry(candidate.mainTaskId)
     }
     
-    // 育成履歴レコードをキャンセル状態に更新
-    if (candidate) {
-      window.dispatchEvent(new CustomEvent('trainingHistoryRecordCancelled', {
-        detail: { 
-          shipId: candidate.shipId,
-          shipName: candidate.name
-        }
-      }))
-    }
     
     const updatedCandidates = trainingCandidates.filter(c => c.id !== candidateId)
     setTrainingCandidates(updatedCandidates)
@@ -1121,22 +1086,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ theme, fleetData }) => {
     setTrainingCandidates(updatedCandidates)
     saveTrainingCandidatesToStorage(updatedCandidates)
     
-    // 育成履歴レコードの目標値も更新
-    const updatedCandidate = updatedCandidates.find(c => c.id === candidateId)
-    if (updatedCandidate && updatedCandidate.mainTaskId) {
-      window.dispatchEvent(new CustomEvent('trainingHistoryTargetsUpdated', {
-        detail: { 
-          shipId: candidate.shipId,
-          shipName: candidate.name,
-          targets: {
-            targetLevel: updatedCandidate.targetLevel,
-            targetHp: updatedCandidate.targetHp,
-            targetAsw: updatedCandidate.targetAsw,
-            targetLuck: updatedCandidate.targetLuck
-          }
-        }
-      }))
-    }
   }
 
   // メインタスクテキストを生成
