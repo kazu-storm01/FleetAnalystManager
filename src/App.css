@@ -34,6 +34,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: fadeIn 0.3s ease;
   z-index: 1000;
 }
 
@@ -221,6 +222,37 @@
 /* 概要項目ボタン */
 .overview-clickable {
   cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.overview-clickable::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(100, 181, 246, 0.1), rgba(25, 118, 210, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.overview-clickable:hover::before {
+  opacity: 1;
+}
+
+.overview-clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(100, 181, 246, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(100, 181, 246, 0.4);
+}
+
+.overview-clickable:active {
+  transform: translateY(-2px);
+  transition: transform 0.1s ease;
 }
 
 .overview-button {
@@ -229,17 +261,28 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
+  gap: 0.75rem;
   width: 100%;
-  color: inherit;
-  text-align: left;
+  height: 100%;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
-.overview-button:hover {
-  background-color: rgba(0, 123, 255, 0.1);
+.overview-button:hover .overview-icon {
+  transform: scale(1.1);
+  color: #64b5f6;
+}
+
+.overview-button:hover .overview-label {
+  color: #64b5f6;
+}
+
+.overview-button:focus {
+  outline: 2px solid rgba(100, 181, 246, 0.5);
+  outline-offset: 2px;
 }
 
 /* タスク・艦隊記録モーダル */
@@ -2296,6 +2339,7 @@ body.dragging-ship .fleet-composition-area {
 
 .target-overlay-input[type=number] {
   -moz-appearance: auto;
+  appearance: auto;
 }
 
 
@@ -9150,6 +9194,7 @@ h4 .material-icons {
   backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
+  animation: fadeIn 0.3s ease;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
@@ -9165,6 +9210,7 @@ h4 .material-icons {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   color: white;
+  animation: slideIn 0.3s ease;
 }
 
 
@@ -10478,6 +10524,182 @@ h4 .material-icons {
   border-radius: 8px;
 }
 
+/* Admiral Modal アニメーション追加 */
+.modal-content.admiral-modal {
+  animation: slideIn 0.3s ease;
+}
+
+/* 高度なタスク追加フォーム */
+.task-form-container {
+  background: linear-gradient(135deg, rgba(100, 181, 246, 0.1), rgba(25, 118, 210, 0.05));
+  border: 1px solid rgba(100, 181, 246, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 1rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(100, 181, 246, 0.1);
+  transition: all 0.3s ease;
+}
+
+.task-form-container:hover {
+  border-color: rgba(100, 181, 246, 0.4);
+  box-shadow: 0 12px 40px rgba(100, 181, 246, 0.15);
+}
+
+.task-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(100, 181, 246, 0.3);
+  border-radius: 12px;
+  padding: 4px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.task-input-wrapper:focus-within {
+  border-color: #64b5f6;
+  box-shadow: 0 0 0 4px rgba(100, 181, 246, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: rgba(100, 181, 246, 0.8);
+  transition: color 0.3s ease;
+}
+
+.task-input-wrapper:focus-within .input-icon {
+  color: #64b5f6;
+}
+
+.enhanced-task-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #e3f2fd;
+  font-size: 1rem;
+  padding: 12px 8px;
+  outline: none;
+  font-weight: 500;
+}
+
+.enhanced-task-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+.enhanced-add-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #64b5f6, #42a5f5);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 12px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(100, 181, 246, 0.3);
+}
+
+.enhanced-add-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #42a5f5, #2196f3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(100, 181, 246, 0.4);
+}
+
+.enhanced-add-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.enhanced-add-button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.enhanced-add-button .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+.input-helper-text {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  font-style: italic;
+}
+
+/* モーダルボタンのインジケーター追加 */
+.overview-clickable::after {
+  content: '📋';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.7rem;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.overview-clickable:hover::after {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* タスク履歴ボタンのスペシャル表示 */
+.task-history-trigger::after {
+  content: '📖';
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .task-form-container {
+    padding: 16px;
+  }
+  
+  .task-input-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .enhanced-task-input {
+    text-align: center;
+  }
+  
+  .enhanced-add-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .button-text {
+    display: none;
+  }
+  
+  .overview-clickable:hover {
+    transform: translateY(-2px);
+  }
+  
+  .overview-button {
+    padding: 16px;
+  }
+  
+  .overview-icon {
+    font-size: 1.8rem;
+  }
+  
+  .overview-value {
+    font-size: 1.3rem;
+  }
+}
+
 /* 艦娘カードローディング表示 */
 .ship-card-loading {
   position: absolute;
@@ -10561,6 +10783,7 @@ h4 .material-icons {
   border-radius: 15px;
   padding: 25px;
   max-width: 500px;
+  animation: slideIn 0.3s ease;
 }
 
 .modal-content.fleet-records-modal {

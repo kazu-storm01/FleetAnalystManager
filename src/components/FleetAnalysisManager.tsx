@@ -1546,7 +1546,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   <span className="material-icons overview-icon">history</span>
                   <div className="overview-text">
                     <span className="overview-label">{'タスク履歴'}</span>
-                    <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalTasks().toString().length) : getTotalTasks()}</span>
+                    <span className="overview-value">{privacyMode === true ? '*'.repeat(Math.min(getTotalTasks().toString().length, 6)) : getTotalTasks()}</span>
                   </div>
                 </button>
               </div>
