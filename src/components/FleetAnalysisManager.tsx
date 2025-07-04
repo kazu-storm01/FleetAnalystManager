@@ -387,6 +387,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setPrivacyMode(false) // デフォルト値
     }
     
+    // 通知状態の復元
+    const savedHasNewAchievements = localStorage.getItem('fleetAnalysis_hasNewAchievements')
+    const savedAchievedCount = localStorage.getItem('fleetAnalysis_achievedCount')
+    
+    if (savedHasNewAchievements !== null) {
+      setHasNewAchievements(savedHasNewAchievements === 'true')
+    }
+    
+    if (savedAchievedCount !== null) {
+      setAchievedCount(parseInt(savedAchievedCount, 10) || 0)
+    }
+    
     if (savedAdmiralName) {
       setAdmiralName(savedAdmiralName)
       setIsFirstSetup(false)
@@ -406,6 +418,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       localStorage.setItem('fleetAnalysisPrivacyMode', privacyMode.toString())
     }
   }, [privacyMode])
+
+  // 通知状態の永続化
+  useEffect(() => {
+    localStorage.setItem('fleetAnalysis_hasNewAchievements', hasNewAchievements.toString())
+  }, [hasNewAchievements])
+
+  useEffect(() => {
+    localStorage.setItem('fleetAnalysis_achievedCount', achievedCount.toString())
+  }, [achievedCount])
 
   // 育成候補の達成状態を監視して通知を同期
   useEffect(() => {
@@ -1568,7 +1589,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       )}
 
       {/* データ入力セクション */}
-      <div className="data-input-section">
+      <div className="data-input-section" style={{ display: 'none' }}>
         <h3>{'最新の艦隊を反映する'}</h3>
         <div className="input-group">
           <div className="fleet-input-wrapper">
