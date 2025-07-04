@@ -54,6 +54,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [tempAdmiralName, setTempAdmiralName] = useState<string>('')
   const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([])
   const [fleetData, setFleetData] = useState<string>('')
+  const [persistedFleetData, setPersistedFleetData] = useState<string>('')  // 内部的な艦隊データ保持用
 
   // fleetDataが変更された時に親コンポーネントに通知
   useEffect(() => {
@@ -319,6 +320,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       
       // 最新の艦隊データも保存（達成チェック用）
       localStorage.setItem(`${admiralName}_latestFleetData`, fleetData)
+      setPersistedFleetData(fleetData)  // 内部保持用にも保存
       console.log('💾 最新艦隊データも保存:', fleetData.length, '文字')
       
       // 保存直後の確認
@@ -404,11 +406,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setIsFirstSetup(false)
       loadFleetEntries(savedAdmiralName)
       
-      // 最新の艦隊データを復元
+      // 最新の艦隊データを復元（入力フィールドには表示しない）
       const savedFleetData = localStorage.getItem(`${savedAdmiralName}_latestFleetData`)
       if (savedFleetData) {
-        setFleetData(savedFleetData)
-        console.log('📊 最新艦隊データを復元')
+        setPersistedFleetData(savedFleetData)
+        console.log('📊 最新艦隊データを復元（内部保持）')
       }
     } else {
       setIsFirstSetup(true)
@@ -438,7 +440,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   // 育成候補の達成状態を監視して通知を同期
   useEffect(() => {
     // 育成候補データがあり、かつ艦隊データがある場合のみ達成チェック
-    if (trainingCandidates.length > 0 && fleetData) {
+    const currentFleetData = fleetData || persistedFleetData
+    if (trainingCandidates.length > 0 && currentFleetData) {
       const currentAchievedCount = trainingCandidates.filter(candidate => 
         isTrainingCandidateAchieved(candidate)
       ).length
@@ -455,7 +458,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setAchievedCount(0)
       setHasNewAchievements(false)
     }
-  }, [trainingCandidates, fleetData, achievedCount])
+  }, [trainingCandidates, fleetData, persistedFleetData, achievedCount])
 
   // LocalStorageの変更を監視してリアルタイム更新
   useEffect(() => {
@@ -858,8 +861,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
   // 個別の育成候補の達成状態をチェック
   const isTrainingCandidateAchieved = (candidate: TrainingCandidate): boolean => {
-    // fleetDataがない場合は、最新エントリーから艦隊データを取得を試みる
-    let currentFleetData = fleetData
+    // fleetDataがない場合は、persistedFleetDataまたは最新エントリーから艦隊データを取得を試みる
+    let currentFleetData = fleetData || persistedFleetData
     if (!currentFleetData) {
       const latestEntry = fleetEntries.find(entry => entry.isLatest)
       if (latestEntry) {
