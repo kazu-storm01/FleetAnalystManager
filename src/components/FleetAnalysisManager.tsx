@@ -198,19 +198,43 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     if (!fleetData.trim()) return
     
     try {
+      // まず育成目標達成チェックを実行（エントリー作成前）
+      console.log('🎯 育成目標達成チェック開始（エントリー作成前）')
+      checkTrainingGoalAchievements(fleetData)
+      
+      // 達成チェック後に新しいエントリーを作成
+      console.log('📝 新しいエントリー作成開始')
       const stats = calculateFleetStats(fleetData)
-      const currentLatest = fleetEntries.find(entry => entry.isLatest)
+      
+      // LocalStorageから最新の状態を取得（Reactの状態更新は非同期のため）
+      const latestEntries = JSON.parse(localStorage.getItem(`${admiralName}_fleetEntries`) || '[]')
+      const currentLatest = latestEntries.find((entry: any) => entry.isLatest)
+      console.log('📊 最新エントリーの取得:', {
+        sourceReactState: fleetEntries.find(entry => entry.isLatest)?.id,
+        sourceLocalStorage: currentLatest?.id,
+        tasksInLatest: currentLatest?.tasks?.length || 0
+      })
       
       // 未達成タスクのみを継続タスクとして引き継ぐ
-      const inheritedTasks = currentLatest 
-        ? currentLatest.tasks.filter(task => !task.completed).map(task => ({
-            ...task,
-            id: Date.now() + Math.floor(Math.random() * 1000), // 新しい整数IDを生成
-            inheritedFrom: currentLatest.id,
-            originalTaskId: task.originalTaskId || task.id,
-            createdAt: new Date().toISOString() // 継承時刻を更新
-          }))
-        : []
+      const allTasks = currentLatest?.tasks || []
+      const incompleteTasks = allTasks.filter(task => !task.completed)
+      const completedTasks = allTasks.filter(task => task.completed)
+      
+      console.log('📋 タスク継承デバッグ:', {
+        totalTasks: allTasks.length,
+        incompleteTasks: incompleteTasks.length,
+        completedTasks: completedTasks.length,
+        incompleteList: incompleteTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed })),
+        completedList: completedTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed }))
+      })
+      
+      const inheritedTasks = incompleteTasks.map(task => ({
+        ...task,
+        id: Date.now() + Math.floor(Math.random() * 1000), // 新しい整数IDを生成
+        inheritedFrom: currentLatest.id,
+        originalTaskId: task.originalTaskId || task.id,
+        createdAt: new Date().toISOString() // 継承時刻を更新
+      }))
 
       const newEntry: FleetEntry = {
         id: Date.now(),
@@ -278,9 +302,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setTimeout(() => {
         console.log('🔍 2000ms後:', verifyData(), '件')
       }, 2000)
-      
-      // 育成目標達成チェックを実行
-      checkTrainingGoalAchievements(fleetData)
       
       // 初回セットアップ状態を確実に解除
       if (isFirstSetup) {
@@ -521,6 +542,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         const updatedTasks = entry.tasks.map(task => {
           if (task.id === taskId) {
             const isCompleting = !task.completed
+            
+            // タスク完了時に育成候補から削除
+            if (isCompleting && isTrainingTask(task.text)) {
+              removeTrainingCandidateByTaskId(task.originalTaskId || task.id)
+            }
+            
             return { 
               ...task, 
               completed: isCompleting,
@@ -550,13 +577,23 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
   }
 
-  // タスクの削除
+  // 手動タスク削除機能
   const deleteTask = (entryId: number, taskId: number) => {
+    if (!confirm('このタスクを削除しますか？')) return
+    
     const updatedEntries = fleetEntries.map(entry => {
       if (entry.id === entryId) {
+        const taskToDelete = entry.tasks.find(task => task.id === taskId)
+        const updatedTasks = entry.tasks.filter(task => task.id !== taskId)
+        
+        // 育成タスクの場合は育成候補からも削除
+        if (taskToDelete && isTrainingTask(taskToDelete.text)) {
+          removeTrainingCandidateByTaskId(taskToDelete.originalTaskId || taskToDelete.id)
+        }
+        
         return {
           ...entry,
-          tasks: entry.tasks.filter(task => task.id !== taskId)
+          tasks: updatedTasks
         }
       }
       return entry
@@ -564,7 +601,27 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     
     setFleetEntries(updatedEntries)
     localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
+    showToast('タスクを削除しました', 'success')
   }
+
+  // 育成候補をタスクIDで削除
+  const removeTrainingCandidateByTaskId = (taskId: number) => {
+    try {
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (!stored) return
+      
+      const candidates = JSON.parse(stored)
+      const updatedCandidates = candidates.filter((candidate: any) => candidate.mainTaskId !== taskId)
+      
+      if (updatedCandidates.length !== candidates.length) {
+        localStorage.setItem('fleetComposer_trainingCandidates', JSON.stringify(updatedCandidates))
+        console.log(`🗑️ 手動削除により育成候補を削除: タスクID ${taskId}`)
+      }
+    } catch (error) {
+      console.error('Training candidate removal failed:', error)
+    }
+  }
+
 
   // タスク追加（最新エントリーのみ）
   const addTaskToLatest = () => {
@@ -615,10 +672,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     return fleetEntries.length
   }
   const getTotalCompletedTasks = () => {
-    return fleetEntries.reduce((total, entry) => {
+    const total = fleetEntries.reduce((total, entry) => {
       const filteredTasks = filterTasksForDisplay(entry.tasks)
-      return total + filteredTasks.filter(task => task.completed).length
+      const completedCount = filteredTasks.filter(task => task.completed).length
+      console.log(`📊 Entry ${entry.id} 完了タスク数:`, completedCount, '/', filteredTasks.length)
+      return total + completedCount
     }, 0)
+    console.log('📊 総完了タスク数:', total)
+    return total
   }
   const getPendingTasks = () => {
     const latestEntry = fleetEntries.find(entry => entry.isLatest)
@@ -715,21 +776,43 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     if (!showTrainingTasksOnly) return tasks
     
     const trainingTaskIds = getTrainingCandidatesMainTaskIds()
+    console.log('🔍 フィルタリング開始:', {
+      totalTasks: tasks.length,
+      trainingTaskIds: trainingTaskIds,
+      showTrainingTasksOnly
+    })
+    
     return tasks.filter(task => {
       // 現在の育成候補リストにあるタスク（継承されたタスクを含む）
       const taskIdToCheck = task.originalTaskId || task.inheritedFrom || task.id
-      if (trainingTaskIds.includes(task.id) || 
+      const isInCurrentTrainingList = trainingTaskIds.includes(task.id) || 
           trainingTaskIds.includes(taskIdToCheck) ||
-          (task.originalTaskId && trainingTaskIds.includes(task.originalTaskId))) {
+          (task.originalTaskId && trainingTaskIds.includes(task.originalTaskId))
+      
+      if (isInCurrentTrainingList) {
+        console.log('✅ 現在の育成リストのタスク:', task.text, 'ID:', task.id)
         return true
       }
       
       // 達成済み育成タスクは育成候補リストの状態に関係なく表示
-      if (task.completed && task.achievedInEntry && isTrainingTask(task.text)) {
-        console.log('🏆 達成済み育成タスクを履歴として表示:', task.text)
+      const isCompletedTrainingTask = task.completed && isTrainingTask(task.text)
+      if (isCompletedTrainingTask) {
+        console.log('🏆 達成済み育成タスク判定:', {
+          taskText: task.text,
+          completed: task.completed,
+          achievedInEntry: task.achievedInEntry,
+          isTrainingTask: isTrainingTask(task.text),
+          taskId: task.id
+        })
         return true
       }
       
+      console.log('❌ フィルタリング除外:', task.text, {
+        id: task.id,
+        completed: task.completed,
+        isTrainingTask: isTrainingTask(task.text),
+        achievedInEntry: task.achievedInEntry
+      })
       return false
     })
   }
@@ -971,26 +1054,25 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           markTrainingTaskAsCompleted(candidate.mainTaskId)
           achievedCount++
           
-          // 育成候補に完了フラグを追加（削除はしない）
-          candidate.isCompleted = true
-          candidate.completedAt = new Date().toISOString()
+          // 育成候補を削除対象としてマーク
           candidatesToRemove.push(candidate.id)
         }
       })
       
-      // 達成した候補の完了状態を更新（削除ではなく）
+      // 達成した候補を育成候補リストから削除（タスク履歴は保持）
       if (candidatesToRemove.length > 0) {
-        const updatedCandidates = trainingCandidates.map((candidate: any) => {
-          if (candidatesToRemove.includes(candidate.id)) {
-            return {
-              ...candidate,
-              isCompleted: true,
-              completedAt: new Date().toISOString()
-            }
-          }
-          return candidate
-        })
+        const updatedCandidates = trainingCandidates.filter((candidate: any) => 
+          !candidatesToRemove.includes(candidate.id)
+        )
         localStorage.setItem('fleetComposer_trainingCandidates', JSON.stringify(updatedCandidates))
+        
+        // 削除された候補をログ出力
+        candidatesToRemove.forEach(candidateId => {
+          const deletedCandidate = trainingCandidates.find((c: any) => c.id === candidateId)
+          if (deletedCandidate) {
+            console.log(`✅ 育成目標達成により育成候補リストから削除: ${deletedCandidate.name}`)
+          }
+        })
       }
       
       // 達成があった場合は通知
@@ -1007,12 +1089,21 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const markTrainingTaskAsCompleted = (taskId: number) => {
     const completionTime = new Date().toISOString()
     let completedTaskText = ''
+    let completionCount = 0
+    
+    console.log('🎯 タスク完了処理開始:', taskId)
     
     const updatedEntries = fleetEntries.map(entry => {
       const updatedTasks = entry.tasks.map(task => {
         // メインタスクの完了
         if (task.id === taskId) {
           completedTaskText = task.text
+          completionCount++
+          console.log('✅ メインタスク完了:', {
+            taskId: task.id,
+            text: task.text,
+            entryId: entry.id
+          })
           return { 
             ...task, 
             completed: true,
@@ -1023,6 +1114,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         // 引き継いだタスクの完了（originalTaskIdが一致するもの）
         else if (task.originalTaskId === taskId) {
           if (!completedTaskText) completedTaskText = task.text
+          completionCount++
+          console.log('✅ 継承タスク完了:', {
+            taskId: task.id,
+            originalTaskId: task.originalTaskId,
+            text: task.text,
+            entryId: entry.id
+          })
           return { 
             ...task, 
             completed: true,
@@ -1033,6 +1131,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         return task
       })
       return { ...entry, tasks: updatedTasks }
+    })
+    
+    console.log('🎯 タスク完了処理完了:', {
+      taskId,
+      completionCount,
+      completedTaskText
     })
     
     setFleetEntries(updatedEntries)
@@ -1851,32 +1955,58 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                           )}
                           <div className="task-content">
                             {isTraining ? (
-                              <span className={`task-text ${task.completed ? 'completed' : ''}`}>{task.text}</span>
+                              <>
+                                <div className="training-task-content">
+                                  <label className="task-checkbox">
+                                    <input
+                                      type="checkbox"
+                                      checked={task.completed}
+                                      onChange={() => toggleTask(latestEntry.id, task.id)}
+                                    />
+                                    <span className={`task-text ${task.completed ? 'completed' : ''}`}>{task.text}</span>
+                                  </label>
+                                  <button 
+                                    onClick={() => deleteTask(latestEntry.id, task.id)}
+                                    className="delete-task-btn training-delete"
+                                    title="育成タスクを削除"
+                                  >
+                                    <span className="material-icons">close</span>
+                                  </button>
+                                </div>
+                                {/* 育成タスクの完了履歴情報 */}
+                                {task.completed && task.completedAt && (
+                                  <div className="task-completion-info">
+                                    <span className="completion-date">
+                                      {'完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
                             ) : (
-                              <label className="task-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={task.completed}
-                                  onChange={() => toggleTask(latestEntry.id, task.id)}
-                                />
-                                <span className={task.completed ? 'completed' : ''}>{task.text}</span>
-                              </label>
-                            )}
-                            {/* 完了履歴情報 */}
-                            {task.completed && task.completedAt && (
-                              <div className="task-completion-info">
-                                <span className="completion-date">
-                                  {'完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
-                                </span>
-                              </div>
-                            )}
-                            {!isTraining && (
-                              <button 
-                                onClick={() => deleteTask(latestEntry.id, task.id)}
-                                className="delete-task-btn"
-                              >
-                                <span className="material-icons">close</span>
-                              </button>
+                              <>
+                                <label className="task-checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={task.completed}
+                                    onChange={() => toggleTask(latestEntry.id, task.id)}
+                                  />
+                                  <span className={task.completed ? 'completed' : ''}>{task.text}</span>
+                                </label>
+                                {/* 通常タスクの完了履歴情報 */}
+                                {task.completed && task.completedAt && (
+                                  <div className="task-completion-info">
+                                    <span className="completion-date">
+                                      {'完了'}: {new Date(task.completedAt).toLocaleString('ja-JP')}
+                                    </span>
+                                  </div>
+                                )}
+                                <button 
+                                  onClick={() => deleteTask(latestEntry.id, task.id)}
+                                  className="delete-task-btn"
+                                >
+                                  <span className="material-icons">close</span>
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>

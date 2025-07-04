@@ -491,88 +491,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
 
-  // タスク連動のチェック（定期実行） - 達成チェックと自動削除
-  useEffect(() => {
-    if (!isFullDataLoaded || trainingCandidates.length === 0) return
-    
-    const checkTasksAndTargets = () => {
-      const entries = getFleetEntriesFromStorage()
-      const updatedCandidates = trainingCandidates.map(candidate => {
-        if (!candidate.mainTaskId) return candidate
-        
-        const ship = ships.find(s => s.id === candidate.instanceId)
-        if (!ship) return candidate
-        
-        // メインタスクが存在するかチェック
-        const taskExists = entries.some((entry: any) => 
-          entry.tasks?.some((task: any) => task.id === candidate.mainTaskId && !task.completed)
-        )
-        
-        if (!taskExists) {
-          // メインタスクが削除されているか完了している場合、育成候補も削除
-          console.log(`✅ 育成タスク完了により削除: ${candidate.name}`)
-          // showToast(`${candidate.name}の育成タスクが完了したため、育成候補から削除しました`)
-          return null // 削除マーク
-        }
-        
-        // 目標達成チェック
-        let allTargetsAchieved = true
-        let hasAnyTarget = false
-        
-        if (candidate.targetLevel && candidate.targetLevel > ship.level) {
-          allTargetsAchieved = false
-          hasAnyTarget = true
-        }
-        if (candidate.targetHp && candidate.targetHp > ship.currentStats.hp) {
-          allTargetsAchieved = false
-          hasAnyTarget = true
-        }
-        if (candidate.targetAsw && candidate.targetAsw > ship.currentStats.asw) {
-          allTargetsAchieved = false
-          hasAnyTarget = true
-        }
-        if (candidate.targetLuck && candidate.targetLuck > ship.currentStats.luck) {
-          allTargetsAchieved = false
-          hasAnyTarget = true
-        }
-        
-        // 目標がすべて達成されている場合、タスクを完了にして育成候補を削除
-        if (hasAnyTarget && allTargetsAchieved) {
-          // タスクを完了にマーク
-          entries.forEach((entry: any) => {
-            if (entry.tasks) {
-              entry.tasks.forEach((task: any) => {
-                if (task.id === candidate.mainTaskId) {
-                  task.completed = true
-                }
-              })
-            }
-          })
-          saveFleetEntriesToStorage(entries)
-          
-          console.log(`🎯 全目標達成により削除: ${candidate.name}`)
-          // showToast(`${candidate.name}がすべての育成目標を達成したため、育成候補から削除しました`)
-          return null // 削除マーク
-        }
-        
-        return candidate
-      }).filter(candidate => candidate !== null) // 削除マークされたものを除外
-      
-      // 変更があった場合のみ更新
-      if (updatedCandidates.length !== trainingCandidates.length) {
-        setTrainingCandidates(updatedCandidates)
-        saveTrainingCandidatesToStorage(updatedCandidates)
-      }
-    }
-    
-    // 初回実行
-    checkTasksAndTargets()
-    
-    // 5秒間隔でチェック
-    const interval = setInterval(checkTasksAndTargets, 5000)
-    
-    return () => clearInterval(interval)
-  }, [trainingCandidates, ships, isFullDataLoaded])
 
   // サイドバーが閉じられた時の処理
   useEffect(() => {
@@ -624,10 +542,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       const parsedShips = parseFleetData(currentFleetData, getShipData)
       setShips(parsedShips)
       
-      // 新しいAPIデータが来た場合、育成候補の達成チェックを即座に実行
-      if (fleetData && fleetData !== storedFleetData && trainingCandidates.length > 0) {
-        checkAchievementsForCandidates(parsedShips, trainingCandidates)
-      }
       
       // 新しいAPIデータが来た場合のみ保存
       if (fleetData && fleetData !== storedFleetData) {
@@ -686,64 +600,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     }
   }, [fleetSlots, fleetName, hasRestoredComposition]) // shipsを除去して無限ループを防止
 
-  // 育成候補の達成チェック専用関数
-  const checkAchievementsForCandidates = (currentShips: Ship[], currentCandidates: TrainingCandidate[]) => {
-    const entries = getFleetEntriesFromStorage()
-    const updatedCandidates = currentCandidates.map(candidate => {
-      if (!candidate.mainTaskId) return candidate
-      
-      const ship = currentShips.find(s => s.id === candidate.instanceId)
-      if (!ship) return candidate
-      
-      // 目標達成チェック
-      let allTargetsAchieved = true
-      let hasAnyTarget = false
-      
-      if (candidate.targetLevel && candidate.targetLevel > ship.level) {
-        allTargetsAchieved = false
-        hasAnyTarget = true
-      }
-      if (candidate.targetHp && candidate.targetHp > ship.currentStats.hp) {
-        allTargetsAchieved = false
-        hasAnyTarget = true
-      }
-      if (candidate.targetAsw && candidate.targetAsw > ship.currentStats.asw) {
-        allTargetsAchieved = false
-        hasAnyTarget = true
-      }
-      if (candidate.targetLuck && candidate.targetLuck > ship.currentStats.luck) {
-        allTargetsAchieved = false
-        hasAnyTarget = true
-      }
-      
-      // 目標がすべて達成されている場合、タスクを完了にして育成候補を削除
-      if (hasAnyTarget && allTargetsAchieved) {
-        // タスクを完了にマーク
-        entries.forEach((entry: any) => {
-          if (entry.tasks) {
-            entry.tasks.forEach((task: any) => {
-              if (task.id === candidate.mainTaskId) {
-                task.completed = true
-              }
-            })
-          }
-        })
-        saveFleetEntriesToStorage(entries)
-        
-        console.log(`🎯 新APIデータにより全目標達成を検出: ${candidate.name}`)
-        // showToast(`${candidate.name}がすべての育成目標を達成しました！育成候補から削除します`)
-        return null // 削除マーク
-      }
-      
-      return candidate
-    }).filter(candidate => candidate !== null) // 削除マークされたものを除外
-    
-    // 変更があった場合のみ更新
-    if (updatedCandidates.length !== currentCandidates.length) {
-      setTrainingCandidates(updatedCandidates)
-      saveTrainingCandidatesToStorage(updatedCandidates)
-    }
-  }
 
   // ソート関数
   const sortShips = (ships: Ship[], sortType: string): Ship[] => {
