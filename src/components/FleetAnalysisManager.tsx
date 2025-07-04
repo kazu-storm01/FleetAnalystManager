@@ -215,20 +215,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         tasksInLatest: currentLatest?.tasks?.length || 0
       })
       
-      // 未達成タスクのみを継続タスクとして引き継ぐ
+      // 育成タスクは未完了のみ引き継ぎ、その他も未達成のみ引き継ぐ
       const allTasks = currentLatest?.tasks || []
-      const incompleteTasks = allTasks.filter(task => !task.completed)
-      const completedTasks = allTasks.filter(task => task.completed)
+      const trainingTasks = allTasks.filter(task => isTrainingTask(task.text) && !task.completed)
+      const nonTrainingIncompleteTasks = allTasks.filter(task => !isTrainingTask(task.text) && !task.completed)
+      const tasksToInherit = [...trainingTasks, ...nonTrainingIncompleteTasks]
       
       console.log('📋 タスク継承デバッグ:', {
         totalTasks: allTasks.length,
-        incompleteTasks: incompleteTasks.length,
-        completedTasks: completedTasks.length,
-        incompleteList: incompleteTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed })),
-        completedList: completedTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed }))
+        incompleteTrainingTasks: trainingTasks.length,
+        nonTrainingIncompleteTasks: nonTrainingIncompleteTasks.length,
+        tasksToInherit: tasksToInherit.length,
+        incompleteTrainingTasksList: trainingTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed })),
+        nonTrainingIncompleteList: nonTrainingIncompleteTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed }))
       })
       
-      const inheritedTasks = incompleteTasks.map(task => ({
+      const inheritedTasks = tasksToInherit.map(task => ({
         ...task,
         id: Date.now() + Math.floor(Math.random() * 1000), // 新しい整数IDを生成
         inheritedFrom: currentLatest.id,
