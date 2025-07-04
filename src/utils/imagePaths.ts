@@ -18,6 +18,13 @@ export const getStatIconPath = (iconName: string): string => {
   return fullPath;
 };
 
+// 艦娘バナー画像のパスを生成
+export const getShipBannerPath = (shipId: number): string => {
+  const basePath = import.meta.env.BASE_URL || '/';
+  const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
+  return `${normalizedBasePath}images/banner/${shipId}.png`;
+};
+
 // デバッグ用: 利用可能なアイコン名の一覧
 export const AVAILABLE_STAT_ICONS = [
   'accuracy',

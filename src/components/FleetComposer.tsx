@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { 
   SHIP_TYPES, 
   getShipTypeByShipType,
@@ -269,86 +269,9 @@ const saveFleetEntriesToStorage = (entries: any[]) => {
   }
 }
 
-const addTaskToLatestFleetEntry = (taskText: string): number => {
-  let entries = getFleetEntriesFromStorage()
-  
-  // エントリーが存在しない場合は自動作成
-  if (entries.length === 0) {
-    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || localStorage.getItem('admiralName') || '提督'
-    const newEntry = {
-      id: Date.now(),
-      totalExp: 0,
-      shipCount: 0,
-      marriedCount: 0,
-      luckModTotal: 0,
-      hpModTotal: 0,
-      aswModTotal: 0,
-      tasks: [],
-      createdAt: new Date().toISOString(),
-      admiralName: admiralName,
-      isLatest: true
-    }
-    entries = [newEntry]
-    saveFleetEntriesToStorage(entries)
-  }
-  
-  let latestEntry = entries.find((entry: any) => entry.isLatest)
-  
-  // isLatestなエントリーがない場合は最新のものをisLatestにする
-  if (!latestEntry) {
-    entries.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    if (entries.length > 0) {
-      entries.forEach((entry: any) => entry.isLatest = false)
-      entries[0].isLatest = true
-      latestEntry = entries[0]
-      saveFleetEntriesToStorage(entries)
-    }
-  }
-  
-  if (!latestEntry) return -1
-  
-  const newTask = {
-    id: Date.now(),
-    text: taskText,
-    completed: false,
-    createdAt: new Date().toISOString()
-  }
-  
-  latestEntry.tasks = latestEntry.tasks || []
-  latestEntry.tasks.push(newTask)
-  
-  saveFleetEntriesToStorage(entries)
-  return newTask.id
-}
+// addTaskToLatestFleetEntry function removed - auto-sync disabled
 
-const removeTaskFromFleetEntry = (taskId: number) => {
-  const entries = getFleetEntriesFromStorage()
-  let removedCount = 0
-  
-  // 最新エントリーのみを対象とする
-  const latestEntry = entries.find((entry: any) => entry.isLatest)
-  
-  if (latestEntry && latestEntry.tasks) {
-    const originalLength = latestEntry.tasks.length
-    // 最新エントリーで、元のタスクIDまたは引き継がれたタスクのoriginalTaskIdが一致する場合に削除
-    latestEntry.tasks = latestEntry.tasks.filter((task: any) => {
-      const shouldRemove = task.id === taskId || task.originalTaskId === taskId
-      if (shouldRemove) {
-        console.log('🔧 最新エントリーのタスク削除:', task.id, '(originalTaskId:', task.originalTaskId, ') text:', task.text)
-      }
-      return !shouldRemove
-    })
-    removedCount = originalLength - latestEntry.tasks.length
-  }
-  
-  console.log('🔧 削除されたタスク数:', removedCount, '(最新エントリーのみ、過去の履歴は保持)')
-  saveFleetEntriesToStorage(entries)
-  
-  // FleetAnalysisManagerの状態も即座に同期
-  window.dispatchEvent(new CustomEvent('fleetEntriesUpdated', {
-    detail: { updatedEntries: entries, removedTaskId: taskId }
-  }))
-}
+// removeTaskFromFleetEntry function removed - auto-sync disabled
 
 const updateTaskText = (taskId: number, newText: string) => {
   const entries = getFleetEntriesFromStorage()
@@ -819,9 +742,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       return
     }
 
-    // メインタスクを作成
-    const mainTaskText = `${ship.name}を育成する`
-    const mainTaskId = addTaskToLatestFleetEntry(mainTaskText)
+    // 自動タスク作成を無効化 - シンプルな表示のみ
+    // const mainTaskText = `${ship.name}を育成する`
+    // const mainTaskId = addTaskToLatestFleetEntry(mainTaskText)
     
     const newCandidate: TrainingCandidate = {
       id: Date.now(),
@@ -830,7 +753,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       name: ship.name,
       level: ship.level,
       addedAt: new Date().toISOString(),
-      mainTaskId: mainTaskId !== -1 ? mainTaskId : undefined
+      // mainTaskId: mainTaskId !== -1 ? mainTaskId : undefined
     }
     
     const updatedCandidates = [...trainingCandidates, newCandidate]
@@ -842,11 +765,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     setIsDroppedOnTrainingCandidates(true)
     
     console.log('✅ 育成候補に追加:', ship.name)
-    if (mainTaskId !== -1) {
-      showToast(`${ship.name} を育成候補に追加し、育成タスクを作成しました！`)
-    } else {
-      showToast(`${ship.name} を育成候補に追加しました！`)
-    }
+    showToast(`${ship.name} を育成候補に追加しました！`)
     
     // 新しい候補が見えるように自動スクロール
     setTimeout(() => {
@@ -856,39 +775,39 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     }, 100)
   }
 
-  // 育成候補から削除（タスク連動）
+  // 育成候補から削除（タスク連動を無効化）
   const handleRemoveFromTrainingCandidates = (candidateId: number) => {
     const candidate = trainingCandidates.find(c => c.id === candidateId)
     
-    // メインタスクを削除
-    if (candidate?.mainTaskId) {
-      removeTaskFromFleetEntry(candidate.mainTaskId)
-    }
+    // 自動タスク削除を無効化
+    // if (candidate?.mainTaskId) {
+    //   removeTaskFromFleetEntry(candidate.mainTaskId)
+    // }
     
     
     const updatedCandidates = trainingCandidates.filter(c => c.id !== candidateId)
     setTrainingCandidates(updatedCandidates)
     deleteTrainingCandidateFromStorage(candidateId)
     
-    showToast(`${candidate?.name || '艦娘'}を育成候補から削除し、関連タスクも削除しました`)
+    showToast(`${candidate?.name || '艦娘'}を育成候補から削除しました`)
   }
 
 
   // サイドバーを閉じる処理（タスク更新込み）
   const closeSidebar = () => {
-    // 保留中のタスク更新を即座に実行
-    if (pendingTaskUpdates.size > 0) {
-      pendingTaskUpdates.forEach(candidateId => {
-        const candidate = trainingCandidates.find(c => c.id === candidateId)
-        if (candidate && candidate.mainTaskId) {
-          const newTaskText = createMainTaskText(candidate)
-          updateTaskText(candidate.mainTaskId, newTaskText)
-        }
-      })
-      
-      showToast(`${pendingTaskUpdates.size}件の育成タスクを更新しました`)
-      setPendingTaskUpdates(new Set())
-    }
+    // 自動タスク更新を無効化
+    // if (pendingTaskUpdates.size > 0) {
+    //   pendingTaskUpdates.forEach(candidateId => {
+    //     const candidate = trainingCandidates.find(c => c.id === candidateId)
+    //     if (candidate && candidate.mainTaskId) {
+    //       const newTaskText = createMainTaskText(candidate)
+    //       updateTaskText(candidate.mainTaskId, newTaskText)
+    //     }
+    //   })
+    //   
+    //   showToast(`${pendingTaskUpdates.size}件の育成タスクを更新しました`)
+    //   setPendingTaskUpdates(new Set())
+    // }
     
     setIsSidebarOpen(false)
   }
@@ -1307,7 +1226,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   index={index}
                   draggedShip={draggedShip}
                   onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
+                  onDragEnd={() => handleDragEnd({} as React.DragEvent)}
                 />
                 ))
               )}
@@ -1585,13 +1504,14 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                       })
                                     }
                                   }}
-                                  onBlur={() => {
-                                    if (candidate.mainTaskId) {
-                                      const newTaskText = createMainTaskText(candidate)
-                                      updateTaskText(candidate.mainTaskId, newTaskText)
-                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
-                                    }
-                                  }}
+                                  // 自動タスク更新を無効化
+                                  // onBlur={() => {
+                                  //   if (candidate.mainTaskId) {
+                                  //     const newTaskText = createMainTaskText(candidate)
+                                  //     updateTaskText(candidate.mainTaskId, newTaskText)
+                                  //     showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
+                                  //   }
+                                  // }}
                                 />
                               </div>
 
@@ -1630,13 +1550,14 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                       })
                                     }
                                   }}
-                                  onBlur={() => {
-                                    if (candidate.mainTaskId) {
-                                      const newTaskText = createMainTaskText(candidate)
-                                      updateTaskText(candidate.mainTaskId, newTaskText)
-                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
-                                    }
-                                  }}
+                                  // 自動タスク更新を無効化
+                                  // onBlur={() => {
+                                  //   if (candidate.mainTaskId) {
+                                  //     const newTaskText = createMainTaskText(candidate)
+                                  //     updateTaskText(candidate.mainTaskId, newTaskText)
+                                  //     showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
+                                  //   }
+                                  // }}
                                 />
                               </div>
 
@@ -1675,13 +1596,14 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                       })
                                     }
                                   }}
-                                  onBlur={() => {
-                                    if (candidate.mainTaskId) {
-                                      const newTaskText = createMainTaskText(candidate)
-                                      updateTaskText(candidate.mainTaskId, newTaskText)
-                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
-                                    }
-                                  }}
+                                  // 自動タスク更新を無効化
+                                  // onBlur={() => {
+                                  //   if (candidate.mainTaskId) {
+                                  //     const newTaskText = createMainTaskText(candidate)
+                                  //     updateTaskText(candidate.mainTaskId, newTaskText)
+                                  //     showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
+                                  //   }
+                                  // }}
                                 />
                               </div>
 
@@ -1712,13 +1634,14 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                       })
                                     }
                                   }}
-                                  onBlur={() => {
-                                    if (candidate.mainTaskId) {
-                                      const newTaskText = createMainTaskText(candidate)
-                                      updateTaskText(candidate.mainTaskId, newTaskText)
-                                      showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
-                                    }
-                                  }}
+                                  // 自動タスク更新を無効化
+                                  // onBlur={() => {
+                                  //   if (candidate.mainTaskId) {
+                                  //     const newTaskText = createMainTaskText(candidate)
+                                  //     updateTaskText(candidate.mainTaskId, newTaskText)
+                                  //     showToast(`${candidate.name}の育成目標を更新しました（${newTaskText.replace(candidate.name + 'を育成する', '').replace('（', '').replace('）', '')}）`)
+                                  //   }
+                                  // }}
                                 />
                               </div>
                             </div>

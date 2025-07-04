@@ -1381,6 +1381,39 @@ body.dragging-ship .fleet-composition-area {
   margin-bottom: 8px;
 }
 
+/* 達成済み育成タスクのスタイル */
+.training-task.completed-training {
+  opacity: 0.7;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(129, 199, 132, 0.05) 100%);
+}
+
+.training-task.completed-training .task-content {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(129, 199, 132, 0.08) 100%);
+  border-left: 3px solid rgba(76, 175, 80, 0.6);
+}
+
+.training-task.completed-training .task-text {
+  color: rgba(225, 245, 254, 0.8) !important;
+}
+
+.training-task.completed-training .task-banner {
+  opacity: 0.6;
+}
+
+/* 達成バッジ */
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  color: #4caf50;
+  font-size: 0.9rem;
+}
+
+.achievement-badge .material-icons {
+  font-size: 16px;
+}
+}
+
 /* 育成タスクのテキストスタイル */
 .training-task .task-text {
   font-weight: 500;
@@ -11156,6 +11189,258 @@ h4 .material-icons {
 
 .task-completion-info .completion-entry {
   color: rgba(225, 245, 254, 0.5);
+}
+
+/* 達成済み育成タスクのフェードアウト */
+.fading-out {
+  animation: fadeOutSlide 2s ease-in-out forwards;
+}
+
+@keyframes fadeOutSlide {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 200px;
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateX(10px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(20px);
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* ===== 育成候補リストモーダル ===== */
+.training-candidates-modal {
+  max-width: 700px !important;
+  width: 90% !important;
+  max-height: 80vh !important;
+}
+
+.training-candidates-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px;
+}
+
+.training-candidate-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.training-candidate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.candidate-banner-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(20, 40, 80, 0.9), rgba(40, 80, 140, 0.7));
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.ship-banner {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.training-candidate-card:hover .ship-banner {
+  transform: scale(1.05);
+}
+
+.banner-fallback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* オーバーレイ情報 */
+.candidate-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.1) 30%,
+    rgba(0, 0, 0, 0.1) 70%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.training-candidate-card:hover .candidate-overlay {
+  opacity: 1;
+}
+
+.overlay-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.candidate-level-badge {
+  background: rgba(255, 215, 0, 0.95);
+  color: #1a1a1a;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.candidate-date {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+}
+
+.overlay-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.candidate-name {
+  margin: 0;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  line-height: 1.2;
+}
+
+.candidate-targets {
+  margin-top: 4px;
+}
+
+.targets-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.target-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+
+.target-icon {
+  font-size: 12px !important;
+}
+
+.target-item .stat-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* 空の状態 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.empty-icon {
+  font-size: 64px !important;
+  color: rgba(100, 181, 246, 0.5);
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  margin: 8px 0;
+  font-size: 1.1rem;
+}
+
+.empty-hint {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 0.9rem !important;
+}
+
+/* ===== 通知バッジ ===== */
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: linear-gradient(135deg, #ff4444, #cc0000);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px !important;
+  animation: pulse-notification 2s infinite;
+  box-shadow: 0 2px 8px rgba(255, 68, 68, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.notification-badge .material-symbols-outlined {
+  font-size: 12px !important;
+  font-weight: 700;
+}
+
+@keyframes pulse-notification {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.6);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(255, 68, 68, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.6);
+  }
+}
+
+.overview-button {
+  position: relative;
 }
 
 

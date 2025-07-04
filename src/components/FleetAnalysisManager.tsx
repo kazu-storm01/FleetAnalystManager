@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { StatIcon } from './ShipStatusDisplay'
+import { getShipBannerPath } from '../utils/imagePaths'
 
 // 型定義
 interface Task {
@@ -13,6 +14,20 @@ interface Task {
   achievedInEntry?: number    // 達成されたエントリーID（履歴用）
 }
 
+
+interface TrainingCandidate {
+  id: number
+  instanceId: number
+  shipId: number
+  name: string
+  level: number
+  addedAt: string
+  targetLevel?: number
+  targetHp?: number
+  targetAsw?: number
+  targetLuck?: number
+  mainTaskId?: number
+}
 
 interface FleetEntry {
   id: number
@@ -60,7 +75,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [showPendingTasksModal, setShowPendingTasksModal] = useState<boolean>(false)
   const [showCompletedTasksModal, setShowCompletedTasksModal] = useState<boolean>(false)
   const [showFleetRecordsModal, setShowFleetRecordsModal] = useState<boolean>(false)
-  const [isResetting, setIsResetting] = useState<boolean>(false)
+  const [showTrainingCandidatesModal, setShowTrainingCandidatesModal] = useState<boolean>(false)
+  const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>([])
+  const [hasNewAchievements, setHasNewAchievements] = useState<boolean>(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -136,18 +153,27 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         throw new Error('艦隊データが見つかりません。正しい艦隊JSONデータを入力してください。')
       }
 
-      // 最初の数件の船舶データを検証
-      const sampleShips = ships.slice(0, Math.min(3, ships.length))
+      // 最初の数件の船舶データを検証（条件を緩和）
+      const sampleShips = ships.slice(0, Math.min(5, ships.length))
       const validShipCount = sampleShips.filter(ship => {
         return ship && typeof ship === 'object' && (
+          // 経験値データがある
           (ship.exp && Array.isArray(ship.exp)) || 
           (ship.api_exp && Array.isArray(ship.api_exp)) ||
-          ship.lv || ship.api_lv ||
-          ship.ship_id || ship.api_ship_id
+          // レベルデータがある
+          (ship.lv !== undefined && ship.lv !== null) || 
+          (ship.api_lv !== undefined && ship.api_lv !== null) ||
+          // 艦船IDがある
+          (ship.ship_id !== undefined && ship.ship_id !== null) || 
+          (ship.api_ship_id !== undefined && ship.api_ship_id !== null) ||
+          // 艦種IDがある
+          (ship.stype !== undefined && ship.stype !== null) ||
+          (ship.api_stype !== undefined && ship.api_stype !== null)
         )
       }).length
 
       if (validShipCount === 0) {
+        console.error('艦船データサンプル:', sampleShips)
         throw new Error('有効な艦船データが見つかりません。艦隊JSONデータの形式を確認してください。')
       }
       
@@ -198,9 +224,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     if (!fleetData.trim()) return
     
     try {
-      // まず育成目標達成チェックを実行（エントリー作成前）
-      console.log('🎯 育成目標達成チェック開始（エントリー作成前）')
-      checkTrainingGoalAchievements(fleetData)
+      // 育成目標達成チェック（読み取り専用）
+      if (trainingCandidates.length > 0) {
+        const hasAchievements = checkTrainingAchievements(fleetData)
+        if (hasAchievements) {
+          setHasNewAchievements(true)
+          showToast('育成目標を達成した艦娘がいます！', 'success')
+        }
+      }
       
       // 達成チェック後に新しいエントリーを作成
       console.log('📝 新しいエントリー作成開始')
@@ -217,8 +248,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       
       // 育成タスクは未完了のみ引き継ぎ、その他も未達成のみ引き継ぐ
       const allTasks = currentLatest?.tasks || []
-      const trainingTasks = allTasks.filter(task => isTrainingTask(task.text) && !task.completed)
-      const nonTrainingIncompleteTasks = allTasks.filter(task => !isTrainingTask(task.text) && !task.completed)
+      const trainingTasks = allTasks.filter((task: Task) => isTrainingTask(task.text) && !task.completed)
+      const nonTrainingIncompleteTasks = allTasks.filter((task: Task) => !isTrainingTask(task.text) && !task.completed)
       const tasksToInherit = [...trainingTasks, ...nonTrainingIncompleteTasks]
       
       console.log('📋 タスク継承デバッグ:', {
@@ -226,13 +257,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         incompleteTrainingTasks: trainingTasks.length,
         nonTrainingIncompleteTasks: nonTrainingIncompleteTasks.length,
         tasksToInherit: tasksToInherit.length,
-        incompleteTrainingTasksList: trainingTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed })),
-        nonTrainingIncompleteList: nonTrainingIncompleteTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed }))
+        incompleteTrainingTasksList: trainingTasks.map((t: Task) => ({ id: t.id, text: t.text, completed: t.completed })),
+        nonTrainingIncompleteList: nonTrainingIncompleteTasks.map((t: Task) => ({ id: t.id, text: t.text, completed: t.completed }))
       })
       
       const inheritedTasks = tasksToInherit.map(task => ({
         ...task,
-        id: Date.now() + Math.floor(Math.random() * 1000), // 新しい整数IDを生成
+        // 育成タスクは既存のIDを保持、その他は新しいIDを生成
+        id: isTrainingTask(task.text) ? task.id : Date.now() + Math.floor(Math.random() * 1000),
         inheritedFrom: currentLatest.id,
         originalTaskId: task.originalTaskId || task.id,
         createdAt: new Date().toISOString() // 継承時刻を更新
@@ -353,6 +385,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setIsFirstSetup(true)
       setShowWelcome(true)
     }
+    
+    // 育成候補リストを読み込み
+    loadTrainingCandidates()
   }, [])
 
   // プライバシーモードの永続化
@@ -492,8 +527,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       }
       localStorage.removeItem('fleetAnalysisAdmiralName')
       
-      // リセット状態をマーク
-      setIsResetting(true)
+      // Reset state removed
       
       // 状態をリセット
       setAdmiralName('')
@@ -504,8 +538,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setShowWelcome(true)
       setShowAdmiralModal(false)
       
-      // リセット完了後フラグをクリア
-      setTimeout(() => setIsResetting(false), 100)
+      // Reset complete
       
       showToast('すべてのデータが削除されました', 'success')
     }
@@ -545,10 +578,10 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           if (task.id === taskId) {
             const isCompleting = !task.completed
             
-            // タスク完了時に育成候補から削除
-            if (isCompleting && isTrainingTask(task.text)) {
-              removeTrainingCandidateByTaskId(task.originalTaskId || task.id)
-            }
+            // 自動削除機能を無効化 - シンプルな表示のみ
+            // if (isCompleting && isTrainingTask(task.text)) {
+            //   removeTrainingCandidateByTaskId(task.originalTaskId || task.id)
+            // }
             
             return { 
               ...task, 
@@ -585,13 +618,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     
     const updatedEntries = fleetEntries.map(entry => {
       if (entry.id === entryId) {
-        const taskToDelete = entry.tasks.find(task => task.id === taskId)
         const updatedTasks = entry.tasks.filter(task => task.id !== taskId)
         
-        // 育成タスクの場合は育成候補からも削除
-        if (taskToDelete && isTrainingTask(taskToDelete.text)) {
-          removeTrainingCandidateByTaskId(taskToDelete.originalTaskId || taskToDelete.id)
-        }
+        // 自動削除機能を無効化 - シンプルな表示のみ
         
         return {
           ...entry,
@@ -607,22 +636,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   }
 
   // 育成候補をタスクIDで削除
-  const removeTrainingCandidateByTaskId = (taskId: number) => {
-    try {
-      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
-      if (!stored) return
-      
-      const candidates = JSON.parse(stored)
-      const updatedCandidates = candidates.filter((candidate: any) => candidate.mainTaskId !== taskId)
-      
-      if (updatedCandidates.length !== candidates.length) {
-        localStorage.setItem('fleetComposer_trainingCandidates', JSON.stringify(updatedCandidates))
-        console.log(`🗑️ 手動削除により育成候補を削除: タスクID ${taskId}`)
-      }
-    } catch (error) {
-      console.error('Training candidate removal failed:', error)
-    }
-  }
+  // removeTrainingCandidateByTaskId function removed - auto-sync disabled
 
 
   // タスク追加（最新エントリーのみ）
@@ -712,66 +726,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }
 
-  // 育成リストとタスクの整合性をチェックし、修正する
-  const syncTrainingListAndTasks = () => {
-    const latestEntry = fleetEntries.find(entry => entry.isLatest)
-    if (!latestEntry) {
-      console.log('🔄 最新エントリーがないため同期スキップ')
-      return
-    }
-
-    const trainingTaskIds = getTrainingCandidatesMainTaskIds()
-    console.log('🔄 育成リスト同期チェック開始')
-    console.log('🔄 最新エントリーID:', latestEntry.id, 'タスク数:', latestEntry.tasks.length)
-    console.log('🔄 育成候補ID一覧:', trainingTaskIds)
-    console.log('🔄 現在のタスク詳細:', latestEntry.tasks.map(t => ({
-      id: t.id,
-      text: t.text.substring(0, 20),
-      originalTaskId: t.originalTaskId,
-      inheritedFrom: t.inheritedFrom,
-      isTraining: t.text.includes('を育成する')
-    })))
-
-    // 育成リストにないタスクを削除（ただし完了済みタスクは保持）
-    const syncedTasks = latestEntry.tasks.filter(task => {
-      const isTrainingTask = task.text.includes('を育成する')
-      if (isTrainingTask) {
-        // 継承されたタスクの場合、originalTaskIdまたはinheritedFromを優先して検索
-        const taskIdToCheck = task.originalTaskId || task.inheritedFrom || task.id
-        const hasTrainingCandidate = trainingTaskIds.includes(task.id) || 
-                                   trainingTaskIds.includes(taskIdToCheck) ||
-                                   (task.originalTaskId && trainingTaskIds.includes(task.originalTaskId))
-        
-        // 完了済みタスクは育成候補リストにない場合でも保持
-        if (!hasTrainingCandidate) {
-          if (task.completed) {
-            console.log('✅ 完了済み育成タスクを保持:', task.text)
-            return true
-          } else {
-            console.log('🗑️ 育成リストにないタスクを削除:', task.text, 'taskId:', task.id, 'originalTaskId:', task.originalTaskId, 'inheritedFrom:', task.inheritedFrom)
-            return false
-          }
-        } else {
-          console.log('✅ 育成タスクを保持:', task.text, 'taskId:', task.id, 'originalTaskId:', task.originalTaskId)
-        }
-      }
-      return true
-    })
-
-    // タスクが変更された場合、更新
-    console.log('🔄 同期結果: 元タスク数:', latestEntry.tasks.length, '→ 同期後:', syncedTasks.length)
-    if (syncedTasks.length !== latestEntry.tasks.length) {
-      console.log('🚨 タスクが変更されました - LocalStorageを更新します')
-      const updatedEntries = fleetEntries.map(entry => 
-        entry.isLatest ? { ...entry, tasks: syncedTasks } : entry
-      )
-      setFleetEntries(updatedEntries)
-      localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
-      console.log('🔄 育成リストとタスクの同期完了')
-    } else {
-      console.log('✅ タスクに変更なし - LocalStorage更新スキップ')
-    }
-  }
+  // syncTrainingListAndTasks function removed - auto-sync disabled
 
   // 育成候補タスクのフィルタリング
   const filterTasksForDisplay = (tasks: Task[]): Task[] => {
@@ -824,83 +779,72 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     return taskText.includes('を育成する')
   }
 
-  // 育成タスクが達成されているかチェック（実際の艦隊データベース版）
-  const isTrainingTaskAchieved = (taskText: string, fleetJsonData?: string): boolean => {
-    if (!taskText.includes('を育成する')) {
-      return false
-    }
-    
-    // 艦隊データがない場合は達成判定できない
-    if (!fleetJsonData) {
-      console.log('🔍 艦隊データがないため達成判定スキップ:', taskText)
-      return false
-    }
-    
-    // 育成候補リストが空の場合は達成判定できない
-    const trainingTaskIds = getTrainingCandidatesMainTaskIds()
-    if (trainingTaskIds.length === 0) {
-      console.log('🔍 育成候補リストが空のため達成判定スキップ:', taskText)
-      return false
-    }
-    
+  // 育成候補リストを読み込む
+  const loadTrainingCandidates = () => {
     try {
-      // 艦隊データを解析
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (stored) {
+        const candidates = JSON.parse(stored) as TrainingCandidate[]
+        setTrainingCandidates(candidates)
+        console.log('📋 育成候補リスト読み込み:', candidates.length, '件')
+      } else {
+        setTrainingCandidates([])
+      }
+    } catch (error) {
+      console.error('育成候補リスト読み込みエラー:', error)
+      setTrainingCandidates([])
+    }
+  }
+
+  // 育成目標達成チェック（読み取り専用版）
+  const checkTrainingAchievements = (fleetJsonData: string) => {
+    try {
       const data = JSON.parse(fleetJsonData)
       const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
       
-      // 育成候補データを取得
-      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
-      if (!stored) return false
-      
-      const candidates = JSON.parse(stored)
-      
-      // タスクテキストから艦娘を特定（簡易版）
-      const taskMatch = taskText.match(/(.+?)を育成する/)
-      if (!taskMatch) return false
-      
-      const shipNameInTask = taskMatch[1]
-      
-      // 育成候補の中から該当する艦娘を探して達成チェック
-      for (const candidate of candidates) {
-        const ship = ships.find((s: any) => 
-          s.api_id === candidate.instanceId || s.id === candidate.instanceId
-        )
-        
-        if (!ship) continue
-        
-        // 現在のステータスを取得
-        const currentLevel = ship.api_lv || ship.lv || 0
-        const currentHp = ship.api_maxhp || ship.maxhp || 0
-        const currentAsw = ship.api_taisen?.[0] || ship.taisen?.[0] || 0
-        const currentLuck = ship.api_lucky?.[0] || ship.lucky?.[0] || 0
-        
-        // 各目標の達成チェック
-        const levelAchieved = !candidate.targetLevel || currentLevel >= candidate.targetLevel
-        const hpAchieved = !candidate.targetHp || currentHp >= candidate.targetHp
-        const aswAchieved = !candidate.targetAsw || currentAsw >= candidate.targetAsw
-        const luckAchieved = !candidate.targetLuck || currentLuck >= candidate.targetLuck
-        
-        const allTargetsAchieved = levelAchieved && hpAchieved && aswAchieved && luckAchieved
-        
-        if (allTargetsAchieved) {
-          console.log('🎯 育成目標達成:', {
-            shipName: shipNameInTask,
-            instanceId: candidate.instanceId,
-            level: currentLevel,
-            hp: currentHp,
-            asw: currentAsw,
-            luck: currentLuck
-          })
-          return true
-        }
+      if (!Array.isArray(ships) || ships.length === 0) {
+        return false
       }
-      
-      return false
+
+      const candidates = trainingCandidates
+      let hasAchievements = false
+
+      candidates.forEach(candidate => {
+        // 艦船IDとレベルで一致する艦船を探す
+        const matchingShip = ships.find((ship: any) => {
+          const shipId = ship.ship_id || ship.api_ship_id
+          const level = ship.lv || ship.api_lv
+          return shipId === candidate.shipId && level >= candidate.level
+        })
+
+        if (matchingShip) {
+          const level = matchingShip.lv || matchingShip.api_lv
+          const hp = matchingShip.maxhp || matchingShip.api_maxhp || 0
+          const asw = matchingShip.asw?.[0] || matchingShip.api_taisen?.[0] || 0
+          const luck = matchingShip.luck?.[0] || matchingShip.api_lucky?.[0] || 0
+
+          // 目標達成チェック
+          const isLevelAchieved = !candidate.targetLevel || level >= candidate.targetLevel
+          const isHpAchieved = !candidate.targetHp || hp >= candidate.targetHp
+          const isAswAchieved = !candidate.targetAsw || asw >= candidate.targetAsw
+          const isLuckAchieved = !candidate.targetLuck || luck >= candidate.targetLuck
+
+          if (isLevelAchieved && isHpAchieved && isAswAchieved && isLuckAchieved) {
+            console.log('🎯 育成目標達成:', candidate.name)
+            hasAchievements = true
+          }
+        }
+      })
+
+      return hasAchievements
     } catch (error) {
-      console.error('育成達成判定エラー:', error)
+      console.error('育成目標達成チェックエラー:', error)
       return false
     }
   }
+
+  // 育成タスクが達成されているかチェック（実際の艦隊データベース版）
+  // isTrainingTaskAchieved function removed - auto-sync disabled
 
   // 育成タスクの艦娘shipIdを取得（最新エントリーのタスクのみ対象）
   const getTrainingTaskShipId = (taskId: number, originalTaskId?: number, entryId?: number): number | null => {
@@ -930,220 +874,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   }
 
   // 育成候補の情報を取得
-  const getTrainingCandidate = (taskId: number, originalTaskId?: number): any | null => {
-    try {
-      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
-      if (!stored) return null
-      
-      const candidates = JSON.parse(stored)
-      // まず現在のtaskIdで検索、見つからなければoriginalTaskIdで検索
-      let candidate = candidates.find((c: any) => c.mainTaskId === taskId)
-      if (!candidate && originalTaskId) {
-        candidate = candidates.find((c: any) => c.mainTaskId === originalTaskId)
-      }
-      return candidate || null
-    } catch (error) {
-      console.error('Training candidate retrieval failed:', error)
-      return null
-    }
-  }
+  // getTrainingCandidate function removed - auto-sync disabled
 
   // 最新の目標値でタスクテキストを生成（FleetComposerのcreateMainTaskTextと同等）
-  const createUpdatedTaskText = (taskId: number, originalTaskId?: number, currentFleetData?: string): string => {
-    try {
-      const candidate = getTrainingCandidate(taskId, originalTaskId)
-      if (!candidate) return '' // 育成候補が見つからない場合は元のテキストを保持
-      
-      // 現在の艦船データを取得
-      let currentStats = null
-      if (currentFleetData) {
-        try {
-          const data = JSON.parse(currentFleetData)
-          const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
-          const ship = ships.find((s: any) => s.api_id === candidate.instanceId || s.id === candidate.instanceId)
-          if (ship) {
-            currentStats = {
-              level: ship.api_lv || ship.lv || 0,
-              hp: ship.api_maxhp || ship.maxhp || 0,
-              asw: ship.api_taisen?.[0] || ship.taisen?.[0] || 0,
-              luck: ship.api_lucky?.[0] || ship.lucky?.[0] || 0
-            }
-          }
-        } catch (error) {
-          console.error('Failed to parse fleet data for task text update:', error)
-        }
-      }
-      
-      const targets: string[] = []
-      
-      if (candidate.targetLevel && (!currentStats || candidate.targetLevel > currentStats.level)) {
-        if (currentStats) {
-          targets.push(`Lv${currentStats.level}→${candidate.targetLevel}`)
-        } else {
-          targets.push(`Lv目標${candidate.targetLevel}`)
-        }
-      }
-      if (candidate.targetHp && (!currentStats || candidate.targetHp > currentStats.hp)) {
-        if (currentStats) {
-          targets.push(`耐久${currentStats.hp}→${candidate.targetHp}`)
-        } else {
-          targets.push(`耐久目標${candidate.targetHp}`)
-        }
-      }
-      if (candidate.targetAsw && (!currentStats || candidate.targetAsw > currentStats.asw)) {
-        if (currentStats) {
-          targets.push(`対潜${currentStats.asw}→${candidate.targetAsw}`)
-        } else {
-          targets.push(`対潜目標${candidate.targetAsw}`)
-        }
-      }
-      if (candidate.targetLuck && (!currentStats || candidate.targetLuck > currentStats.luck)) {
-        if (currentStats) {
-          targets.push(`運${currentStats.luck}→${candidate.targetLuck}`)
-        } else {
-          targets.push(`運目標${candidate.targetLuck}`)
-        }
-      }
-      
-      if (targets.length === 0) {
-        return `${candidate.name}を育成する`
-      }
-      
-      return `${candidate.name}を育成する（${targets.join('、')}）`
-    } catch (error) {
-      console.error('Task text generation failed:', error)
-      return '' // エラーの場合は元のテキストを保持
-    }
-  }
+  // createUpdatedTaskText function removed - auto-sync disabled
 
-  // 育成目標達成チェック機能
-  const checkTrainingGoalAchievements = (jsonData: string) => {
-    try {
-      // 育成候補を取得
-      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
-      if (!stored) return
-      
-      const trainingCandidates = JSON.parse(stored)
-      if (trainingCandidates.length === 0) return
-      
-      // 艦隊データをパース
-      const data = JSON.parse(jsonData)
-      const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
-      
-      let achievedCount = 0
-      const candidatesToRemove: number[] = []
-      
-      trainingCandidates.forEach((candidate: any) => {
-        const ship = ships.find((s: any) => s.api_id === candidate.instanceId || s.id === candidate.instanceId)
-        if (!ship || !candidate.mainTaskId) return
-        
-        // 現在のステータスを取得
-        const level = ship.api_lv || ship.lv || 0
-        const hp = ship.api_maxhp || ship.maxhp || 0
-        const asw = ship.api_taisen?.[0] || ship.taisen?.[0] || 0
-        const luck = ship.api_lucky?.[0] || ship.lucky?.[0] || 0
-        
-        // 目標達成チェック
-        const levelAchieved = !candidate.targetLevel || level >= candidate.targetLevel
-        const hpAchieved = !candidate.targetHp || hp >= candidate.targetHp  
-        const aswAchieved = !candidate.targetAsw || asw >= candidate.targetAsw
-        const luckAchieved = !candidate.targetLuck || luck >= candidate.targetLuck
-        
-        const allTargetsAchieved = levelAchieved && hpAchieved && aswAchieved && luckAchieved
-        
-        if (allTargetsAchieved) {
-          // タスクを完了状態に更新（引き継いだタスクも含む）
-          markTrainingTaskAsCompleted(candidate.mainTaskId)
-          achievedCount++
-          
-          // 育成候補を削除対象としてマーク
-          candidatesToRemove.push(candidate.id)
-        }
-      })
-      
-      // 達成した候補を育成候補リストから削除（タスク履歴は保持）
-      if (candidatesToRemove.length > 0) {
-        const updatedCandidates = trainingCandidates.filter((candidate: any) => 
-          !candidatesToRemove.includes(candidate.id)
-        )
-        localStorage.setItem('fleetComposer_trainingCandidates', JSON.stringify(updatedCandidates))
-        
-        // 削除された候補をログ出力
-        candidatesToRemove.forEach(candidateId => {
-          const deletedCandidate = trainingCandidates.find((c: any) => c.id === candidateId)
-          if (deletedCandidate) {
-            console.log(`✅ 育成目標達成により育成候補リストから削除: ${deletedCandidate.name}`)
-          }
-        })
-      }
-      
-      // 達成があった場合は通知
-      if (achievedCount > 0) {
-        showToast(`${achievedCount}件の育成目標を達成しました！`, 'success')
-      }
-      
-    } catch (error) {
-      console.error('Training goal achievement check failed:', error)
-    }
-  }
+  // checkTrainingGoalAchievements function removed - auto-sync disabled
 
   // 育成タスクを完了にマーク（引き継いだタスクも含む）
-  const markTrainingTaskAsCompleted = (taskId: number) => {
-    const completionTime = new Date().toISOString()
-    let completedTaskText = ''
-    let completionCount = 0
-    
-    console.log('🎯 タスク完了処理開始:', taskId)
-    
-    const updatedEntries = fleetEntries.map(entry => {
-      const updatedTasks = entry.tasks.map(task => {
-        // メインタスクの完了
-        if (task.id === taskId) {
-          completedTaskText = task.text
-          completionCount++
-          console.log('✅ メインタスク完了:', {
-            taskId: task.id,
-            text: task.text,
-            entryId: entry.id
-          })
-          return { 
-            ...task, 
-            completed: true,
-            completedAt: completionTime,
-            achievedInEntry: entry.id
-          }
-        }
-        // 引き継いだタスクの完了（originalTaskIdが一致するもの）
-        else if (task.originalTaskId === taskId) {
-          if (!completedTaskText) completedTaskText = task.text
-          completionCount++
-          console.log('✅ 継承タスク完了:', {
-            taskId: task.id,
-            originalTaskId: task.originalTaskId,
-            text: task.text,
-            entryId: entry.id
-          })
-          return { 
-            ...task, 
-            completed: true,
-            completedAt: completionTime,
-            achievedInEntry: entry.id
-          }
-        }
-        return task
-      })
-      return { ...entry, tasks: updatedTasks }
-    })
-    
-    console.log('🎯 タスク完了処理完了:', {
-      taskId,
-      completionCount,
-      completedTaskText
-    })
-    
-    setFleetEntries(updatedEntries)
-    localStorage.setItem(`${admiralName}_fleetEntries`, JSON.stringify(updatedEntries))
-  }
+  // markTrainingTaskAsCompleted function removed - auto-sync disabled
 
 
   // プライバシーモード用の値マスク関数
@@ -1760,6 +1499,30 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   </div>
                 </button>
               </div>
+
+              {/* 育成候補リスト */}
+              <div className="overview-item overview-clickable">
+                <button 
+                  onClick={() => {
+                    loadTrainingCandidates()
+                    setShowTrainingCandidatesModal(true)
+                    setHasNewAchievements(false) // 開いた時に通知をクリア
+                  }} 
+                  className="overview-button"
+                  title="育成候補リストを表示"
+                >
+                  <span className="overview-icon material-symbols-outlined">school</span>
+                  {hasNewAchievements && (
+                    <span className="notification-badge">
+                      <span className="material-symbols-outlined">priority_high</span>
+                    </span>
+                  )}
+                  <div className="overview-text">
+                    <span className="overview-label">育成候補</span>
+                    <span className="overview-value">{trainingCandidates.length}</span>
+                  </div>
+                </button>
+              </div>
         </div>
       )}
 
@@ -2311,6 +2074,96 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 育成候補リストモーダル */}
+      {showTrainingCandidatesModal && (
+        <div className="modal-overlay">
+          <div className="modal-content training-candidates-modal">
+            <div className="modal-header">
+              <h3>育成候補リスト</h3>
+              <button
+                onClick={() => setShowTrainingCandidatesModal(false)}
+                className="modal-close-btn"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              {trainingCandidates.length === 0 ? (
+                <div className="empty-state">
+                  <span className="material-symbols-outlined empty-icon">school</span>
+                  <p>育成候補がありません</p>
+                  <p className="empty-hint">艦隊編成画面で艦船を育成候補にドラッグして追加してください</p>
+                </div>
+              ) : (
+                <div className="training-candidates-grid">
+                  {trainingCandidates.map(candidate => (
+                    <div key={candidate.id} className="training-candidate-card">
+                      <div className="candidate-banner-container">
+                        <img 
+                          src={getShipBannerPath(candidate.shipId)}
+                          alt={candidate.name}
+                          className="ship-banner"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            // フォールバック表示を追加
+                            const fallback = document.createElement('div')
+                            fallback.className = 'banner-fallback'
+                            fallback.textContent = candidate.name
+                            e.currentTarget.parentElement?.appendChild(fallback)
+                          }}
+                        />
+                        
+                        {/* オーバーレイ情報 */}
+                        <div className="candidate-overlay">
+                          <div className="overlay-top">
+                            <div className="candidate-level-badge">Lv.{candidate.level}</div>
+                            <div className="candidate-date">{new Date(candidate.addedAt).toLocaleDateString('ja-JP')}</div>
+                          </div>
+                          
+                          <div className="overlay-bottom">
+                            <h4 className="candidate-name">{candidate.name}</h4>
+                            {(candidate.targetLevel || candidate.targetHp || candidate.targetAsw || candidate.targetLuck) && (
+                              <div className="candidate-targets">
+                                <div className="targets-list">
+                                  {candidate.targetLevel && (
+                                    <div className="target-item">
+                                      <span className="material-symbols-outlined target-icon">trending_up</span>
+                                      <span>Lv.{candidate.targetLevel}</span>
+                                    </div>
+                                  )}
+                                  {candidate.targetHp && (
+                                    <div className="target-item">
+                                      <StatIcon icon="hp" />
+                                      <span>耐久{candidate.targetHp}</span>
+                                    </div>
+                                  )}
+                                  {candidate.targetAsw && (
+                                    <div className="target-item">
+                                      <StatIcon icon="asw" />
+                                      <span>対潜{candidate.targetAsw}</span>
+                                    </div>
+                                  )}
+                                  {candidate.targetLuck && (
+                                    <div className="target-item">
+                                      <StatIcon icon="luck" />
+                                      <span>運{candidate.targetLuck}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
