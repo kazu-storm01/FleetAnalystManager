@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   SHIP_TYPES, 
   getShipTypeByShipType,
@@ -1436,58 +1436,23 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   <div className="no-ships-icon"><span className="material-icons">anchor</span></div>
                   <div className="no-ships-text">
                     {ships.length === 0 
-                      ? '艦隊データが読み込まれていません。分析管理で艦隊JSONデータを入力してください。'
+                      ? (fleetData || storedFleetData) 
+                        ? '艦隊データを処理中...'
+                        : '艦隊データが読み込まれていません。分析管理で艦隊JSONデータを入力してください。'
                       : `${SHIP_TYPES[selectedType as keyof typeof SHIP_TYPES] || 'この艦種'}の艦娘はいません。`
                     }
                   </div>
                 </div>
               ) : (
                 filteredAndSortedShips.map((ship, index) => (
-                <div
+                <LazyShipCard
                   key={ship.id}
-                  className={`ship-card-container ${draggedShip?.id === ship.id ? 'dragging' : ''}`}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, ship)}
+                  ship={ship}
+                  index={index}
+                  draggedShip={draggedShip}
+                  onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
-                  style={{ 
-                    animationDelay: `${index * 0.05}s`,
-                  }}
-                >
-                  {/* 上部ラベル */}
-                  <div className="ship-label">
-                    <span className="ship-name-label">{ship.name}</span>
-                    <span className="ship-level-label">Lv.{ship.level}</span>
-                  </div>
-                  
-                  {/* カード本体 */}
-                  <div className={`ship-card-ac rarity-${ship.rarity}`}>
-                    {/* 背景画像 */}
-                    <div 
-                      className="ship-card-background"
-                      style={{
-                        backgroundImage: `url(${ship.avatarUrl || `/api/placeholder/280/320`})`,
-                      }}
-                    >
-                      {/* オーバーレイとコンテンツ */}
-                      <div className="ship-card-overlay">
-                      <div className="ship-stats-inline">
-                        <span className="stat-inline">
-                          耐{ship.currentStats.hp}
-                          {ship.improvements.hp > 0 && <span className="improvement">+{ship.improvements.hp}</span>}
-                        </span>
-                        <span className="stat-inline">
-                          潜{ship.currentStats.asw}
-                          {ship.improvements.asw > 0 && <span className="improvement">+{ship.improvements.asw}</span>}
-                        </span>
-                        <span className="stat-inline">
-                          運{ship.currentStats.luck}
-                          {ship.improvements.luck > 0 && <span className="improvement">+{ship.improvements.luck}</span>}
-                        </span>
-                      </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                />
                 ))
               )}
             </div>
@@ -1929,6 +1894,106 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           {toast.message}
         </div>
       )}
+    </div>
+  )
+}
+
+// 遅延読み込み対応の艦娘カードコンポーネント
+const LazyShipCard: React.FC<{
+  ship: any
+  index: number
+  draggedShip: any
+  onDragStart: (e: React.DragEvent, ship: any) => void
+  onDragEnd: () => void
+}> = ({ ship, index, draggedShip, onDragStart, onDragEnd }) => {
+  const [isVisible, setIsVisible] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect()
+        }
+      },
+      {
+        rootMargin: '50px' // 50px手前から読み込み開始
+      }
+    )
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
+  // 画像の事前読み込み
+  useEffect(() => {
+    if (isVisible && ship.avatarUrl && !imageLoaded) {
+      const img = new Image()
+      img.onload = () => setImageLoaded(true)
+      img.src = ship.avatarUrl
+    }
+  }, [isVisible, ship.avatarUrl, imageLoaded])
+
+  return (
+    <div
+      ref={cardRef}
+      className={`ship-card-container ${draggedShip?.id === ship.id ? 'dragging' : ''}`}
+      draggable
+      onDragStart={(e) => onDragStart(e, ship)}
+      onDragEnd={onDragEnd}
+      style={{ 
+        animationDelay: `${index * 0.05}s`,
+      }}
+    >
+      {/* 上部ラベル */}
+      <div className="ship-label">
+        <span className="ship-name-label">{ship.name}</span>
+        <span className="ship-level-label">Lv.{ship.level}</span>
+      </div>
+      
+      {/* カード本体 */}
+      <div className={`ship-card-ac rarity-${ship.rarity}`}>
+        {/* 背景画像 */}
+        <div 
+          className="ship-card-background"
+          style={{
+            backgroundImage: isVisible && imageLoaded 
+              ? `url(${ship.avatarUrl || `/api/placeholder/280/320`})`
+              : 'none',
+            backgroundColor: !imageLoaded ? 'rgba(100, 181, 246, 0.1)' : 'transparent'
+          }}
+        >
+          {/* ローディング表示 */}
+          {isVisible && !imageLoaded && (
+            <div className="ship-card-loading">
+              <span className="material-icons loading-spin">sync</span>
+            </div>
+          )}
+          
+          {/* オーバーレイとコンテンツ */}
+          <div className="ship-card-overlay">
+            <div className="ship-stats-inline">
+              <span className="stat-inline">
+                耐{ship.currentStats.hp}
+                {ship.improvements.hp > 0 && <span className="improvement">+{ship.improvements.hp}</span>}
+              </span>
+              <span className="stat-inline">
+                潜{ship.currentStats.asw}
+                {ship.improvements.asw > 0 && <span className="improvement">+{ship.improvements.asw}</span>}
+              </span>
+              <span className="stat-inline">
+                運{ship.currentStats.luck}
+                {ship.improvements.luck > 0 && <span className="improvement">+{ship.improvements.luck}</span>}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -954,8 +954,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
   // プライバシーモード用の差分マスク関数
   const maskDiffValue = (value: number) => {
-    if (privacyMode !== true) return value.toLocaleString()
-    const sign = value >= 0 ? '+' : ''
+    const sign = value > 0 ? '+' : ''
+    if (privacyMode !== true) return sign + value.toLocaleString()
     return sign + '*'.repeat(Math.min(Math.abs(value).toString().length, 6))
   }
 
@@ -1698,7 +1698,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       {latestEntry && latestEntry.tasks.length > 0 && (
         <div className="tasks-section">
                   <div className="task-header">
-                    <h4>{'タスク進捗'} ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
+                    <h4>タスク進捗 ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
                     <div className="progress-bar">
                       <div 
                         className={`progress-fill ${getTaskProgress(latestEntry.tasks).percentage === 100 ? 'completed' : ''}`}

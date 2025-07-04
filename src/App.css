@@ -4401,6 +4401,9 @@ body.dragging-ship .drawer-overlay {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .theme-button:hover {
@@ -6338,24 +6341,24 @@ body.dragging-ship .drawer-overlay {
 }
 
 .stat-badge .diff.positive {
-  color: #ffffff;
-  background: linear-gradient(45deg, #66bb6a, #4caf50);
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 .stat-badge .diff.negative {
-  color: #ffffff;
-  background: linear-gradient(45deg, #ef5350, #f44336);
-  border: 1px solid rgba(244, 67, 54, 0.3);
-  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 .stat-badge .diff.neutral {
-  color: #ffffff;
-  background: linear-gradient(45deg, #424242, #212121);
-  border: 1px solid rgba(66, 66, 66, 0.3);
-  box-shadow: 0 2px 8px rgba(33, 33, 33, 0.2);
+  color: #9e9e9e;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 
@@ -6711,6 +6714,9 @@ body.dragging-ship .drawer-overlay {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .theme-button:hover {
@@ -8648,24 +8654,24 @@ body.dragging-ship .drawer-overlay {
 }
 
 .stat-badge .diff.positive {
-  color: #ffffff;
-  background: linear-gradient(45deg, #66bb6a, #4caf50);
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 .stat-badge .diff.negative {
-  color: #ffffff;
-  background: linear-gradient(45deg, #ef5350, #f44336);
-  border: 1px solid rgba(244, 67, 54, 0.3);
-  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 .stat-badge .diff.neutral {
-  color: #ffffff;
-  background: linear-gradient(45deg, #424242, #212121);
-  border: 1px solid rgba(66, 66, 66, 0.3);
-  box-shadow: 0 2px 8px rgba(33, 33, 33, 0.2);
+  color: #9e9e9e;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 
@@ -8919,7 +8925,7 @@ body.dragging-ship .drawer-overlay {
 
 .task-header h4 {
   margin: 0;
-  color: #00d4ff;
+  color: white;
   font-size: 1rem;
   font-weight: bold;
 }
@@ -9271,18 +9277,18 @@ h4 .material-icons {
 }
 
 .table-diff.positive {
-  color: #ffffff;
-  background: linear-gradient(45deg, #66bb6a, #4caf50);
+  color: #4caf50;
+  background: none;
 }
 
 .table-diff.negative {
-  color: #ffffff;
-  background: linear-gradient(45deg, #ef5350, #f44336);
+  color: #f44336;
+  background: none;
 }
 
 .table-diff.neutral {
-  color: #ffffff;
-  background: linear-gradient(45deg, #424242, #212121);
+  color: #9e9e9e;
+  background: none;
 }
 
 .status-badge {
@@ -9320,18 +9326,18 @@ h4 .material-icons {
 }
 
 .stat-diff.positive {
-  color: #ffffff;
-  background: linear-gradient(45deg, #66bb6a, #4caf50);
+  color: #4caf50;
+  background: none;
 }
 
 .stat-diff.negative {
-  color: #ffffff;
-  background: linear-gradient(45deg, #ef5350, #f44336);
+  color: #f44336;
+  background: none;
 }
 
 .stat-diff.neutral {
-  color: #ffffff;
-  background: linear-gradient(45deg, #424242, #212121);
+  color: #9e9e9e;
+  background: none;
 }
 
 /* レスポンシブ対応 */
@@ -9399,9 +9405,6 @@ h4 .material-icons {
 .floating-button .material-icons {
   font-size: 24px;
 }
-
-/* 深海テーマでのフローティングボタン */
-
 
 
 /* 提督名変更モーダル */
@@ -10191,8 +10194,6 @@ h4 .material-icons {
   height: 40px;
   border-radius: 50%;
   border: none;
-  background: #ffffff;
-  color: #000000;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -10220,39 +10221,40 @@ h4 .material-icons {
 .action-button.admiral-button {
   background: #ffffff;
   color: #000000;
-  box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  /* box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2); */
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-button.admiral-button:hover {
-  box-shadow: 0 8px 24px rgba(244, 67, 54, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* box-shadow: 0 8px 24px rgba(244, 67, 54, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3); */
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-button.chart-button {
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
-  /* animation: chartButtonPulse 2s ease-in-out infinite; */
+  background: rgba(100, 181, 246, 0.8);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-button.chart-button:hover {
-  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Backup/Settings button - black gradient */
 .action-button.backup-button {
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 0 4px 16px rgba(66, 66, 66, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: rgba(100, 181, 246, 0.8);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-button.backup-button:hover {
-  box-shadow: 0 8px 24px rgba(66, 66, 66, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Privacy button - purple gradient */
 .action-button.privacy-button {
-  background: #ffffff;
-  color: #000000;
+  background: rgba(100, 181, 246, 0.8);
+  color: #ffffff;
   box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -10261,13 +10263,20 @@ h4 .material-icons {
 }
 
 .action-button.privacy-button.active {
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 0 4px 16px rgba(233, 30, 99, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: rgba(100, 181, 246, 0.8);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-button.privacy-button.active:hover {
-  box-shadow: 0 8px 24px rgba(233, 30, 99, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button.analyst-switch-button {
+  background: rgba(255, 152, 0, 0.8);
+  border: 1px solid rgba(255, 152, 0, 0.9);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* レスポンシブ対応 */
@@ -10470,9 +10479,38 @@ h4 .material-icons {
 .tasks-section {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 3px 8px rgba(0, 0, 0, 0.15) !important;
   border-radius: 8px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  margin-top: 12px;
+}
+
+/* 艦娘カードローディング表示 */
+.ship-card-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.ship-card-loading .material-icons {
+  font-size: 2rem;
+  color: rgba(100, 181, 246, 0.8);
+  animation: loading-spin 1s linear infinite;
+}
+
+@keyframes loading-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 不足していたslideInFromBottomアニメーション */
+@keyframes slideInFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .add-items-section {

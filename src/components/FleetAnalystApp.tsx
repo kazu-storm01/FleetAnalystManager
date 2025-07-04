@@ -321,7 +321,7 @@ ${applicant.advice}
       <div className="theme-toggle">
         {onSwitchToAnalysisManager && (
           <button onClick={onSwitchToAnalysisManager} className="theme-button">
-            📊 ダッシュボード
+            <span className="material-symbols-outlined">analytics</span> ダッシュボード
           </button>
         )}
       </div>
