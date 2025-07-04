@@ -10700,6 +10700,96 @@ h4 .material-icons {
   }
 }
 
+
+
+/* 艦隊データ更新ボタン */
+.fleet-update-btn {
+  background: transparent;
+  color: #999;
+  border: 1px solid transparent;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+}
+
+.fleet-update-btn:hover:not(:disabled) {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+  border-color: rgba(76, 175, 80, 0.3);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.fleet-update-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fleet-update-btn .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+/* 艦隊入力フィールドのラッパー */
+.fleet-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.fleet-input-wrapper .fleet-data-input {
+  flex: 1;
+  padding-right: 45px !important;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.fleet-input-wrapper .fleet-data-input:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.fleet-update-btn-inside {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  color: #999;
+  border: 1px solid transparent;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.fleet-update-btn-inside:hover:not(:disabled) {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+  border-color: rgba(76, 175, 80, 0.3);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.fleet-update-btn-inside:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fleet-update-btn-inside .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
 /* 艦娘カードローディング表示 */
 .ship-card-loading {
   position: absolute;
