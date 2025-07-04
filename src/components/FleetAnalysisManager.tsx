@@ -1734,12 +1734,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   onClick={() => {
                     loadTrainingCandidates()
                     
-                    // fleetDataがない場合はLocalStorageから復元を試みる
-                    if (!fleetData && admiralName) {
+                    // fleetDataがない場合はLocalStorageから復元を試みる（内部保持用）
+                    if (!fleetData && !persistedFleetData && admiralName) {
                       const savedFleetData = localStorage.getItem(`${admiralName}_latestFleetData`)
                       if (savedFleetData) {
-                        setFleetData(savedFleetData)
-                        console.log('🔍 モーダル開放時に艦隊データを復元')
+                        setPersistedFleetData(savedFleetData)
+                        console.log('🔍 モーダル開放時に艦隊データを復元（内部保持）')
                       }
                     }
                     
