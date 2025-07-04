@@ -607,6 +607,24 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     e.dataTransfer.setData('text/plain', ship.id.toString())
     e.dataTransfer.setData('application/json', JSON.stringify(ship))
     document.body.classList.add('dragging-ship')
+
+    // グローバルなドラッグ終了イベントを追加（画面外でドラッグが終了した場合の対策）
+    const handleGlobalDragEnd = () => {
+      console.log('🔧 DEBUG: Global drag end detected')
+      setIsDraggingShip(false)
+      setDraggedShip(null)
+      setDragOverSlot(null)
+      setIsDroppedOnTrainingCandidates(false)
+      setIsDraggingOverTrainingArea(false)
+      document.body.classList.remove('dragging-ship')
+      // イベントリスナーを削除
+      document.removeEventListener('dragend', handleGlobalDragEnd)
+      document.removeEventListener('mouseup', handleGlobalDragEnd)
+    }
+    
+    // ドラッグ終了時とマウスアップ時の両方で確実にクリーンアップ
+    document.addEventListener('dragend', handleGlobalDragEnd)
+    document.addEventListener('mouseup', handleGlobalDragEnd)
   }
 
   // ドラッグオーバー
@@ -1212,6 +1230,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                       // 状態リセット
                       setDraggedShip(null)
                       setDragOverSlot(null)
+                      setIsDraggingShip(false)
                       setIsDroppedOnTrainingCandidates(false)
                       document.body.classList.remove('dragging-ship')
                     }, 100)
