@@ -30,11 +30,12 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
 }
 
@@ -11215,51 +11216,168 @@ h4 .material-icons {
   }
 }
 
+/* ===== アニメーション定義 ===== */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes cardStagger {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ===== 育成候補リストモーダル ===== */
 .training-candidates-modal {
-  max-width: 700px !important;
+  max-width: 600px !important;
   width: 90% !important;
-  max-height: 80vh !important;
+  max-height: 75vh !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+  animation: modalSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.training-candidates-modal .modal-header {
+  background: linear-gradient(135deg, rgba(100, 181, 246, 0.2), rgba(33, 150, 243, 0.1));
+  border-bottom: 1px solid rgba(100, 181, 246, 0.3);
+  backdrop-filter: blur(15px);
+}
+
+.modal-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-header-icon {
+  font-size: 24px !important;
+  color: #64b5f6;
+  background: rgba(100, 181, 246, 0.2);
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.modal-header-subtitle {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+  margin-top: 2px;
 }
 
 .training-candidates-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 181, 246, 0.5) transparent;
+}
+
+.training-candidates-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.training-candidates-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.training-candidates-grid::-webkit-scrollbar-thumb {
+  background: rgba(100, 181, 246, 0.5);
+  border-radius: 3px;
+}
+
+.training-candidates-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 181, 246, 0.7);
 }
 
 .training-candidate-card {
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  animation: cardStagger 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+.training-candidate-card:nth-child(1) { animation-delay: 0.1s; }
+.training-candidate-card:nth-child(2) { animation-delay: 0.2s; }
+.training-candidate-card:nth-child(3) { animation-delay: 0.3s; }
+.training-candidate-card:nth-child(4) { animation-delay: 0.4s; }
+.training-candidate-card:nth-child(5) { animation-delay: 0.5s; }
+.training-candidate-card:nth-child(6) { animation-delay: 0.6s; }
+
 .training-candidate-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(100, 181, 246, 0.3);
+  border-color: rgba(100, 181, 246, 0.4);
+}
+
+.training-candidate-card:active {
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* 達成した育成候補のスタイル */
+.training-candidate-card.achieved {
+  border-color: rgba(76, 175, 80, 0.5);
+  background: rgba(76, 175, 80, 0.1);
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+}
+
+.training-candidate-card.achieved:hover {
+  border-color: rgba(76, 175, 80, 0.7);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(76, 175, 80, 0.5);
+}
+
+.training-candidate-card.achieved .candidate-banner-container {
+  border: 2px solid rgba(76, 175, 80, 0.6);
+}
+
+.training-candidate-card.achieved .candidate-level-badge {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .candidate-banner-container {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 150px;
   background: linear-gradient(135deg, rgba(20, 40, 80, 0.9), rgba(40, 80, 140, 0.7));
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 .ship-banner {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
-  transition: transform 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: brightness(0.9) contrast(1.1);
 }
 
 .training-candidate-card:hover .ship-banner {
-  transform: scale(1.05);
+  transform: scale(1.1);
+  filter: brightness(1.1) contrast(1.2);
 }
 
 .banner-fallback {
@@ -11291,13 +11409,14 @@ h4 .material-icons {
   padding: 12px;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.1) 30%,
-    rgba(0, 0, 0, 0.1) 70%,
-    rgba(0, 0, 0, 0.8) 100%
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.2) 30%,
+    rgba(0, 0, 0, 0.2) 70%,
+    rgba(0, 0, 0, 0.9) 100%
   );
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
 }
 
 .training-candidate-card:hover .candidate-overlay {
@@ -11311,11 +11430,12 @@ h4 .material-icons {
 }
 
 .candidate-level-badge {
-  background: rgba(255, 215, 0, 0.95);
+  background: linear-gradient(135deg, #FFD700, #FFA500);
   color: #1a1a1a;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   font-weight: 700;
   backdrop-filter: blur(5px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -11339,10 +11459,11 @@ h4 .material-icons {
 .candidate-name {
   margin: 0;
   color: white;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
   line-height: 1.2;
+  letter-spacing: 0.5px;
 }
 
 .candidate-targets {
@@ -11360,12 +11481,79 @@ h4 .material-icons {
   align-items: center;
   gap: 4px;
   color: white;
-  font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.7rem;
+  background: rgba(100, 181, 246, 0.2);
   padding: 4px 8px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
   white-space: nowrap;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.target-item:hover {
+  background: rgba(100, 181, 246, 0.3);
+  border-color: rgba(100, 181, 246, 0.5);
+  transform: scale(1.05);
+}
+
+/* 育成完了ボタン */
+.candidate-complete-section {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.complete-training-btn {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.complete-training-btn:hover {
+  background: linear-gradient(135deg, #45a049, #4CAF50);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+}
+
+.complete-training-btn:active {
+  transform: translateY(0) scale(1.02);
+}
+
+.complete-training-btn .material-symbols-outlined {
+  font-size: 18px !important;
+}
+
+/* 達成バッジ */
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+}
+
+.achievement-badge .material-symbols-outlined {
+  font-size: 14px !important;
 }
 
 .target-icon {
@@ -11380,8 +11568,25 @@ h4 .material-icons {
 /* 空の状態 */
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   color: rgba(255, 255, 255, 0.7);
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .training-candidates-grid {
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .candidate-banner-container {
+    height: 120px;
+  }
+  
+  .training-candidates-modal {
+    width: 95% !important;
+    max-height: 80vh !important;
+  }
 }
 
 .empty-icon {

@@ -78,6 +78,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [showTrainingCandidatesModal, setShowTrainingCandidatesModal] = useState<boolean>(false)
   const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>([])
   const [hasNewAchievements, setHasNewAchievements] = useState<boolean>(false)
+  const [achievedCount, setAchievedCount] = useState<number>(0)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -226,10 +227,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     try {
       // 育成目標達成チェック（読み取り専用）
       if (trainingCandidates.length > 0) {
-        const hasAchievements = checkTrainingAchievements(fleetData)
-        if (hasAchievements) {
+        const achievementResult = checkTrainingAchievements(fleetData)
+        if (achievementResult.hasAchievements) {
           setHasNewAchievements(true)
-          showToast('育成目標を達成した艦娘がいます！', 'success')
+          setAchievedCount(achievementResult.achievedCount)
+          const achievedNames = achievementResult.achievedCandidates.map(c => c.name).join('、')
+          showToast(
+            `🎉 育成目標達成！ ${achievementResult.achievedCount}隻 (${achievedNames})`, 
+            'success'
+          )
         }
       }
       
@@ -310,6 +316,10 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       }
       
       localStorage.setItem(key, jsonData)
+      
+      // 最新の艦隊データも保存（達成チェック用）
+      localStorage.setItem(`${admiralName}_latestFleetData`, fleetData)
+      console.log('💾 最新艦隊データも保存:', fleetData.length, '文字')
       
       // 保存直後の確認
       const savedCheck = localStorage.getItem(key)
@@ -396,6 +406,26 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       localStorage.setItem('fleetAnalysisPrivacyMode', privacyMode.toString())
     }
   }, [privacyMode])
+
+  // 育成候補の達成状態を監視して通知を同期
+  useEffect(() => {
+    if (trainingCandidates.length > 0 && fleetData) {
+      const currentAchievedCount = trainingCandidates.filter(candidate => 
+        isTrainingCandidateAchieved(candidate)
+      ).length
+      
+      // 達成数が変化した場合のみ更新
+      if (currentAchievedCount !== achievedCount) {
+        setAchievedCount(currentAchievedCount)
+        setHasNewAchievements(currentAchievedCount > 0)
+        console.log('🔄 達成状態同期:', currentAchievedCount, '件')
+      }
+    } else if (trainingCandidates.length === 0) {
+      // 育成候補がない場合は通知をクリア
+      setAchievedCount(0)
+      setHasNewAchievements(false)
+    }
+  }, [trainingCandidates, fleetData, achievedCount])
 
   // LocalStorageの変更を監視してリアルタイム更新
   useEffect(() => {
@@ -796,18 +826,177 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }
 
+  // 個別の育成候補の達成状態をチェック
+  const isTrainingCandidateAchieved = (candidate: TrainingCandidate): boolean => {
+    // fleetDataがない場合は、最新エントリーから艦隊データを取得を試みる
+    let currentFleetData = fleetData
+    if (!currentFleetData) {
+      const latestEntry = fleetEntries.find(entry => entry.isLatest)
+      if (latestEntry) {
+        // 最新エントリーに保存されている生のJSONデータを探す
+        const savedFleetData = localStorage.getItem(`${admiralName}_latestFleetData`)
+        if (savedFleetData) {
+          currentFleetData = savedFleetData
+          console.log('🔍 LocalStorageから艦隊データを復元:', candidate.name)
+        }
+      }
+    }
+    
+    if (!currentFleetData) {
+      console.log('🔍 fleetDataがない:', candidate.name)
+      return false
+    }
+    
+    try {
+      const data = JSON.parse(currentFleetData)
+      const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
+      
+      console.log('🔍 達成チェック開始:', {
+        candidateName: candidate.name,
+        candidateInstanceId: candidate.instanceId,
+        candidateShipId: candidate.shipId,
+        candidateLevel: candidate.level,
+        targets: {
+          level: candidate.targetLevel,
+          hp: candidate.targetHp,
+          asw: candidate.targetAsw,
+          luck: candidate.targetLuck
+        },
+        shipsCount: ships.length,
+        availableShips: ships.slice(0, 3).map((ship: any) => ({
+          instanceId: ship.api_id || ship.id,
+          shipId: ship.ship_id || ship.api_ship_id,
+          level: ship.lv || ship.api_lv
+        }))
+      })
+      
+      // instanceIdで艦船を探す（より正確）
+      const matchingShip = ships.find((ship: any) => {
+        const instanceId = ship.api_id || ship.id
+        return instanceId === candidate.instanceId
+      })
+      
+      // instanceIdで見つからない場合は、shipIdとレベルで検索
+      const fallbackShip = !matchingShip ? ships.find((ship: any) => {
+        const shipId = ship.ship_id || ship.api_ship_id
+        const level = ship.lv || ship.api_lv
+        return shipId === candidate.shipId && level >= candidate.level
+      }) : null
+      
+      const targetShip = matchingShip || fallbackShip
+
+      console.log('🔍 艦船検索結果:', {
+        candidateName: candidate.name,
+        candidateInstanceId: candidate.instanceId,
+        candidateShipId: candidate.shipId,
+        foundByInstanceId: !!matchingShip,
+        foundByShipId: !!fallbackShip,
+        finalFound: !!targetShip,
+        targetShipData: targetShip ? {
+          instanceId: targetShip.api_id || targetShip.id,
+          shipId: targetShip.ship_id || targetShip.api_ship_id,
+          level: targetShip.lv || targetShip.api_lv
+        } : null
+      })
+
+      if (!targetShip) {
+        console.log('❌ 一致する艦船が見つからない:', {
+          candidateName: candidate.name,
+          candidateInstanceId: candidate.instanceId,
+          candidateShipId: candidate.shipId
+        })
+        return false
+      }
+
+      const level = targetShip.lv || targetShip.api_lv
+      const hp = targetShip.maxhp || targetShip.api_maxhp || 0
+      const asw = targetShip.asw?.[0] || targetShip.api_taisen?.[0] || 0
+      const luck = targetShip.luck?.[0] || targetShip.api_lucky?.[0] || 0
+
+      console.log('🔍 現在のステータス:', {
+        name: candidate.name,
+        current: { level, hp, asw, luck },
+        targets: { 
+          level: candidate.targetLevel, 
+          hp: candidate.targetHp, 
+          asw: candidate.targetAsw, 
+          luck: candidate.targetLuck 
+        }
+      })
+
+      // 目標達成チェック（目標が0の場合も未設定と同じ扱い）
+      const isLevelAchieved = !candidate.targetLevel || candidate.targetLevel <= 0 || level >= candidate.targetLevel
+      const isHpAchieved = !candidate.targetHp || candidate.targetHp <= 0 || hp >= candidate.targetHp
+      const isAswAchieved = !candidate.targetAsw || candidate.targetAsw <= 0 || asw >= candidate.targetAsw
+      const isLuckAchieved = !candidate.targetLuck || candidate.targetLuck <= 0 || luck >= candidate.targetLuck
+
+      const allAchieved = isLevelAchieved && isHpAchieved && isAswAchieved && isLuckAchieved
+
+      console.log('🔍 達成状況:', {
+        name: candidate.name,
+        level: isLevelAchieved,
+        hp: isHpAchieved,
+        asw: isAswAchieved,
+        luck: isLuckAchieved,
+        allAchieved
+      })
+
+      return allAchieved
+    } catch (error) {
+      console.error('個別育成達成チェックエラー:', error)
+      return false
+    }
+  }
+
+  // 育成候補を完了状態にする
+  const completeTrainingCandidate = (candidateId: number) => {
+    try {
+      const stored = localStorage.getItem('fleetComposer_trainingCandidates')
+      if (!stored) return
+
+      const candidates = JSON.parse(stored)
+      const completedCandidate = candidates.find((c: any) => c.id === candidateId)
+      const updatedCandidates = candidates.filter((candidate: any) => candidate.id !== candidateId)
+      
+      localStorage.setItem('fleetComposer_trainingCandidates', JSON.stringify(updatedCandidates))
+      
+      // 状態を更新
+      setTrainingCandidates(updatedCandidates)
+      
+      // 完了した候補が達成状態だった場合、通知カウントを減らす
+      if (completedCandidate && isTrainingCandidateAchieved(completedCandidate)) {
+        const newAchievedCount = Math.max(0, achievedCount - 1)
+        setAchievedCount(newAchievedCount)
+        
+        // 達成候補がすべて完了した場合は通知をクリア
+        if (newAchievedCount === 0) {
+          setHasNewAchievements(false)
+        }
+      }
+      
+      if (completedCandidate) {
+        showToast(`${completedCandidate.name}の育成を完了しました！`, 'success')
+      }
+      
+      console.log('✅ 育成候補完了:', candidateId)
+    } catch (error) {
+      console.error('育成候補完了エラー:', error)
+      showToast('育成完了処理に失敗しました', 'error')
+    }
+  }
+
   // 育成目標達成チェック（読み取り専用版）
-  const checkTrainingAchievements = (fleetJsonData: string) => {
+  const checkTrainingAchievements = (fleetJsonData: string): { hasAchievements: boolean; achievedCount: number; achievedCandidates: TrainingCandidate[] } => {
     try {
       const data = JSON.parse(fleetJsonData)
       const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
       
       if (!Array.isArray(ships) || ships.length === 0) {
-        return false
+        return { hasAchievements: false, achievedCount: 0, achievedCandidates: [] }
       }
 
       const candidates = trainingCandidates
-      let hasAchievements = false
+      const achievedCandidates: TrainingCandidate[] = []
 
       candidates.forEach(candidate => {
         // 艦船IDとレベルで一致する艦船を探す
@@ -831,15 +1020,19 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
           if (isLevelAchieved && isHpAchieved && isAswAchieved && isLuckAchieved) {
             console.log('🎯 育成目標達成:', candidate.name)
-            hasAchievements = true
+            achievedCandidates.push(candidate)
           }
         }
       })
 
-      return hasAchievements
+      return {
+        hasAchievements: achievedCandidates.length > 0,
+        achievedCount: achievedCandidates.length,
+        achievedCandidates
+      }
     } catch (error) {
       console.error('育成目標達成チェックエラー:', error)
-      return false
+      return { hasAchievements: false, achievedCount: 0, achievedCandidates: [] }
     }
   }
 
@@ -1505,8 +1698,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                 <button 
                   onClick={() => {
                     loadTrainingCandidates()
+                    
+                    // fleetDataがない場合はLocalStorageから復元を試みる
+                    if (!fleetData && admiralName) {
+                      const savedFleetData = localStorage.getItem(`${admiralName}_latestFleetData`)
+                      if (savedFleetData) {
+                        setFleetData(savedFleetData)
+                        console.log('🔍 モーダル開放時に艦隊データを復元')
+                      }
+                    }
+                    
                     setShowTrainingCandidatesModal(true)
-                    setHasNewAchievements(false) // 開いた時に通知をクリア
+                    // 通知クリアは育成完了ボタンを押した時のみ
                   }} 
                   className="overview-button"
                   title="育成候補リストを表示"
@@ -1514,7 +1717,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   <span className="overview-icon material-symbols-outlined">school</span>
                   {hasNewAchievements && (
                     <span className="notification-badge">
-                      <span className="material-symbols-outlined">priority_high</span>
+                      {achievedCount}
                     </span>
                   )}
                   <div className="overview-text">
@@ -2084,7 +2287,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="modal-overlay">
           <div className="modal-content training-candidates-modal">
             <div className="modal-header">
-              <h3>育成候補リスト</h3>
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">school</span>
+                <div>
+                  <h3>育成候補リスト</h3>
+                  <span className="modal-header-subtitle">{trainingCandidates.length}隻の艦娘が育成中</span>
+                </div>
+              </div>
               <button
                 onClick={() => setShowTrainingCandidatesModal(false)}
                 className="modal-close-btn"
@@ -2101,8 +2310,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                 </div>
               ) : (
                 <div className="training-candidates-grid">
-                  {trainingCandidates.map(candidate => (
-                    <div key={candidate.id} className="training-candidate-card">
+                  {trainingCandidates.map(candidate => {
+                    const isAchieved = isTrainingCandidateAchieved(candidate)
+                    
+                    // 達成状態はuseEffectで管理
+                    
+                    return (
+                    <div key={candidate.id} className={`training-candidate-card ${isAchieved ? 'achieved' : ''}`}>
                       <div className="candidate-banner-container">
                         <img 
                           src={getShipBannerPath(candidate.shipId)}
@@ -2126,7 +2340,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                           </div>
                           
                           <div className="overlay-bottom">
-                            <h4 className="candidate-name">{candidate.name}</h4>
+                            <h4 className="candidate-name">
+                              {candidate.name}
+                              {isAchieved && (
+                                <span className="achievement-badge">
+                                  <span className="material-symbols-outlined">check_circle</span>
+                                  達成
+                                </span>
+                              )}
+                            </h4>
                             {(candidate.targetLevel || candidate.targetHp || candidate.targetAsw || candidate.targetLuck) && (
                               <div className="candidate-targets">
                                 <div className="targets-list">
@@ -2157,11 +2379,30 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                                 </div>
                               </div>
                             )}
+                            
+                            {/* 育成完了ボタン */}
+                            {isAchieved && (
+                              <div className="candidate-complete-section">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    completeTrainingCandidate(candidate.id)
+                                  }}
+                                  className="complete-training-btn"
+                                  title="育成完了"
+                                >
+                                  <span className="material-symbols-outlined">military_tech</span>
+                                  <span>育成完了</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
+                        
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

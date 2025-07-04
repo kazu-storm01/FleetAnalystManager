@@ -704,31 +704,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     document.body.classList.remove('dragging-ship')
   }
 
-  // ドラッグ終了
-  const handleDragEnd = (e: React.DragEvent) => {
-    console.log('🔧 DEBUG: Drag end started, dropEffect:', e.dataTransfer.dropEffect, 'isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
-    
-    setTimeout(() => {
-      console.log('🔧 DEBUG: Drag end timeout, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
-      
-      // 状態リセット
-      setIsDraggingShip(false)
-      setIsDraggingOverTrainingArea(false)
-      
-      if (isDroppedOnTrainingCandidates) {
-        console.log('🔧 DEBUG: Resetting training candidates flag')
-        setIsDroppedOnTrainingCandidates(false)
-      } else if (e.dataTransfer.dropEffect === 'none' && draggedShip) {
-        console.log('🔧 DEBUG: No drop effect detected, calling handleDropOutside')
-        handleDropOutside()
-      } else {
-        console.log('🔧 DEBUG: Normal drag end cleanup')
-        setDraggedShip(null)
-        setDragOverSlot(null)
-        document.body.classList.remove('dragging-ship')
-      }
-    }, 100) // 100msに延長してイベント順序を確実にする
-  }
+  // handleDragEnd function removed - replaced with inline implementation
 
   // 育成候補への追加
   const handleAddToTrainingCandidates = (ship: Ship) => {
@@ -1226,7 +1202,20 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   index={index}
                   draggedShip={draggedShip}
                   onDragStart={handleDragStart}
-                  onDragEnd={() => handleDragEnd({} as React.DragEvent)}
+                  onDragEnd={() => {
+                    // ドラッグ終了処理（引数なしバージョン）
+                    console.log('🔧 DEBUG: Drag end started (no event), isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
+                    
+                    setTimeout(() => {
+                      console.log('🔧 DEBUG: Drag end timeout, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
+                      
+                      // 状態リセット
+                      setDraggedShip(null)
+                      setDragOverSlot(null)
+                      setIsDroppedOnTrainingCandidates(false)
+                      document.body.classList.remove('dragging-ship')
+                    }, 100)
+                  }}
                 />
                 ))
               )}
