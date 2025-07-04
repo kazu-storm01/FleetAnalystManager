@@ -430,6 +430,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
   // 育成候補の達成状態を監視して通知を同期
   useEffect(() => {
+    // 育成候補データがあり、かつ艦隊データがある場合のみ達成チェック
     if (trainingCandidates.length > 0 && fleetData) {
       const currentAchievedCount = trainingCandidates.filter(candidate => 
         isTrainingCandidateAchieved(candidate)
@@ -441,8 +442,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         setHasNewAchievements(currentAchievedCount > 0)
         console.log('🔄 達成状態同期:', currentAchievedCount, '件')
       }
-    } else if (trainingCandidates.length === 0) {
-      // 育成候補がない場合は通知をクリア
+    }
+    // 育成候補がない場合のみ通知をクリア（fleetDataが空でも通知は保持）
+    else if (trainingCandidates.length === 0) {
       setAchievedCount(0)
       setHasNewAchievements(false)
     }
@@ -1589,7 +1591,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       )}
 
       {/* データ入力セクション */}
-      <div className="data-input-section" style={{ display: 'none' }}>
+      <div className="data-input-section">
         <h3>{'最新の艦隊を反映する'}</h3>
         <div className="input-group">
           <div className="fleet-input-wrapper">
@@ -1604,6 +1606,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               onClick={() => {
                 console.log('🖱️ 読み込みボタンクリック:', { fleetDataLength: fleetData.length, admiralName })
                 handleFleetDataUpdate()
+                // データ処理後にテキストフィールドをクリア
+                setFleetData('')
               }}
               className="fleet-update-btn-inside"
               disabled={!fleetData.trim()}
