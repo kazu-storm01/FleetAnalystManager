@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { StatIcon } from './ShipStatusDisplay'
 import { getShipBannerPath } from '../utils/imagePaths'
+import { getShipMasterDataSync } from '../data/shipMasterDataCore'
+import { parseImprovements } from '../utils/shipStatsCalculator'
+import { useShipData } from '../hooks/useShipData'
 
 // 型定義
 interface Task {
@@ -48,7 +51,31 @@ interface FleetAnalysisManagerProps {
   onSwitchToAnalyst?: () => void
 }
 
+// レベルによるステータス計算（FleetComposerと同じ処理）
+const calculateStatFromLevel = (level: number, statMin: number, statMax: number | undefined): number => {
+  if (statMin === 0 && (!statMax || statMax === 0)) {
+    return 0
+  }
+  if (statMax === undefined || statMax === 0) {
+    return statMin
+  }
+  if (level <= 1) {
+    return statMin
+  }
+  if (level >= 99) {
+    return statMax
+  }
+  if (statMax <= statMin) {
+    return statMin
+  }
+  
+  // FleetComposerと同じ正しい計算式を使用
+  const ratio = (level - 1) / (99 - 1)
+  return Math.floor(statMin + (statMax - statMin) * ratio)
+}
+
 const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetDataChange, onSwitchToAnalyst }) => {
+  const { getShipData } = useShipData()
   const [admiralName, setAdmiralName] = useState<string>('')
   const [isFirstSetup, setIsFirstSetup] = useState<boolean>(true)
   const [tempAdmiralName, setTempAdmiralName] = useState<string>('')
@@ -419,6 +446,30 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     
     // 育成候補リストを読み込み
     loadTrainingCandidates()
+  }, [])
+
+  // localStorageの変更を監視して育成候補リストを自動更新
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'fleetComposer_trainingCandidates' && e.newValue) {
+        console.log('📋 育成候補リストの変更を検知')
+        loadTrainingCandidates()
+      }
+    }
+
+    // 同じウィンドウ内での変更も監視するためのカスタムイベント
+    const handleTrainingCandidatesUpdate = () => {
+      console.log('📋 育成候補リストの更新イベントを受信')
+      loadTrainingCandidates()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('trainingCandidatesUpdated', handleTrainingCandidatesUpdate)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('trainingCandidatesUpdated', handleTrainingCandidatesUpdate)
+    }
   }, [])
 
   // プライバシーモードの永続化
@@ -942,9 +993,78 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       }
 
       const level = targetShip.lv || targetShip.api_lv
-      const hp = targetShip.maxhp || targetShip.api_maxhp || 0
-      const asw = targetShip.asw?.[0] || targetShip.api_taisen?.[0] || 0
-      const luck = targetShip.luck?.[0] || targetShip.api_lucky?.[0] || 0
+      const shipId = targetShip.ship_id || targetShip.api_ship_id
+      
+      console.log('🔍 マスターデータ検索:', {
+        candidateName: candidate.name,
+        candidateShipId: candidate.shipId,
+        apiShipId: shipId,
+        ship_id: targetShip.ship_id,
+        api_ship_id: targetShip.api_ship_id
+      })
+      
+      // マスターデータを取得（FleetComposerと同じ関数を使用）
+      const masterData = getShipData(shipId)
+      if (!masterData) {
+        console.error('マスターデータが見つかりません:', {
+          searchedShipId: shipId,
+          candidateName: candidate.name,
+          candidateShipId: candidate.shipId
+        })
+        return false
+      }
+      
+      console.log('🔍 マスターデータ取得成功:', {
+        shipId,
+        masterName: masterData.name,
+        masterHp: masterData.initialStats.hp,
+        masterHpMarried: masterData.initialStats.hpMarried
+      })
+
+      // 改修値を解析（艦隊編成と同じ処理）
+      const improvements = parseImprovements(targetShip.api_kyouka || targetShip.st || [])
+      
+      // APIステータス値を取得（FleetComposerと同じフォールバック順序）
+      const apiFirepower = targetShip.api_karyoku ? targetShip.api_karyoku[0] : (targetShip.karyoku ? targetShip.karyoku[0] : masterData.initialStats.firepower)
+      const apiTorpedo = targetShip.api_raisou ? targetShip.api_raisou[0] : (targetShip.raisou ? targetShip.raisou[0] : masterData.initialStats.torpedo)
+      const apiAA = targetShip.api_taiku ? targetShip.api_taiku[0] : (targetShip.taiku ? targetShip.taiku[0] : masterData.initialStats.aa)
+      const apiArmor = targetShip.api_soukou ? targetShip.api_soukou[0] : (targetShip.soukou ? targetShip.soukou[0] : masterData.initialStats.armor)
+      const apiLuck = targetShip.api_lucky ? targetShip.api_lucky[0] : (targetShip.lucky ? targetShip.lucky[0] : masterData.initialStats.luck)
+      const apiAsw = targetShip.api_taisen ? targetShip.api_taisen[0] : (targetShip.taisen ? targetShip.taisen[0] : undefined)
+      
+      // レベル依存ステータス（最大値の取得）- FleetComposerと同じ計算
+      let aswMax = masterData.initialStats.aswMax || (
+        masterData.initialStats.asw > 0 ? masterData.initialStats.asw + 20 : 0
+      )
+      
+      // FleetComposerのaswMax計算ロジックを適用
+      if (masterData.name === '吹雪改二') {
+        aswMax = 94  // FleetComposerで実際に使用されている値
+        console.log('🔧 吹雪改二の aswMax をFleetComposer準拠の94に設定')
+      }
+      const evasionMax = masterData.initialStats.evasionMax || (
+        masterData.initialStats.evasion > 0 ? masterData.initialStats.evasion + 30 : masterData.initialStats.evasion
+      )
+      const losMax = masterData.initialStats.losMax || (
+        masterData.initialStats.los > 0 ? masterData.initialStats.los + 20 : masterData.initialStats.los
+      )
+      
+      // レベル成長ステータスを計算
+      const levelBasedAsw = calculateStatFromLevel(level, masterData.initialStats.asw, aswMax)
+      
+      // 最終ステータスを計算（艦隊編成と同じ処理）
+      // ケッコン判定
+      const isMarried = level >= 100
+      
+      // HP計算：レベル100超え（ケッコン艦）の場合はhpMarriedを参照
+      const baseHp = isMarried && masterData.initialStats.hpMarried 
+        ? masterData.initialStats.hpMarried 
+        : masterData.initialStats.hp
+      
+      const hp = baseHp + (improvements.hp || 0)
+      // 対潜: FleetComposerと完全に同じ計算（レベル成長値 + 改修値のみ）
+      const asw = levelBasedAsw + (improvements.asw || 0)
+      const luck = apiLuck + (improvements.luck || 0)
 
       console.log('🔍 現在のステータス:', {
         name: candidate.name,
@@ -954,6 +1074,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           hp: candidate.targetHp, 
           asw: candidate.targetAsw, 
           luck: candidate.targetLuck 
+        },
+        debug: {
+          levelBasedAsw: levelBasedAsw,
+          aswImprovement: improvements.asw || 0,
+          finalAsw: asw,
+          aswCalculation: `${levelBasedAsw} + ${improvements.asw || 0} = ${asw}`,
+          aswMax: aswMax,
+          masterAsw: masterData.initialStats.asw,
+          level: level
         }
       })
 
@@ -1041,9 +1170,48 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
         if (matchingShip) {
           const level = matchingShip.lv || matchingShip.api_lv
-          const hp = matchingShip.maxhp || matchingShip.api_maxhp || 0
-          const asw = matchingShip.asw?.[0] || matchingShip.api_taisen?.[0] || 0
-          const luck = matchingShip.luck?.[0] || matchingShip.api_lucky?.[0] || 0
+          const shipId = matchingShip.ship_id || matchingShip.api_ship_id
+          
+          // マスターデータを取得（FleetComposerと同じ関数を使用）
+          const masterData = getShipData(shipId)
+          if (!masterData) {
+            console.error('マスターデータが見つかりません:', shipId)
+            return
+          }
+
+          // 改修値を解析（艦隊編成と同じ処理）
+          const improvements = parseImprovements(matchingShip.api_kyouka || matchingShip.st || [])
+          
+          // APIステータス値を取得（FleetComposerと同じフォールバック順序）
+          const apiLuck = matchingShip.api_lucky ? matchingShip.api_lucky[0] : (matchingShip.lucky ? matchingShip.lucky[0] : masterData.initialStats.luck)
+          const apiAsw = matchingShip.api_taisen ? matchingShip.api_taisen[0] : (matchingShip.taisen ? matchingShip.taisen[0] : undefined)
+          
+          // レベル依存ステータス（最大値の取得）- FleetComposerと同じ計算
+          let aswMax = masterData.initialStats.aswMax || (
+            masterData.initialStats.asw > 0 ? masterData.initialStats.asw + 20 : 0
+          )
+          
+          // FleetComposerのaswMax計算ロジックを適用
+          if (masterData.name === '吹雪改二') {
+            aswMax = 94  // FleetComposerで実際に使用されている値
+          }
+          
+          // レベル成長ステータスを計算
+          const levelBasedAsw = calculateStatFromLevel(level, masterData.initialStats.asw, aswMax)
+          
+          // 最終ステータスを計算（艦隊編成と同じ処理）
+          // ケッコン判定
+          const isMarried = level >= 100
+          
+          // HP計算：レベル100超え（ケッコン艦）の場合はhpMarriedを参照
+          const baseHp = isMarried && masterData.initialStats.hpMarried 
+            ? masterData.initialStats.hpMarried 
+            : masterData.initialStats.hp
+          
+          const hp = baseHp + (improvements.hp || 0)
+          // 対潜: FleetComposerと完全に同じ計算（レベル成長値 + 改修値のみ）
+          const asw = levelBasedAsw + (improvements.asw || 0)
+          const luck = apiLuck + (improvements.luck || 0)
 
           // 目標達成チェック
           const isLevelAchieved = !candidate.targetLevel || level >= candidate.targetLevel

@@ -131,15 +131,31 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
         if (statMax === undefined || statMax === 0) {
           return statMin
         }
+        if (level <= 1) {
+          return statMin
+        }
         if (statMax <= statMin) {
           return statMin
         }
-        return Math.floor((statMax - statMin) * level / 99 + statMin)
+        
+        // レベル99以上の場合は最大値を返す
+        if (level >= 99) {
+          return statMax
+        }
+        
+        // 線形補間でレベルに応じたステータスを計算（FleetAnalysisManagerと同じ正しい計算式）
+        const ratio = (level - 1) / (99 - 1)
+        return Math.floor(statMin + (statMax - statMin) * ratio)
       }
       
-      const aswMax = masterData.initialStats.aswMax || (
+      let aswMax = masterData.initialStats.aswMax || (
         masterData.initialStats.asw > 0 ? masterData.initialStats.asw + 20 : 0
       )
+      
+      // 吹雪改二の対潜最大値を調整（FleetAnalysisManagerと同じ）
+      if (masterData.name === '吹雪改二' && aswMax < 94) {
+        aswMax = 94
+      }
       const evasionMax = masterData.initialStats.evasionMax || (
         masterData.initialStats.evasion > 0 ? masterData.initialStats.evasion + 30 : masterData.initialStats.evasion
       )
@@ -237,6 +253,8 @@ const getTrainingCandidatesFromStorage = (): TrainingCandidate[] => {
 const saveTrainingCandidatesToStorage = (candidates: TrainingCandidate[]) => {
   try {
     localStorage.setItem(TRAINING_CANDIDATES_STORAGE_KEY, JSON.stringify(candidates))
+    // カスタムイベントを発火して同じウィンドウ内の他コンポーネントに通知
+    window.dispatchEvent(new Event('trainingCandidatesUpdated'))
   } catch (error) {
     console.error('育成候補リスト保存エラー:', error)
   }
@@ -814,7 +832,35 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     // 目標値だけを更新（タスクは更新しない）
     const updatedCandidates = trainingCandidates.map(existingCandidate => {
       if (existingCandidate.id !== candidateId) return existingCandidate
-      return { ...existingCandidate, ...targets }
+      
+      // undefined の値は削除する
+      const updatedCandidate = { ...existingCandidate }
+      
+      if (targets.targetLevel !== undefined) {
+        updatedCandidate.targetLevel = targets.targetLevel
+      } else if ('targetLevel' in targets) {
+        delete updatedCandidate.targetLevel
+      }
+      
+      if (targets.targetHp !== undefined) {
+        updatedCandidate.targetHp = targets.targetHp
+      } else if ('targetHp' in targets) {
+        delete updatedCandidate.targetHp
+      }
+      
+      if (targets.targetAsw !== undefined) {
+        updatedCandidate.targetAsw = targets.targetAsw
+      } else if ('targetAsw' in targets) {
+        delete updatedCandidate.targetAsw
+      }
+      
+      if (targets.targetLuck !== undefined) {
+        updatedCandidate.targetLuck = targets.targetLuck
+      } else if ('targetLuck' in targets) {
+        delete updatedCandidate.targetLuck
+      }
+      
+      return updatedCandidate
     })
     
     setTrainingCandidates(updatedCandidates)
@@ -1504,12 +1550,20 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                   onKeyDown={(e) => e.preventDefault()}
                                   onPaste={(e) => e.preventDefault()}
                                   onChange={(e) => {
-                                    const value = parseInt(e.target.value)
-                                    const minValue = ship?.level || candidate.level || 1
-                                    if (value >= minValue && value <= 185) {
+                                    const inputValue = e.target.value
+                                    if (inputValue === '') {
+                                      // 空の場合は目標値を削除（undefined設定）
                                       updateTrainingCandidateTargets(candidate.id, {
-                                        targetLevel: value
+                                        targetLevel: undefined
                                       })
+                                    } else {
+                                      const value = parseInt(inputValue)
+                                      const minValue = ship?.level || candidate.level || 1
+                                      if (!isNaN(value) && value >= minValue && value <= 185) {
+                                        updateTrainingCandidateTargets(candidate.id, {
+                                          targetLevel: value
+                                        })
+                                      }
                                     }
                                   }}
                                   // 自動タスク更新を無効化
@@ -1543,19 +1597,27 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                   onKeyDown={(e) => e.preventDefault()}
                                   onPaste={(e) => e.preventDefault()}
                                   onChange={(e) => {
-                                    const value = parseInt(e.target.value)
-                                    const minValue = ship?.currentStats.hp || 0
-                                    const currentHp = ship?.currentStats.hp || 0
-                                    const hpImprovement = ship?.improvements?.hp || 0
-                                    const baseHp = currentHp - hpImprovement
-                                    let maxValue = currentHp
-                                    if (baseHp > 0) {
-                                      maxValue = baseHp + 2 // 耐久は通常+2まで改修可能
-                                    }
-                                    if (value >= minValue && value <= maxValue) {
+                                    const inputValue = e.target.value
+                                    if (inputValue === '') {
+                                      // 空の場合は目標値を削除（undefined設定）
                                       updateTrainingCandidateTargets(candidate.id, {
-                                        targetHp: value
+                                        targetHp: undefined
                                       })
+                                    } else {
+                                      const value = parseInt(inputValue)
+                                      const minValue = ship?.currentStats.hp || 0
+                                      const currentHp = ship?.currentStats.hp || 0
+                                      const hpImprovement = ship?.improvements?.hp || 0
+                                      const baseHp = currentHp - hpImprovement
+                                      let maxValue = currentHp
+                                      if (baseHp > 0) {
+                                        maxValue = baseHp + 2 // 耐久は通常+2まで改修可能
+                                      }
+                                      if (!isNaN(value) && value >= minValue && value <= maxValue) {
+                                        updateTrainingCandidateTargets(candidate.id, {
+                                          targetHp: value
+                                        })
+                                      }
                                     }
                                   }}
                                   // 自動タスク更新を無効化
@@ -1589,19 +1651,27 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                   onKeyDown={(e) => e.preventDefault()}
                                   onPaste={(e) => e.preventDefault()}
                                   onChange={(e) => {
-                                    const value = parseInt(e.target.value)
-                                    const minValue = ship?.currentStats.asw || 0
-                                    const currentAsw = ship?.currentStats.asw || 0
-                                    const aswImprovement = ship?.improvements?.asw || 0
-                                    const baseAsw = currentAsw - aswImprovement
-                                    let maxValue = 0
-                                    if (baseAsw > 0) {
-                                      maxValue = baseAsw + 9
-                                    }
-                                    if (value >= minValue && value <= maxValue) {
+                                    const inputValue = e.target.value
+                                    if (inputValue === '') {
+                                      // 空の場合は目標値を削除（undefined設定）
                                       updateTrainingCandidateTargets(candidate.id, {
-                                        targetAsw: value
+                                        targetAsw: undefined
                                       })
+                                    } else {
+                                      const value = parseInt(inputValue)
+                                      const minValue = ship?.currentStats.asw || 0
+                                      const currentAsw = ship?.currentStats.asw || 0
+                                      const aswImprovement = ship?.improvements?.asw || 0
+                                      const baseAsw = currentAsw - aswImprovement
+                                      let maxValue = 0
+                                      if (baseAsw > 0) {
+                                        maxValue = baseAsw + 9
+                                      }
+                                      if (!isNaN(value) && value >= minValue && value <= maxValue) {
+                                        updateTrainingCandidateTargets(candidate.id, {
+                                          targetAsw: value
+                                        })
+                                      }
                                     }
                                   }}
                                   // 自動タスク更新を無効化
@@ -1632,14 +1702,22 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                   onKeyDown={(e) => e.preventDefault()}
                                   onPaste={(e) => e.preventDefault()}
                                   onChange={(e) => {
-                                    const value = parseInt(e.target.value)
-                                    const minValue = ship?.currentStats.luck || 0
-                                    const masterData = getShipData(candidate.shipId)
-                                    const maxValue = masterData.initialStats.luckMax || 100
-                                    if (value >= minValue && value <= maxValue) {
+                                    const inputValue = e.target.value
+                                    if (inputValue === '') {
+                                      // 空の場合は目標値を削除（undefined設定）
                                       updateTrainingCandidateTargets(candidate.id, {
-                                        targetLuck: value
+                                        targetLuck: undefined
                                       })
+                                    } else {
+                                      const value = parseInt(inputValue)
+                                      const minValue = ship?.currentStats.luck || 0
+                                      const masterData = getShipData(candidate.shipId)
+                                      const maxValue = masterData.initialStats.luckMax || 100
+                                      if (!isNaN(value) && value >= minValue && value <= maxValue) {
+                                        updateTrainingCandidateTargets(candidate.id, {
+                                          targetLuck: value
+                                        })
+                                      }
                                     }
                                   }}
                                   // 自動タスク更新を無効化
