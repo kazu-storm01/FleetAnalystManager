@@ -712,9 +712,11 @@ body.dragging-ship .fleet-composition-area {
 .fleet-name-container {
   display: flex;
   align-items: center;
-  gap: 15px;
-  max-width: 600px;
+  gap: 30px;
+  max-width: 900px;
   margin: 0 auto;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .fleet-name-label {
@@ -725,6 +727,8 @@ body.dragging-ship .fleet-composition-area {
   font-weight: 600;
   color: #64b5f6;
   min-width: 80px;
+  flex-shrink: 0;
+  justify-content: center;
 }
 
 
@@ -743,6 +747,9 @@ body.dragging-ship .fleet-composition-area {
   font-weight: 500;
   transition: all 0.3s ease;
   backdrop-filter: blur(5px);
+  text-align: center;
+  min-width: 200px;
+  max-width: 250px;
 }
 
 
@@ -762,10 +769,13 @@ body.dragging-ship .fleet-composition-area {
 .fleet-count-indicator {
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 8px 12px;
   background: rgba(100, 181, 246, 0.2);
   border-radius: 8px;
   border: 1px solid rgba(100, 181, 246, 0.3);
+  flex-shrink: 0;
+  min-width: 80px;
 }
 
 
@@ -1167,8 +1177,11 @@ body.dragging-ship .fleet-composition-area {
 /* 編成名入力コンテナ */
 .fleet-name-input-container {
   display: flex;
-  gap: 8px;
+  gap: 15px;
   align-items: center;
+  justify-content: center;
+  max-width: 400px;
+  flex-shrink: 0;
 }
 
 .fleet-name-input {
@@ -1188,6 +1201,8 @@ body.dragging-ship .fleet-composition-area {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .save-formation-btn {
@@ -2292,8 +2307,8 @@ body.dragging-ship .fleet-composition-area {
 
 /* 育成タスクフィルターボタン */
 .training-filter-button.active {
-  background-color: #1890ff;
-  color: white;
+  background: #ffffff;
+  color: #000000;
 }
 
 .training-filter-button .material-icons {
@@ -10176,8 +10191,8 @@ h4 .material-icons {
   height: 40px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(45deg, #4facfe, #00f2fe);
-  color: white;
+  background: #ffffff;
+  color: #000000;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -10203,7 +10218,8 @@ h4 .material-icons {
 
 /* 個別ボタンカラー */
 .action-button.admiral-button {
-  background: linear-gradient(45deg, #f44336, #d32f2f);
+  background: #ffffff;
+  color: #000000;
   box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -10212,8 +10228,8 @@ h4 .material-icons {
 }
 
 .action-button.chart-button {
-  background: linear-gradient(45deg, #4caf50, #2e7d32);
-  color: white;
+  background: #ffffff;
+  color: #000000;
   box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
   /* animation: chartButtonPulse 2s ease-in-out infinite; */
 }
@@ -10224,8 +10240,8 @@ h4 .material-icons {
 
 /* Backup/Settings button - black gradient */
 .action-button.backup-button {
-  background: linear-gradient(45deg, #424242, #212121);
-  color: white;
+  background: #ffffff;
+  color: #000000;
   box-shadow: 0 4px 16px rgba(66, 66, 66, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -10235,8 +10251,8 @@ h4 .material-icons {
 
 /* Privacy button - purple gradient */
 .action-button.privacy-button {
-  background: linear-gradient(45deg, #9c27b0, #673ab7);
-  color: white;
+  background: #ffffff;
+  color: #000000;
   box-shadow: 0 4px 16px rgba(156, 39, 176, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -10245,25 +10261,14 @@ h4 .material-icons {
 }
 
 .action-button.privacy-button.active {
-  background: linear-gradient(45deg, #e91e63, #ad1457);
+  background: #ffffff;
+  color: #000000;
   box-shadow: 0 4px 16px rgba(233, 30, 99, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-button.privacy-button.active:hover {
   box-shadow: 0 8px 24px rgba(233, 30, 99, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
-
-/* 深海テーマでのアクションボタン */
-
-
-
-
-
-
-
-
-
-
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
@@ -10285,9 +10290,89 @@ h4 .material-icons {
   .action-button .material-icons {
     font-size: 1.3rem !important;
   }
+  
+  /* 編成名入力エリアのレスポンシブ対応 */
+  .fleet-name-container {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  
+  .fleet-name-label {
+    justify-content: center;
+    min-width: auto;
+  }
+  
+  .fleet-name-input {
+    width: 100%;
+    margin: 0;
+  }
+  
+  .formation-action-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .save-formation-btn,
+  .clear-all-fleet-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+  
+  .fleet-count-indicator {
+    justify-content: center;
+  }
 }
 
+@media (max-width: 768px) {
+  .fleet-name-container {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+  
+  .fleet-name-input-container {
+    flex-direction: column;
+    gap: 10px;
+    max-width: 100%;
+    align-items: center;
+  }
+  
+  .formation-action-buttons {
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .fleet-name-input {
+    min-width: 150px;
+    max-width: 200px;
+  }
+}
 
+@media (max-width: 480px) {
+  .fleet-name-input-area {
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .fleet-name-input {
+    font-size: 0.9rem;
+    padding: 10px 12px;
+    min-width: 150px;
+  }
+  
+  .fleet-name-label {
+    font-size: 0.9rem;
+  }
+  
+  .fleet-count-text {
+    font-size: 0.8rem;
+  }
+}
 
 /* チャートボタンの脈動アニメーション */
 @keyframes chartButtonPulse {

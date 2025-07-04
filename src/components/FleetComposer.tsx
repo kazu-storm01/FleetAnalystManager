@@ -1588,7 +1588,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             className={`sidebar-tab ${sidebarActiveTab === 'training' ? 'active' : ''}`}
             onClick={() => setSidebarActiveTab('training')}
           >
-            📚 育成候補
+            <span className="material-icons">note_alt</span> 育成候補
           </button>
         </div>
         
@@ -1598,7 +1598,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           {isDraggingShip && sidebarActiveTab === 'training' && (
             <div className="sidebar-drag-overlay">
               <div className="sidebar-drag-content">
-                <span className="material-icons sidebar-drag-icon">add_circle</span>
+                <span className="material-icons sidebar-drag-icon">add_notes</span>
                 <div className="sidebar-drag-text">
                   {draggedShip?.name}を<br/>育成候補に追加
                 </div>
