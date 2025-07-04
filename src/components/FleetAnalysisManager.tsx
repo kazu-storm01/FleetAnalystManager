@@ -1454,15 +1454,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="dashboard-header">
           <h2><span className="material-icons">anchor</span> {admiralName} のダッシュボード</h2>
           
-          {/* アクションボタン */}
+          {/* アクションボタン（フィルター以外） */}
           <div className="dashboard-actions">
-            <button 
-              onClick={() => setShowTrainingTasksOnly(!showTrainingTasksOnly)} 
-              className={`action-button training-filter-button ${showTrainingTasksOnly ? 'active' : ''}`}
-              title={showTrainingTasksOnly ? '全タスク表示' : '育成タスクのみ表示'}
-            >
-              <span className="material-symbols-outlined">{showTrainingTasksOnly ? 'filter_list_off' : 'filter_list'}</span>
-            </button>
             <button 
               onClick={() => setPrivacyMode(!privacyMode)} 
               className={`action-button privacy-button ${privacyMode === true ? 'active' : ''}`}
@@ -1698,7 +1691,31 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       {latestEntry && latestEntry.tasks.length > 0 && (
         <div className="tasks-section">
                   <div className="task-header">
-                    <h4>タスク進捗 ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                      {/* フィルターボタン */}
+                      <button 
+                        onClick={() => setShowTrainingTasksOnly(!showTrainingTasksOnly)} 
+                        className={`filter-status-button`}
+                        title={showTrainingTasksOnly ? '育成タスクのみ表示中 - クリックで全タスク表示' : '全タスク表示中 - クリックで育成タスクのみ表示'}
+                        style={{
+                          fontSize: '0.75rem', 
+                          padding: '4px 8px',
+                          minHeight: '28px',
+                          borderRadius: '6px',
+                          background: 'transparent',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{fontSize: '0.8rem'}}>{showTrainingTasksOnly ? 'filter_alt' : 'list'}</span>
+                        <span>{showTrainingTasksOnly ? '育成のみ' : '全タスク'}</span>
+                      </button>
+                      <h4 style={{margin: '0', fontSize: '1rem', fontWeight: 'bold', color: 'white'}}>タスク進捗 ({getTaskProgress(latestEntry.tasks).completed}/{getTaskProgress(latestEntry.tasks).total})</h4>
+                    </div>
                     <div className="progress-bar">
                       <div 
                         className={`progress-fill ${getTaskProgress(latestEntry.tasks).percentage === 100 ? 'completed' : ''}`}
@@ -1767,6 +1784,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="action-area" style={{marginTop: '1.5rem'}}>
           <div className="input-section">
             {/* <h4 style={{marginBottom: '1rem'}}>タスク・URL追加</h4> */}
+            
             
             {/* タスク追加 */}
             <div className="input-group" style={{marginBottom: '1rem'}}>
