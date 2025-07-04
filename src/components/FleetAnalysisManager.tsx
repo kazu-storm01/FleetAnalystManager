@@ -568,6 +568,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     const filteredTasks = filterTasksForDisplay(latestEntry.tasks)
     return filteredTasks.filter(task => !task.completed).length
   }
+  const getTotalTasks = () => fleetEntries.reduce((total, entry) => 
+    total + entry.tasks.length, 0
+  )
 
   // 育成候補リストのmainTaskIdを取得
   const getTrainingCandidatesMainTaskIds = (): number[] => {
@@ -1459,9 +1462,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
             <button 
               onClick={() => setPrivacyMode(!privacyMode)} 
               className={`action-button privacy-button ${privacyMode === true ? 'active' : ''}`}
-              title={privacyMode === true ? 'プライバシーモード解除' : 'プライバシーモード'}
+              title={privacyMode === true ? 'プライバシーモード中 - クリックで通常表示' : '通常表示中 - クリックでプライバシーモード'}
             >
-              <span className="material-symbols-outlined">{privacyMode === true ? 'visibility' : 'visibility_off'}</span>
+              <span className="material-symbols-outlined">{privacyMode === true ? 'visibility_off' : 'visibility'}</span>
             </button>
             {fleetEntries.length >= 2 && (
               <button 
@@ -1534,16 +1537,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   </div>
                 </button>
               </div>
-              <div className="overview-item task-history-trigger">
+              <div className="overview-item overview-clickable">
                 <button
                   onClick={() => setShowTaskHistoryModal(true)}
-                  className="task-history-button"
+                  className="overview-button"
                   title="タスク履歴を表示"
                 >
                   <span className="material-icons overview-icon">history</span>
                   <div className="overview-text">
                     <span className="overview-label">{'タスク履歴'}</span>
-                    <span className="overview-value">{'一覧表示'}</span>
+                    <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalTasks().toString().length) : getTotalTasks()}</span>
                   </div>
                 </button>
               </div>
@@ -1786,26 +1789,32 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
             {/* <h4 style={{marginBottom: '1rem'}}>タスク・URL追加</h4> */}
             
             
-            {/* タスク追加 */}
-            <div className="input-group" style={{marginBottom: '1rem'}}>
-              <div className="input-with-button" style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+            {/* タスク追加フォーム */}
+            <div className="task-form-container">
+              <div className="task-input-wrapper">
+                <div className="input-icon">
+                  <span className="material-symbols-outlined">task_alt</span>
+                </div>
                 <input
                   type="text"
+                  placeholder="新しいタスクを入力してください..."
                   value={newTaskText}
                   onChange={(e) => setNewTaskText(e.target.value)}
-                  placeholder={'タスク内容を入力してください...'}
-                  className="task-input"
                   onKeyDown={(e) => e.key === 'Enter' && addTaskToLatest()}
-                  style={{flex: '1', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd'}}
+                  className="enhanced-task-input"
                 />
-                <button 
+                <button
                   onClick={addTaskToLatest}
-                  className="add-button"
+                  className="enhanced-add-button"
                   disabled={!newTaskText.trim()}
-                  style={{padding: '0.5rem 1rem', borderRadius: '4px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer'}}
+                  title="タスクを追加"
                 >
-                  {'追加'}
+                  <span className="material-symbols-outlined">add_circle</span>
+                  <span className="button-text">追加</span>
                 </button>
+              </div>
+              <div className="input-helper-text">
+                Enterキーでも追加できます
               </div>
             </div>
 
