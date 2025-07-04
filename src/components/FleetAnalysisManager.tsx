@@ -403,6 +403,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setAdmiralName(savedAdmiralName)
       setIsFirstSetup(false)
       loadFleetEntries(savedAdmiralName)
+      
+      // 最新の艦隊データを復元
+      const savedFleetData = localStorage.getItem(`${savedAdmiralName}_latestFleetData`)
+      if (savedFleetData) {
+        setFleetData(savedFleetData)
+        console.log('📊 最新艦隊データを復元')
+      }
     } else {
       setIsFirstSetup(true)
       setShowWelcome(true)
