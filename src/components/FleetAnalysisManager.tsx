@@ -1849,7 +1849,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   className="overview-button"
                   title="艦隊記録を表示"
                 >
-                  <span className="material-icons overview-icon">trending_up</span>
+                  <span className="material-icons overview-icon">sailing</span>
                   <div className="overview-text">
                     <span className="overview-label">{'総記録数'}</span>
                     <span className="overview-value" key={`${fleetEntries.length}-${forceUpdate}`}>{privacyMode === true ? '*'.repeat(getTotalEntries().toString().length) : getTotalEntries()}</span>
@@ -1875,7 +1875,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   className="overview-button"
                   title="未達成タスクを表示"
                 >
-                  <span className="material-icons overview-icon">assignment</span>
+                  <span className="material-icons overview-icon">pending_actions</span>
                   <div className="overview-text">
                     <span className="overview-label">{'未達成タスク'}</span>
                     <span className="overview-value">{privacyMode === true ? '*'.repeat(getPendingTasks().toString().length) : getPendingTasks()}</span>
@@ -2236,8 +2236,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="modal-overlay" onClick={() => setShowAdmiralModal(false)}>
           <div className="modal-content admiral-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{'提督変更'}</h2>
-              <button onClick={() => setShowAdmiralModal(false)} className="close-button">
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">person</span>
+                <div>
+                  <h3>提督変更</h3>
+                  <span className="modal-header-subtitle">提督名: {admiralName}</span>
+                </div>
+              </div>
+              <button onClick={() => setShowAdmiralModal(false)} className="modal-close-btn">
                 <span className="material-icons">close</span>
               </button>
             </div>
@@ -2282,7 +2288,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="modal-overlay">
           <div className="modal-content task-history-modal">
             <div className="modal-header">
-              <h3>タスク履歴</h3>
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">history</span>
+                <div>
+                  <h3>タスク履歴</h3>
+                  <span className="modal-header-subtitle">全{fleetEntries.reduce((acc, entry) => acc + entry.tasks.length, 0)}個のタスク</span>
+                </div>
+              </div>
               <button
                 onClick={() => setShowTaskHistoryModal(false)}
                 className="modal-close-btn"
@@ -2337,7 +2349,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="modal-overlay">
           <div className="modal-content task-modal">
             <div className="modal-header">
-              <h3>未達成タスク一覧</h3>
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">pending_actions</span>
+                <div>
+                  <h3>未達成タスク一覧</h3>
+                  <span className="modal-header-subtitle">{fleetEntries.reduce((acc, entry) => acc + entry.tasks.filter(t => !t.completed).length, 0)}件の未達成タスク</span>
+                </div>
+              </div>
               <button
                 onClick={() => setShowPendingTasksModal(false)}
                 className="modal-close-btn"
@@ -2386,7 +2404,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="modal-overlay">
           <div className="modal-content task-modal">
             <div className="modal-header">
-              <h3>達成タスク一覧</h3>
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">task_alt</span>
+                <div>
+                  <h3>達成タスク一覧</h3>
+                  <span className="modal-header-subtitle">{fleetEntries.reduce((acc, entry) => acc + entry.tasks.filter(t => t.completed).length, 0)}件の達成タスク</span>
+                </div>
+              </div>
               <button
                 onClick={() => setShowCompletedTasksModal(false)}
                 className="modal-close-btn"
@@ -2435,7 +2459,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         <div className="modal-overlay">
           <div className="modal-content fleet-records-modal">
             <div className="modal-header">
-              <h3>艦隊記録一覧</h3>
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">sailing</span>
+                <div>
+                  <h3>艦隊記録一覧</h3>
+                  <span className="modal-header-subtitle">{fleetEntries.length}件の艦隊記録</span>
+                </div>
+              </div>
               <button
                 onClick={() => setShowFleetRecordsModal(false)}
                 className="modal-close-btn"
