@@ -11478,7 +11478,8 @@ h4 .material-icons {
 .overlay-bottom {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  padding-bottom: 45px;
 }
 
 .candidate-name {
@@ -11524,7 +11525,10 @@ h4 .material-icons {
 
 /* 育成完了ボタン */
 .candidate-complete-section {
-  margin-top: 12px;
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: center;
 }
