@@ -58,12 +58,33 @@
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.modal-header-icon {
+  font-size: 2rem;
+  color: #64b5f6;
+  opacity: 0.9;
 }
 
 .modal-header h3 {
   margin: 0;
   color: white;
   font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal-header-subtitle {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+  display: block;
 }
 
 .modal-close-btn {
@@ -279,6 +300,13 @@
 
 .overview-button:hover .overview-label {
   color: #64b5f6;
+}
+
+/* モーダルボタンのホバー効果を確実に適用 */
+.overview-clickable .overview-button:hover .overview-icon {
+  transform: scale(1.1) !important;
+  color: #64b5f6 !important;
+  transition: all 0.3s ease;
 }
 
 .overview-button:focus {
@@ -1412,7 +1440,6 @@ body.dragging-ship .fleet-composition-area {
 
 .achievement-badge .material-icons {
   font-size: 16px;
-}
 }
 
 /* 育成タスクのテキストスタイル */
@@ -6101,10 +6128,7 @@ body.dragging-ship .drawer-overlay {
   flex: 1;
 }
 
-/* 育成タスクの×ボタンも同じ位置に統一 */
-.training-task-content .delete-task-btn {
-  /* 親の.delete-task-btnの設定を継承 */
-}
+/* 育成タスクの×ボタンも同じ位置に統一 - 親の.delete-task-btnの設定を継承 */
 
 .delete-task-btn {
   background: transparent;
@@ -8433,10 +8457,7 @@ body.dragging-ship .drawer-overlay {
   flex: 1;
 }
 
-/* 育成タスクの×ボタンも同じ位置に統一 */
-.training-task-content .delete-task-btn {
-  /* 親の.delete-task-btnの設定を継承 */
-}
+/* 育成タスクの×ボタンも同じ位置に統一 - 親の.delete-task-btnの設定を継承 */
 
 .delete-task-btn {
   background: transparent;
@@ -10105,7 +10126,6 @@ h4 .material-icons {
 /* 統計概要アイコンスタイル */
 .overview-icon {
   font-size: 2rem !important;
-  color: #00d4ff;
   margin-right: 0 !important;
 }
 
@@ -11243,17 +11263,22 @@ h4 .material-icons {
 .training-candidates-modal {
   max-width: 600px !important;
   width: 90% !important;
-  max-height: 75vh !important;
+  max-height: 85vh !important;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 15px;
+  padding: 0;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
   animation: modalSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
 }
 
-.training-candidates-modal .modal-header {
-  background: linear-gradient(135deg, rgba(100, 181, 246, 0.2), rgba(33, 150, 243, 0.1));
-  border-bottom: 1px solid rgba(100, 181, 246, 0.3);
-  backdrop-filter: blur(15px);
+.training-candidates-modal .modal-body {
+  overflow-y: auto;
+  max-height: calc(85vh - 120px);
+  padding-bottom: 30px;
 }
 
 .modal-header-content {
@@ -11585,7 +11610,11 @@ h4 .material-icons {
   
   .training-candidates-modal {
     width: 95% !important;
-    max-height: 80vh !important;
+    max-height: 90vh !important;
+  }
+  
+  .training-candidates-modal .modal-body {
+    max-height: calc(90vh - 100px);
   }
 }
 
@@ -11644,8 +11673,6 @@ h4 .material-icons {
   }
 }
 
-.overview-button {
-  position: relative;
-}
+/* .overview-button の重複定義を削除（259行目の定義を使用） */
 
 
