@@ -1828,7 +1828,7 @@ body.dragging-ship .fleet-composition-area {
   flex-direction: column;
 }
 
-/* 育成候補タブ専用スタイル */
+/* 育成リストタブ専用スタイル */
 .training-candidates-content {
   height: 100%;
   display: flex;
@@ -1871,7 +1871,7 @@ body.dragging-ship .fleet-composition-area {
   animation: loading-spin 1s linear infinite;
 }
 
-/* 育成候補カードのスタイル */
+/* 育成リストカードのスタイル */
 .training-candidate-card {
   display: flex;
   flex-direction: column;
@@ -2068,7 +2068,7 @@ body.dragging-ship .fleet-composition-area {
   margin-top: 4px;
 }
 
-/* コンパクト育成候補カード */
+/* コンパクト育成リストカード */
 .training-candidate-compact {
   background: rgba(13, 71, 161, 0.1);
   border: 1px solid rgba(100, 181, 246, 0.3);
@@ -2222,7 +2222,7 @@ body.dragging-ship .fleet-composition-area {
 
 
 
-/* バナーフル活用育成候補カード */
+/* バナーフル活用育成リストカード */
 .training-candidate-banner {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -2494,7 +2494,7 @@ body.dragging-ship .fleet-composition-area {
   transform: rotate(-45deg);
 }
 
-/* ===== 育成候補リストサイドバー ===== */
+/* ===== 育成リストリストサイドバー ===== */
 
 /* 右側サイドバー */
 .training-candidates-sidebar {
@@ -8910,16 +8910,17 @@ body.dragging-ship .drawer-overlay {
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.3s ease;
+  padding: 20px;
 }
 
 .backup-popup-content {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   border-radius: 20px;
-  padding: 30px;
+  padding: 0;
   max-width: 600px;
   width: 90%;
   max-height: 80vh;
-  overflow-y: auto;
+  overflow: hidden;
   border: 2px solid rgba(255, 215, 0, 0.3);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: slideIn 0.3s ease;
@@ -8932,7 +8933,7 @@ body.dragging-ship .drawer-overlay {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
-  padding-bottom: 15px;
+  padding: 20px 30px 15px 30px;
   border-bottom: 2px solid rgba(255, 215, 0, 0.3);
 }
 
@@ -8976,6 +8977,7 @@ body.dragging-ship .drawer-overlay {
   flex-wrap: wrap;
   justify-content: center;
   margin-bottom: 20px;
+  padding: 0 30px 30px 30px;
 }
 
 /* アニメーション */
@@ -10966,7 +10968,7 @@ h4 .material-icons {
 .modal-content.url-modal {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   border-radius: 15px;
-  padding: 25px;
+  padding: 0;
   max-width: 500px;
   animation: slideIn 0.3s ease;
 }
@@ -10974,7 +10976,7 @@ h4 .material-icons {
 .modal-content.fleet-records-modal {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   border-radius: 15px;
-  padding: 25px;
+  padding: 0;
   max-width: 900px;
   width: 90%;
   border: 2px solid rgba(79, 172, 254, 0.3);
@@ -10985,7 +10987,7 @@ h4 .material-icons {
 .modal-content.task-history-modal {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   border-radius: 15px;
-  padding: 25px;
+  padding: 0;
   max-width: 800px;
   width: 90%;
   border: 2px solid rgba(79, 172, 254, 0.3);
@@ -10993,6 +10995,14 @@ h4 .material-icons {
   animation: slideIn 0.3s ease;
 }
 
+
+/* モーダルボディのパディング */
+.task-modal .modal-body,
+.url-modal .modal-body,
+.fleet-records-modal .modal-body,
+.task-history-modal .modal-body {
+  padding: 25px;
+}
 
 .modal-body .input-group {
   display: flex;
@@ -11259,7 +11269,7 @@ h4 .material-icons {
   }
 }
 
-/* ===== 育成候補リストモーダル ===== */
+/* ===== 育成リストリストモーダル ===== */
 .training-candidates-modal {
   max-width: 600px !important;
   width: 90% !important;
@@ -11360,7 +11370,7 @@ h4 .material-icons {
   transform: translateY(-4px) scale(1.01);
 }
 
-/* 達成した育成候補のスタイル */
+/* 達成した育成リストのスタイル */
 .training-candidate-card.achieved {
   border-color: rgba(76, 175, 80, 0.5);
   background: rgba(76, 175, 80, 0.1);
