@@ -1340,13 +1340,18 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   </div>
                 </div>
               ) : (
-                filteredAndSortedShips.map((ship, index) => (
-                <LazyShipCard
-                  key={ship.id}
-                  ship={ship}
-                  index={index}
-                  draggedShip={draggedShip}
-                  onDragStart={handleDragStart}
+                filteredAndSortedShips.map((ship, index) => {
+                  // 編成中かどうかをチェック
+                  const isInFleet = fleetSlots.some(slot => slot.ship?.id === ship.id)
+                  
+                  return (
+                    <LazyShipCard
+                      key={ship.id}
+                      ship={ship}
+                      index={index}
+                      draggedShip={draggedShip}
+                      isInFleet={isInFleet}
+                      onDragStart={handleDragStart}
                   onDragEnd={() => {
                     // ドラッグ終了処理（引数なしバージョン）
                     console.log('🔧 DEBUG: Drag end started (no event), isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
@@ -1364,7 +1369,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                     }, 100)
                   }}
                 />
-                ))
+                  )
+                })
               )}
             </div>
           </div>
@@ -1850,9 +1856,10 @@ const LazyShipCard: React.FC<{
   ship: any
   index: number
   draggedShip: any
+  isInFleet: boolean
   onDragStart: (e: React.DragEvent, ship: any) => void
   onDragEnd: () => void
-}> = ({ ship, index, draggedShip, onDragStart, onDragEnd }) => {
+}> = ({ ship, index, draggedShip, isInFleet, onDragStart, onDragEnd }) => {
   const [isVisible, setIsVisible] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -1889,18 +1896,21 @@ const LazyShipCard: React.FC<{
   return (
     <div
       ref={cardRef}
-      className={`ship-card-container ${draggedShip?.id === ship.id ? 'dragging' : ''}`}
-      draggable
-      onDragStart={(e) => onDragStart(e, ship)}
-      onDragEnd={onDragEnd}
+      className={`ship-card-container ${draggedShip?.id === ship.id ? 'dragging' : ''} ${isInFleet ? 'in-fleet' : ''}`}
+      draggable={!isInFleet}
+      onDragStart={(e) => !isInFleet && onDragStart(e, ship)}
+      onDragEnd={!isInFleet ? onDragEnd : undefined}
       style={{ 
         animationDelay: `${index * 0.05}s`,
+        cursor: isInFleet ? 'not-allowed' : 'grab'
       }}
+      title={isInFleet ? 'この艦娘は既に編成に含まれています' : ''}
     >
       {/* 上部ラベル */}
       <div className="ship-label">
         <span className="ship-name-label">{ship.name}</span>
         <span className="ship-level-label">Lv.{ship.level}</span>
+        {isInFleet && <span className="in-fleet-badge">編成中</span>}
       </div>
       
       {/* カード本体 */}

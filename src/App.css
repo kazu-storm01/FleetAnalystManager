@@ -936,6 +936,56 @@ body.dragging-ship .fleet-composition-area {
   cursor: grabbing;
 }
 
+/* 編成中の艦娘カードのスタイル */
+.ship-card-container.in-fleet {
+  opacity: 0.5;
+  filter: grayscale(70%) brightness(0.8);
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+.ship-card-container.in-fleet::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.ship-card-container.in-fleet:hover {
+  transform: none;
+  cursor: not-allowed !important;
+}
+
+/* 編成中バッジ */
+.in-fleet-badge {
+  background: linear-gradient(45deg, #f44336, #e91e63);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-left: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* 艦娘カード（スロット内） */
 .ship-card-slot {
   display: flex;
@@ -3157,6 +3207,14 @@ body.dragging-ship .fleet-composition-area {
   border: 1px solid rgba(100, 181, 246, 0.3);
   backdrop-filter: blur(8px);
   box-shadow: 0 2px 8px rgba(100, 181, 246, 0.2);
+  position: relative;
+  gap: 4px;
+}
+
+/* 編成中の艦娘のラベル */
+.ship-card-container.in-fleet .ship-label {
+  background: linear-gradient(135deg, rgba(150, 150, 150, 0.9), rgba(100, 100, 100, 0.8));
+  border-color: rgba(150, 150, 150, 0.3);
 }
 
 
