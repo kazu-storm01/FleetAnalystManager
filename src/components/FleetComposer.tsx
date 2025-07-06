@@ -740,7 +740,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       delete (cleanShipData as any).__fromSlot
       
       if (fromSlot !== null && fromSlot !== undefined) {
-        // スロット間の入れ替え
+        // スロット間の入れ替え（既存の編成済み艦娘の移動）
         console.log('🔧 DEBUG: Swapping ships between slots:', fromSlot, 'and', position)
         setFleetSlots(prev => {
           const targetShip = prev[position].ship
@@ -754,8 +754,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           })
         })
       } else {
-        // 通常の配置
-        console.log('🔧 DEBUG: Placing ship in slot:', position)
+        // 下部ドロワーからの新規配置
+        console.log('🔧 DEBUG: Placing ship from drawer in slot:', position)
         setFleetSlots(prev => prev.map(slot => 
           slot.position === position 
             ? { ...slot, ship: cleanShipData }
@@ -786,20 +786,28 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     let shipToPlace = draggedShip || dropData
     
     if (shipToPlace && shipToPlace.id && shipToPlace.name && shipToPlace.shipId) {
-      const emptySlot = fleetSlots.find(slot => slot.ship === null)
-      if (emptySlot) {
-        console.log('🔧 DEBUG: Auto-placing ship:', shipToPlace.name)
-        setFleetSlots(prev => prev.map(slot => 
-          slot.position === emptySlot.position 
-            ? { ...slot, ship: shipToPlace }
-            : slot
-        ))
+      // 既に編成済みの艦娘（draggedFromSlotがある）の場合は自動配置しない
+      if (draggedFromSlot !== null) {
+        console.log('🔧 DEBUG: Skipping auto-placement for ship from fleet slot:', draggedFromSlot)
+        // 元のスロットに戻す処理は不要（ドラッグ中なので元の位置にそのまま残る）
       } else {
-        console.log('🔧 DEBUG: No empty slot found for auto-placement')
+        // 下部ドロワーからの新規配置のみ実行
+        const emptySlot = fleetSlots.find(slot => slot.ship === null)
+        if (emptySlot) {
+          console.log('🔧 DEBUG: Auto-placing ship from drawer:', shipToPlace.name)
+          setFleetSlots(prev => prev.map(slot => 
+            slot.position === emptySlot.position 
+              ? { ...slot, ship: shipToPlace }
+              : slot
+          ))
+        } else {
+          console.log('🔧 DEBUG: No empty slot found for auto-placement')
+        }
       }
     }
     // 必ずクリーンアップ
     setDraggedShip(null)
+    setDraggedFromSlot(null)
     setDragOverSlot(null)
     document.body.classList.remove('dragging-ship')
   }
