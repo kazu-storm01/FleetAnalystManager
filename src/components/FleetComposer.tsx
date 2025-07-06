@@ -414,6 +414,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [draggedShip, setDraggedShip] = useState<Ship | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
   const [isDraggingFormation, setIsDraggingFormation] = useState(false)
+  const [draggedFromSlot, setDraggedFromSlot] = useState<number | null>(null)
   const [fleetName, setFleetName] = useState<string>('')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const candidatesListRef = useRef<HTMLDivElement>(null)
@@ -614,15 +615,23 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   }
 
   // ドラッグ開始
-  const handleDragStart = (e: React.DragEvent, ship: Ship) => {
-    console.log('🔧 DEBUG: Drag start for ship:', ship.name)
+  const handleDragStart = (e: React.DragEvent, ship: Ship, fromSlot?: number) => {
+    console.log('🔧 DEBUG: Drag start for ship:', ship.name, 'from slot:', fromSlot)
     setDraggedShip(ship)
+    setDraggedFromSlot(fromSlot ?? null)
     setIsDraggingShip(true)
     setIsDroppedOnTrainingCandidates(false) // 初期化
     setIsDraggingOverTrainingArea(false)
-    e.dataTransfer.effectAllowed = 'copy' // 'move'から'copy'に変更
+    e.dataTransfer.effectAllowed = fromSlot !== undefined ? 'move' : 'copy'
+    
+    // 艦娘データとスロット情報を含むオブジェクトを作成
+    const dragData = {
+      ...ship,
+      __fromSlot: fromSlot // スロット情報を追加
+    }
+    
     e.dataTransfer.setData('text/plain', ship.id.toString())
-    e.dataTransfer.setData('application/json', JSON.stringify(ship))
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData))
     document.body.classList.add('dragging-ship')
 
     // グローバルなドラッグ終了イベントを追加（画面外でドラッグが終了した場合の対策）
@@ -630,6 +639,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       console.log('🔧 DEBUG: Global drag end detected')
       setIsDraggingShip(false)
       setDraggedShip(null)
+      setDraggedFromSlot(null)
       setDragOverSlot(null)
       setIsDroppedOnTrainingCandidates(false)
       setIsDraggingOverTrainingArea(false)
@@ -647,18 +657,16 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   // ドラッグオーバー
   const handleDragOver = (e: React.DragEvent, position: number) => {
     e.preventDefault()
+    setDragOverSlot(position)
     
-    // 編成データかどうかを確認
-    const types = Array.from(e.dataTransfer.types)
-    if (types.includes('application/json')) {
-      e.dataTransfer.dropEffect = 'copy'
-      console.log('🔧 DEBUG: Formation drag over slot', position)
-      setIsDraggingFormation(true)
-      setDragOverSlot(position)
-    } else {
-      e.dataTransfer.dropEffect = 'move'
+    // draggedShipがある場合は艦娘のドラッグ
+    if (draggedShip) {
+      e.dataTransfer.dropEffect = draggedFromSlot !== null ? 'move' : 'copy'
       setIsDraggingFormation(false)
-      setDragOverSlot(position)
+    } else {
+      // draggedShipがない場合は編成データの可能性
+      e.dataTransfer.dropEffect = 'copy'
+      setIsDraggingFormation(true)
     }
   }
 
@@ -678,41 +686,93 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     console.log('🔧 DEBUG: Drop on slot', position)
     console.log('🔧 DEBUG: Available data types:', e.dataTransfer.types)
 
-    // 編成データのドロップ処理を最優先
+    // データの取得を試みる
+    let dropData: any = null
+    let isFormationData = false
+
     try {
-      const formationData = e.dataTransfer.getData('application/json')
-      console.log('🔧 DEBUG: Formation data in slot:', formationData)
-      
-      if (formationData) {
-        const formation = JSON.parse(formationData)
-        console.log('🔧 DEBUG: Parsed formation in slot:', formation)
+      const jsonData = e.dataTransfer.getData('application/json')
+      if (jsonData) {
+        dropData = JSON.parse(jsonData)
+        console.log('🔧 DEBUG: Parsed drop data:', dropData)
         
-        if (formation.ships && formation.name) {
-          console.log('🔧 DEBUG: Loading formation via slot drop:', formation.name)
-          handleLoadFormation(formation)
-          showToast(`編成「${formation.name}」を読み込みました！`)
-          return
+        // 編成データかどうかを判定
+        if (dropData.ships && dropData.name && Array.isArray(dropData.ships)) {
+          isFormationData = true
         }
       }
     } catch (error) {
-      console.log('🔧 DEBUG: Error parsing formation data in slot:', error)
+      console.log('🔧 DEBUG: Error parsing JSON data:', error)
+    }
+
+    // 編成データのドロップ処理
+    if (isFormationData && dropData) {
+      console.log('🔧 DEBUG: Loading formation via slot drop:', dropData.name)
+      handleLoadFormation(dropData)
+      showToast(`編成「${dropData.name}」を読み込みました！`)
+      return
     }
 
     // 艦娘のドロップ処理
-    if (draggedShip) {
-      setFleetSlots(prev => prev.map(slot => 
-        slot.position === position 
-          ? { ...slot, ship: draggedShip }
-          : slot
-      ))
-      setDraggedShip(null)
+    // まずdraggedShipの状態を確認
+    let shipToDrop = draggedShip
+    let fromSlot = draggedFromSlot
+    
+    // draggedShipがない場合は、dataTransferから艦娘データを取得
+    if (!shipToDrop && dropData && dropData.id && dropData.name && dropData.shipId) {
+      console.log('🔧 DEBUG: Using ship data from dataTransfer')
+      shipToDrop = dropData as Ship
+      
+      // dataTransferからfromSlot情報も取得
+      if ((dropData as any).__fromSlot !== undefined) {
+        fromSlot = (dropData as any).__fromSlot
+        console.log('🔧 DEBUG: Found fromSlot in dataTransfer:', fromSlot)
+      }
     }
+
+    if (shipToDrop) {
+      console.log('🔧 DEBUG: Dropping ship:', shipToDrop.name, 'to slot:', position, 'from slot:', fromSlot)
+      
+      // __fromSlotプロパティを削除（艦娘データに含めない）
+      const cleanShipData: Ship = { ...shipToDrop } as Ship
+      delete (cleanShipData as any).__fromSlot
+      
+      if (fromSlot !== null && fromSlot !== undefined) {
+        // スロット間の入れ替え
+        console.log('🔧 DEBUG: Swapping ships between slots:', fromSlot, 'and', position)
+        setFleetSlots(prev => {
+          const targetShip = prev[position].ship
+          return prev.map(slot => {
+            if (slot.position === position) {
+              return { ...slot, ship: cleanShipData }
+            } else if (slot.position === fromSlot) {
+              return { ...slot, ship: targetShip }
+            }
+            return slot
+          })
+        })
+      } else {
+        // 通常の配置
+        console.log('🔧 DEBUG: Placing ship in slot:', position)
+        setFleetSlots(prev => prev.map(slot => 
+          slot.position === position 
+            ? { ...slot, ship: cleanShipData }
+            : slot
+        ))
+      }
+    } else {
+      console.log('🔧 DEBUG: No ship data available for drop')
+    }
+    
+    // 状態をリセット
+    setDraggedShip(null)
+    setDraggedFromSlot(null)
     // ドラッグ終了時にクラスを削除
     document.body.classList.remove('dragging-ship')
   }
 
   // 画面外ドロップ処理（自動編成）
-  const handleDropOutside = () => {
+  const handleDropOutside = (dropData?: any) => {
     console.log('🔧 DEBUG: handleDropOutside called, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
     
     if (isDroppedOnTrainingCandidates) {
@@ -720,13 +780,16 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       return
     }
     
-    if (draggedShip) {
+    // ドロップする艦娘を決定
+    let shipToPlace = draggedShip || dropData
+    
+    if (shipToPlace && shipToPlace.id && shipToPlace.name && shipToPlace.shipId) {
       const emptySlot = fleetSlots.find(slot => slot.ship === null)
       if (emptySlot) {
-        console.log('🔧 DEBUG: Auto-placing ship:', draggedShip.name)
+        console.log('🔧 DEBUG: Auto-placing ship:', shipToPlace.name)
         setFleetSlots(prev => prev.map(slot => 
           slot.position === emptySlot.position 
-            ? { ...slot, ship: draggedShip }
+            ? { ...slot, ship: shipToPlace }
             : slot
         ))
       } else {
@@ -988,19 +1051,16 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
              e.preventDefault()
              e.stopPropagation()
              
-             // 編成データかどうかを確認
-             const types = Array.from(e.dataTransfer.types)
-             console.log('🔧 DEBUG: Drag over fleet area, types:', types)
-             
-             if (types.includes('application/json')) {
-               e.dataTransfer.dropEffect = 'copy'
-               console.log('🔧 DEBUG: Formation drag over fleet area - setting copy effect')
+             // draggedShipがある場合は艦娘のドラッグ
+             if (draggedShip) {
+               e.dataTransfer.dropEffect = draggedFromSlot !== null ? 'move' : 'copy'
              }
              // サイドバーが開いていて育成タブが選択されている場合は、copy効果を維持
              else if (isSidebarOpen && sidebarActiveTab === 'training') {
                e.dataTransfer.dropEffect = 'copy'
              } else {
-               e.dataTransfer.dropEffect = 'move'
+               // その他の場合（編成データなど）
+               e.dataTransfer.dropEffect = 'copy'
              }
            }}
            onDrop={(e) => {
@@ -1010,24 +1070,31 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
              console.log('🔧 DEBUG: Drop on fleet-composition-area')
              console.log('🔧 DEBUG: Available data types:', e.dataTransfer.types)
              
-             // 編成データのドロップ処理を最優先
+             // データの取得を試みる
+             let dropData: any = null
+             let isFormationData = false
+             
              try {
-               const formationData = e.dataTransfer.getData('application/json')
-               console.log('🔧 DEBUG: Formation data:', formationData)
-               
-               if (formationData) {
-                 const formation = JSON.parse(formationData)
-                 console.log('🔧 DEBUG: Parsed formation:', formation)
+               const jsonData = e.dataTransfer.getData('application/json')
+               if (jsonData) {
+                 dropData = JSON.parse(jsonData)
+                 console.log('🔧 DEBUG: Parsed drop data:', dropData)
                  
-                 if (formation.ships && formation.name) {
-                   console.log('🔧 DEBUG: Loading formation via drag:', formation.name)
-                   handleLoadFormation(formation)
-                   showToast(`編成「${formation.name}」を読み込みました！`)
-                   return
+                 // 編成データかどうかを判定
+                 if (dropData.ships && dropData.name && Array.isArray(dropData.ships)) {
+                   isFormationData = true
                  }
                }
              } catch (error) {
-               console.log('🔧 DEBUG: Error parsing formation data:', error)
+               console.log('🔧 DEBUG: Error parsing JSON data:', error)
+             }
+             
+             // 編成データのドロップ処理
+             if (isFormationData && dropData) {
+               console.log('🔧 DEBUG: Loading formation via drag:', dropData.name)
+               handleLoadFormation(dropData)
+               showToast(`編成「${dropData.name}」を読み込みました！`)
+               return
              }
              
              // 育成リストへの追加処理
@@ -1095,7 +1162,22 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
               onDrop={(e) => handleDrop(e, slot.position)}
             >
               {slot.ship ? (
-                <div className="ship-card-fleet-slot">
+                <div className="ship-card-fleet-slot"
+                     draggable
+                     onDragStart={(e) => {
+                       if (slot.ship) {
+                         console.log('🔧 DEBUG: Starting drag from fleet slot:', slot.position, 'ship:', slot.ship.name)
+                         handleDragStart(e, slot.ship, slot.position)
+                       }
+                     }}
+                     onDragEnd={() => {
+                       console.log('🔧 DEBUG: Fleet slot drag end')
+                       setDraggedShip(null)
+                       setDraggedFromSlot(null)
+                       setDragOverSlot(null)
+                       setIsDraggingShip(false)
+                       document.body.classList.remove('dragging-ship')
+                     }}>
                   {/* 艦娘バナー画像 */}
                   <div className="ship-banner-container">
                     <div 
@@ -1274,6 +1356,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                       
                       // 状態リセット
                       setDraggedShip(null)
+                      setDraggedFromSlot(null)
                       setDragOverSlot(null)
                       setIsDraggingShip(false)
                       setIsDroppedOnTrainingCandidates(false)

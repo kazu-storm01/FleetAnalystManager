@@ -904,6 +904,17 @@ body.dragging-ship .fleet-composition-area {
   box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
 }
 
+/* 艦娘カードのドラッグ中のスタイル */
+.ship-card-fleet-slot {
+  cursor: move;
+  transition: all 0.2s ease;
+}
+
+.ship-card-fleet-slot:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
 .ship-card-container.dragging {
   opacity: 0.5;
   transform: scale(0.95);
