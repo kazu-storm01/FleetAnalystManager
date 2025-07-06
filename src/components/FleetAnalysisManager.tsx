@@ -444,22 +444,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setShowWelcome(true)
     }
     
-    // 育成候補リストを読み込み
+    // 育成リストを読み込み
     loadTrainingCandidates()
   }, [])
 
-  // localStorageの変更を監視して育成候補リストを自動更新
+  // localStorageの変更を監視して育成リストを自動更新
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'fleetComposer_trainingCandidates' && e.newValue) {
-        console.log('📋 育成候補リストの変更を検知')
+        console.log('📋 育成リストの変更を検知')
         loadTrainingCandidates()
       }
     }
 
     // 同じウィンドウ内での変更も監視するためのカスタムイベント
     const handleTrainingCandidatesUpdate = () => {
-      console.log('📋 育成候補リストの更新イベントを受信')
+      console.log('📋 育成リストの更新イベントを受信')
       loadTrainingCandidates()
     }
 
@@ -488,9 +488,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     localStorage.setItem('fleetAnalysis_achievedCount', achievedCount.toString())
   }, [achievedCount])
 
-  // 育成候補の達成状態を監視して通知を同期
+  // 育成リストの達成状態を監視して通知を同期
   useEffect(() => {
-    // 育成候補データがあり、かつ艦隊データがある場合のみ達成チェック
+    // 育成リストデータがあり、かつ艦隊データがある場合のみ達成チェック
     const currentFleetData = fleetData || persistedFleetData
     if (trainingCandidates.length > 0 && currentFleetData) {
       const currentAchievedCount = trainingCandidates.filter(candidate => 
@@ -504,7 +504,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         console.log('🔄 達成状態同期:', currentAchievedCount, '件')
       }
     }
-    // 育成候補がない場合のみ通知をクリア（fleetDataが空でも通知は保持）
+    // 育成リストがない場合のみ通知をクリア（fleetDataが空でも通知は保持）
     else if (trainingCandidates.length === 0) {
       setAchievedCount(0)
       setHasNewAchievements(false)
@@ -749,7 +749,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     showToast('タスクを削除しました', 'success')
   }
 
-  // 育成候補をタスクIDで削除
+  // 育成リストをタスクIDで削除
   // removeTrainingCandidateByTaskId function removed - auto-sync disabled
 
 
@@ -824,7 +824,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }, 0)
   }
 
-  // 育成候補リストのmainTaskIdを取得
+  // 育成リストのmainTaskIdを取得
   const getTrainingCandidatesMainTaskIds = (): number[] => {
     try {
       const stored = localStorage.getItem('fleetComposer_trainingCandidates')
@@ -842,7 +842,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
   // syncTrainingListAndTasks function removed - auto-sync disabled
 
-  // 育成候補タスクのフィルタリング
+  // 育成リストタスクのフィルタリング
   const filterTasksForDisplay = (tasks: Task[]): Task[] => {
     if (!showTrainingTasksOnly) return tasks
     
@@ -854,7 +854,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     })
     
     return tasks.filter(task => {
-      // 現在の育成候補リストにあるタスク（継承されたタスクを含む）
+      // 現在の育成リストにあるタスク（継承されたタスクを含む）
       const taskIdToCheck = task.originalTaskId || task.inheritedFrom || task.id
       const isInCurrentTrainingList = trainingTaskIds.includes(task.id) || 
           trainingTaskIds.includes(taskIdToCheck) ||
@@ -865,7 +865,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         return true
       }
       
-      // 達成済み育成タスクは育成候補リストの状態に関係なく表示
+      // 達成済み育成タスクは育成リストの状態に関係なく表示
       const isCompletedTrainingTask = task.completed && isTrainingTask(task.text)
       if (isCompletedTrainingTask) {
         console.log('🏆 達成済み育成タスク判定:', {
@@ -893,24 +893,24 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     return taskText.includes('を育成する')
   }
 
-  // 育成候補リストを読み込む
+  // 育成リストを読み込む
   const loadTrainingCandidates = () => {
     try {
       const stored = localStorage.getItem('fleetComposer_trainingCandidates')
       if (stored) {
         const candidates = JSON.parse(stored) as TrainingCandidate[]
         setTrainingCandidates(candidates)
-        console.log('📋 育成候補リスト読み込み:', candidates.length, '件')
+        console.log('📋 育成リスト読み込み:', candidates.length, '件')
       } else {
         setTrainingCandidates([])
       }
     } catch (error) {
-      console.error('育成候補リスト読み込みエラー:', error)
+      console.error('育成リスト読み込みエラー:', error)
       setTrainingCandidates([])
     }
   }
 
-  // 個別の育成候補の達成状態をチェック
+  // 個別の育成リストの達成状態をチェック
   const isTrainingCandidateAchieved = (candidate: TrainingCandidate): boolean => {
     // fleetDataがない場合は、persistedFleetDataまたは最新エントリーから艦隊データを取得を試みる
     let currentFleetData = fleetData || persistedFleetData
@@ -1110,7 +1110,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }
 
-  // 育成候補を完了状態にする
+  // 育成リストを完了状態にする
   const completeTrainingCandidate = (candidateId: number) => {
     try {
       const stored = localStorage.getItem('fleetComposer_trainingCandidates')
@@ -1140,9 +1140,9 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         showToast(`${completedCandidate.name}の育成を完了しました！`, 'success')
       }
       
-      console.log('✅ 育成候補完了:', candidateId)
+      console.log('✅ 育成リスト完了:', candidateId)
     } catch (error) {
-      console.error('育成候補完了エラー:', error)
+      console.error('育成リスト完了エラー:', error)
       showToast('育成完了処理に失敗しました', 'error')
     }
   }
@@ -1267,7 +1267,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }
 
-  // 育成候補の情報を取得
+  // 育成リストの情報を取得
   // getTrainingCandidate function removed - auto-sync disabled
 
   // 最新の目標値でタスクテキストを生成（FleetComposerのcreateMainTaskTextと同等）
@@ -1896,7 +1896,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                 </button>
               </div>
 
-              {/* 育成候補リスト */}
+              {/* 育成リスト */}
               <div className="overview-item overview-clickable">
                 <button 
                   onClick={() => {
@@ -1915,7 +1915,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                     // 通知クリアは育成完了ボタンを押した時のみ
                   }} 
                   className="overview-button"
-                  title="育成候補リストを表示"
+                  title="育成リストを表示"
                 >
                   <span className="overview-icon material-symbols-outlined">school</span>
                   {hasNewAchievements && (
@@ -1924,7 +1924,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                     </span>
                   )}
                   <div className="overview-text">
-                    <span className="overview-label">育成候補</span>
+                    <span className="overview-label">育成リスト</span>
                     <span className="overview-value">{trainingCandidates.length}</span>
                   </div>
                 </button>
@@ -2484,27 +2484,27 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                     <div className="fleet-record-stats">
                       <div className="stat-item">
                         <span className="stat-label">総経験値</span>
-                        <span className="stat-value">{entry.totalExp.toLocaleString()}</span>
+                        <span className="stat-value">{privacyMode ? maskValue(entry.totalExp) : entry.totalExp.toLocaleString()}</span>
                       </div>
                       <div className="stat-item">
                         <span className="stat-label">艦船数</span>
-                        <span className="stat-value">{entry.shipCount}</span>
+                        <span className="stat-value">{privacyMode ? maskValue(entry.shipCount) : entry.shipCount}</span>
                       </div>
                       <div className="stat-item">
                         <span className="stat-label">ケッコン艦</span>
-                        <span className="stat-value">{entry.marriedCount}</span>
+                        <span className="stat-value">{privacyMode ? maskValue(entry.marriedCount) : entry.marriedCount}</span>
                       </div>
                       <div className="stat-item">
                         <span className="stat-label">運改修</span>
-                        <span className="stat-value">{entry.luckModTotal}</span>
+                        <span className="stat-value">{privacyMode ? maskValue(entry.luckModTotal) : entry.luckModTotal}</span>
                       </div>
                       <div className="stat-item">
                         <span className="stat-label">耐久改修</span>
-                        <span className="stat-value">{entry.hpModTotal}</span>
+                        <span className="stat-value">{privacyMode ? maskValue(entry.hpModTotal) : entry.hpModTotal}</span>
                       </div>
                       <div className="stat-item">
                         <span className="stat-label">対潜改修</span>
-                        <span className="stat-value">{entry.aswModTotal}</span>
+                        <span className="stat-value">{privacyMode ? maskValue(entry.aswModTotal) : entry.aswModTotal}</span>
                       </div>
                     </div>
                   </div>
@@ -2515,7 +2515,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         </div>
       )}
 
-      {/* 育成候補リストモーダル */}
+      {/* 育成リストモーダル */}
       {showTrainingCandidatesModal && (
         <div className="modal-overlay">
           <div className="modal-content training-candidates-modal">
@@ -2523,7 +2523,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               <div className="modal-header-content">
                 <span className="material-symbols-outlined modal-header-icon">school</span>
                 <div>
-                  <h3>育成候補リスト</h3>
+                  <h3>育成リスト</h3>
                   <span className="modal-header-subtitle">{trainingCandidates.length}隻の艦娘が育成中</span>
                 </div>
               </div>
@@ -2538,8 +2538,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               {trainingCandidates.length === 0 ? (
                 <div className="empty-state">
                   <span className="material-symbols-outlined empty-icon">school</span>
-                  <p>育成候補がありません</p>
-                  <p className="empty-hint">艦隊編成画面で艦船を育成候補にドラッグして追加してください</p>
+                  <p>育成リストがありません</p>
+                  <p className="empty-hint">艦隊編成画面で艦船を育成リストにドラッグして追加してください</p>
                 </div>
               ) : (
                 <div className="training-candidates-grid">

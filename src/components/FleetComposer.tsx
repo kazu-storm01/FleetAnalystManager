@@ -222,7 +222,7 @@ interface SavedFormation {
   updatedAt: string
 }
 
-// 育成候補の型定義
+// 育成リストの型定義
 interface TrainingCandidate {
   id: number
   instanceId: number // 固有インスタンスID（同名別艦娘を区別）
@@ -239,13 +239,13 @@ interface TrainingCandidate {
   mainTaskId?: number // メインの「●●を育成する」タスクID
 }
 
-// 育成候補リスト管理
+// 育成リスト管理
 const getTrainingCandidatesFromStorage = (): TrainingCandidate[] => {
   try {
     const stored = localStorage.getItem(TRAINING_CANDIDATES_STORAGE_KEY)
     return stored ? JSON.parse(stored) : []
   } catch (error) {
-    console.error('育成候補リスト読み込みエラー:', error)
+    console.error('育成リスト読み込みエラー:', error)
     return []
   }
 }
@@ -256,7 +256,7 @@ const saveTrainingCandidatesToStorage = (candidates: TrainingCandidate[]) => {
     // カスタムイベントを発火して同じウィンドウ内の他コンポーネントに通知
     window.dispatchEvent(new Event('trainingCandidatesUpdated'))
   } catch (error) {
-    console.error('育成候補リスト保存エラー:', error)
+    console.error('育成リスト保存エラー:', error)
   }
 }
 
@@ -742,7 +742,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
 
   // handleDragEnd function removed - replaced with inline implementation
 
-  // 育成候補への追加
+  // 育成リストへの追加
   const handleAddToTrainingCandidates = (ship: Ship) => {
     console.log('🔧 DEBUG: handleAddToTrainingCandidates called for:', ship.name)
     
@@ -750,7 +750,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     if (existing) {
       // 既に存在する場合でもドロップフラグを設定
       setIsDroppedOnTrainingCandidates(true)
-      showToast(`${ship.name} は既に育成候補に登録されています`, 'error')
+      showToast(`${ship.name} は既に育成リストに登録されています`, 'error')
       return
     }
 
@@ -776,8 +776,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     // ドロップ成功を明示的にマーク
     setIsDroppedOnTrainingCandidates(true)
     
-    console.log('✅ 育成候補に追加:', ship.name)
-    showToast(`${ship.name} を育成候補に追加しました！`)
+    console.log('✅ 育成リストに追加:', ship.name)
+    showToast(`${ship.name} を育成リストに追加しました！`)
     
     // 新しい候補が見えるように自動スクロール
     setTimeout(() => {
@@ -787,7 +787,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     }, 100)
   }
 
-  // 育成候補から削除（タスク連動を無効化）
+  // 育成リストから削除（タスク連動を無効化）
   const handleRemoveFromTrainingCandidates = (candidateId: number) => {
     const candidate = trainingCandidates.find(c => c.id === candidateId)
     
@@ -801,7 +801,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     setTrainingCandidates(updatedCandidates)
     deleteTrainingCandidateFromStorage(candidateId)
     
-    showToast(`${candidate?.name || '艦娘'}を育成候補から削除しました`)
+    showToast(`${candidate?.name || '艦娘'}を育成リストから削除しました`)
   }
 
 
@@ -824,7 +824,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     setIsSidebarOpen(false)
   }
 
-  // 育成候補の目標値を更新（サイドバー閉じ時にタスク連動）
+  // 育成リストの目標値を更新（サイドバー閉じ時にタスク連動）
   const updateTrainingCandidateTargets = (candidateId: number, targets: { targetLevel?: number, targetHp?: number, targetAsw?: number, targetLuck?: number }) => {
     const candidate = trainingCandidates.find(c => c.id === candidateId)
     if (!candidate) return
@@ -1031,7 +1031,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                console.log('🔧 DEBUG: Error parsing formation data:', error)
              }
              
-             // 育成候補への追加処理
+             // 育成リストへの追加処理
              if (isDroppedOnTrainingCandidates) {
                console.log('🔧 DEBUG: Skipping fleet area drop because already dropped on training candidates')
                return
@@ -1311,7 +1311,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
         </span>
       </button>
 
-      {/* 統合サイドバー（編成管理 + 育成候補） */}
+      {/* 統合サイドバー（編成管理 + 育成リスト） */}
       <div 
         className={`formation-sidebar ${isSidebarOpen ? 'open' : 'closed'} ${isDraggingShip && sidebarActiveTab === 'training' ? 'drag-over' : ''} ${isDraggingOverTrainingArea ? 'drag-highlight' : ''}`}
         onDragOver={(e) => {
@@ -1360,7 +1360,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       >
         <div className="sidebar-header">
           <h3>
-            {sidebarActiveTab === 'formations' ? '保存済み編成' : '育成候補リスト'}
+            {sidebarActiveTab === 'formations' ? '保存済み編成' : '育成リスト'}
           </h3>
           <button 
             className="close-sidebar-btn"
@@ -1382,7 +1382,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             className={`sidebar-tab ${sidebarActiveTab === 'training' ? 'active' : ''}`}
             onClick={() => setSidebarActiveTab('training')}
           >
-            <span className="material-icons">note_alt</span> 育成候補
+            <span className="material-icons">note_alt</span> 育成リスト
           </button>
         </div>
         
@@ -1394,7 +1394,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
               <div className="sidebar-drag-content">
                 <span className="material-icons sidebar-drag-icon">add_notes</span>
                 <div className="sidebar-drag-text">
-                  {draggedShip?.name}を<br/>育成候補に追加
+                  {draggedShip?.name}を<br/>育成リストに追加
                 </div>
               </div>
             </div>
@@ -1505,7 +1505,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   <div className="no-candidates">
                     <div className="no-candidates-icon"><span className="material-icons">anchor</span></div>
                     <div className="no-candidates-text">
-                      育成候補がありません<br/>
+                      育成リストがありません<br/>
                       艦娘をここにドラッグして追加してください
                     </div>
                   </div>
@@ -1528,7 +1528,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                               <button 
                                 className="remove-candidate-btn-banner"
                                 onClick={() => handleRemoveFromTrainingCandidates(candidate.id)}
-                                title="育成候補から削除"
+                                title="育成リストから削除"
                               >
                                 <span className="material-icons">close</span>
                               </button>
