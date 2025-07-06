@@ -622,7 +622,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     setIsDraggingShip(true)
     setIsDroppedOnTrainingCandidates(false) // 初期化
     setIsDraggingOverTrainingArea(false)
-    e.dataTransfer.effectAllowed = fromSlot !== undefined ? 'move' : 'copy'
+    
+    // fromSlotがある場合、育成リストへのドロップも可能にする
+    e.dataTransfer.effectAllowed = fromSlot !== undefined ? 'all' : 'copy'
     
     // 艦娘データとスロット情報を含むオブジェクトを作成
     const dragData = {
@@ -1162,12 +1164,17 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
               onDrop={(e) => handleDrop(e, slot.position)}
             >
               {slot.ship ? (
-                <div className="ship-card-fleet-slot"
+                <div className={`ship-card-fleet-slot ${isDraggingShip && isSidebarOpen && sidebarActiveTab === 'training' ? 'dragging-to-training' : ''}`}
                      draggable
                      onDragStart={(e) => {
                        if (slot.ship) {
                          console.log('🔧 DEBUG: Starting drag from fleet slot:', slot.position, 'ship:', slot.ship.name)
                          handleDragStart(e, slot.ship, slot.position)
+                         
+                         // 育成タブが開いている場合のヒント
+                         if (isSidebarOpen && sidebarActiveTab === 'training') {
+                           showToast('右の育成リストにドラッグして追加できます', 'success')
+                         }
                        }
                      }}
                      onDragEnd={() => {
