@@ -4,7 +4,6 @@ import {
   getShipTypeByShipType,
   calculateRarity
 } from '../data/shipMasterDataCore'
-import { SHIP_TYPES as SHIP_TYPE_NAMES } from '../data/shipMasterData'
 import { useShipData } from '../hooks/useShipData'
 import { parseImprovements } from '../utils/shipStatsCalculator'
 import ShipStatusDisplay from './ShipStatusDisplay'
@@ -1109,7 +1108,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                         {/* 位置とタイプ */}
                         <div className="ship-header-fleet">
                           <span className="ship-position">#{slot.position + 1}</span>
-                          <span className="ship-type-badge">{SHIP_TYPE_NAMES[slot.ship.type as keyof typeof SHIP_TYPE_NAMES] || slot.ship.type}</span>
+                          <span className="ship-type-badge">{SHIP_TYPES[slot.ship.type as keyof typeof SHIP_TYPES] || slot.ship.type}</span>
                         </div>
                         
                         {/* 削除ボタン */}
