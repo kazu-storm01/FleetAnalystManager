@@ -8,6 +8,80 @@ import { useShipData } from '../hooks/useShipData'
 import { parseImprovements } from '../utils/shipStatsCalculator'
 import ShipStatusDisplay from './ShipStatusDisplay'
 
+// 装備データの型定義
+interface Equipment {
+  api_id: number
+  api_sortno: number
+  api_name: string
+  api_type: number[] // [大分類, 中分類, 小分類, アイコン種別, 0]
+  api_houg: number  // 火力
+  api_raig: number  // 雷装
+  api_tyku: number  // 対空
+  api_tais: number  // 対潜
+  api_souk: number  // 装甲
+  api_houm: number  // 命中
+  api_houk: number  // 回避
+  api_saku: number  // 索敵
+  api_leng: number  // 射程
+  api_rare: number  // レア度
+}
+
+// 装備種別の定義（api_type[2]の値に基づく）
+const EQUIPMENT_TYPES = {
+  1: '小口径主砲',
+  2: '中口径主砲',
+  3: '大口径主砲',
+  4: '副砲',
+  5: '魚雷',
+  6: '艦上戦闘機',
+  7: '艦上爆撃機',
+  8: '艦上攻撃機',
+  9: '艦上偵察機',
+  10: '水上偵察機',
+  11: '水上爆撃機',
+  12: '小型電探',
+  13: '大型電探',
+  14: 'ソナー',
+  15: '爆雷',
+  17: '機関部強化',
+  18: '対空強化弾',
+  19: '対艦強化弾',
+  21: '対空機銃',
+  22: '特殊潜航艇',
+  23: '戦闘糧食',
+  24: '上陸用舟艇',
+  25: 'オートジャイロ',
+  26: '対潜哨戒機',
+  27: '追加装甲(中型)',
+  28: '追加装甲(大型)',
+  29: '探照灯',
+  30: '簡易輸送部材',
+  31: '艦艇修理施設',
+  32: '潜水艦魚雷',
+  33: '照明弾',
+  34: '司令部施設',
+  35: '航空要員',
+  36: '高射装置',
+  37: '対地装備',
+  39: '水上艦要員',
+  40: '潜水艦装備',
+  41: '大型飛行艇',
+  42: '大型探照灯',
+  43: '戦闘糧食',
+  44: '洋上補給',
+  45: '水上戦闘機',
+  46: '特型内火艇',
+  47: '陸上攻撃機',
+  48: '局地戦闘機',
+  49: '陸上偵察機',
+  50: '輸送材料',
+  51: '潜水艦電探',
+  52: '陸戦部隊',
+  53: '大型陸上機',
+  54: '発煙装置',
+  57: '噴式機'
+}
+
 // 艦娘データの型定義
 interface Ship {
   id: number
@@ -18,6 +92,7 @@ interface Ship {
   level: number
   slotCount: number   // 装備スロット数
   aircraftSlots: number[] // 各スロットの搭載数 [18, 18, 27, 10] など
+  equipments?: (Equipment | null)[] // 装備スロット
   // 実際のステータス（計算済み）
   currentStats: {
     hp: number
@@ -428,10 +503,30 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [sidebarActiveTab, setSidebarActiveTab] = useState<'formations' | 'training'>('formations')
   const [isDraggingOverTrainingArea, setIsDraggingOverTrainingArea] = useState(false)
   const [isDraggingShip, setIsDraggingShip] = useState(false)
+  
+  // 装備関連の状態
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([])
+  const [selectedShipSlot, setSelectedShipSlot] = useState<{position: number, slotIndex: number} | null>(null)
+  const [isEquipmentPanelOpen, setIsEquipmentPanelOpen] = useState(false)
+  const [equipmentTypeFilter, setEquipmentTypeFilter] = useState<number | 'all'>('all')
+  const [draggedEquipment, setDraggedEquipment] = useState<Equipment | null>(null)
 
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
 
+  // 装備データの読み込み
+  useEffect(() => {
+    const loadEquipmentData = async () => {
+      try {
+        const response = await fetch('/FleetAnalystManager/gear.json')
+        const data = await response.json()
+        setEquipmentList(data)
+      } catch (error) {
+        console.error('装備データの読み込みに失敗:', error)
+      }
+    }
+    loadEquipmentData()
+  }, [])
 
   // サイドバーが閉じられた時の処理
   useEffect(() => {
@@ -612,6 +707,50 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     })
 
     return stats
+  }
+
+  // 装備スロットクリックハンドラー
+  const handleEquipmentSlotClick = (position: number, slotIndex: number) => {
+    setSelectedShipSlot({ position, slotIndex })
+    setIsEquipmentPanelOpen(true)
+  }
+
+  // 装備選択ハンドラー
+  const handleEquipmentSelect = (equipment: Equipment) => {
+    if (!selectedShipSlot) return
+
+    const updatedSlots = [...fleetSlots]
+    const targetSlot = updatedSlots[selectedShipSlot.position]
+    
+    if (targetSlot.ship) {
+      // 装備配列を初期化（未定義の場合）
+      if (!targetSlot.ship.equipments) {
+        targetSlot.ship.equipments = Array(targetSlot.ship.slotCount).fill(null)
+      }
+      
+      // 装備を設定
+      targetSlot.ship.equipments[selectedShipSlot.slotIndex] = equipment
+      
+      // TODO: 装備によるステータス変化を計算
+      
+      setFleetSlots(updatedSlots)
+      saveFleetCompositionToStorage(updatedSlots, fleetName)
+    }
+  }
+
+  // 装備削除ハンドラー
+  const handleEquipmentRemove = (position: number, slotIndex: number) => {
+    const updatedSlots = [...fleetSlots]
+    const targetSlot = updatedSlots[position]
+    
+    if (targetSlot.ship && targetSlot.ship.equipments) {
+      targetSlot.ship.equipments[slotIndex] = null
+      
+      // TODO: 装備除去によるステータス変化を計算
+      
+      setFleetSlots(updatedSlots)
+      saveFleetCompositionToStorage(updatedSlots, fleetName)
+    }
   }
 
   // ドラッグ開始
@@ -1234,11 +1373,48 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                     <div className="equipment-slots-vertical">
                       {Array.from({ length: slot.ship?.slotCount || 0 }, (_, slotIndex) => {
                         const aircraftCount = slot.ship?.aircraftSlots[slotIndex] || 0;
+                        const equipment = slot.ship?.equipments?.[slotIndex];
                         return (
-                          <div key={slotIndex} className="equipment-slot-field">
+                          <div 
+                            key={slotIndex} 
+                            className="equipment-slot-field clickable"
+                            onClick={() => handleEquipmentSlotClick(slot.position, slotIndex)}
+                            onDragOver={(e) => {
+                              if (draggedEquipment) {
+                                e.preventDefault()
+                                e.dataTransfer.dropEffect = 'copy'
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              if (draggedEquipment) {
+                                handleEquipmentSelect(draggedEquipment)
+                                setSelectedShipSlot({ position: slot.position, slotIndex })
+                                setDraggedEquipment(null)
+                              }
+                            }}
+                          >
                             <div className="equipment-slot-content">
-                              <div className="equipment-icon">⚙</div>
-                              <div className="equipment-text">装備{slotIndex + 1}</div>
+                              {equipment ? (
+                                <>
+                                  <div className="equipment-icon equipped">⚙</div>
+                                  <div className="equipment-name">{equipment.api_name}</div>
+                                  <button 
+                                    className="equipment-remove"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleEquipmentRemove(slot.position, slotIndex)
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="equipment-icon">⚙</div>
+                                  <div className="equipment-text">装備{slotIndex + 1}</div>
+                                </>
+                              )}
                               {aircraftCount > 0 && (
                                 <div className="aircraft-count">{aircraftCount}</div>
                               )}
@@ -1862,6 +2038,81 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           {toast.message}
         </div>
       )}
+
+      {/* 装備選択パネル */}
+      <div className={`equipment-panel ${isEquipmentPanelOpen ? 'open' : 'closed'}`}>
+        <div className="equipment-panel-header">
+          <h3 className="equipment-panel-title">
+            装備選択
+            {selectedShipSlot && fleetSlots[selectedShipSlot.position]?.ship && (
+              <span className="equipment-panel-ship-info">
+                - {fleetSlots[selectedShipSlot.position].ship?.name} 装備{selectedShipSlot.slotIndex + 1}
+              </span>
+            )}
+          </h3>
+          <button 
+            className="equipment-panel-close"
+            onClick={() => setIsEquipmentPanelOpen(false)}
+          >
+            <span className="material-icons">close</span>
+          </button>
+        </div>
+
+        <div className="equipment-panel-filters">
+          <button
+            className={`equipment-filter-btn ${equipmentTypeFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setEquipmentTypeFilter('all')}
+          >
+            全て
+          </button>
+          {/* 主要カテゴリのみ表示 */}
+          {[1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 17, 18, 19, 21, 24, 29, 30, 31, 34, 37, 46, 47, 48].map(typeId => (
+            <button
+              key={typeId}
+              className={`equipment-filter-btn ${equipmentTypeFilter === typeId ? 'active' : ''}`}
+              onClick={() => setEquipmentTypeFilter(typeId)}
+            >
+              {EQUIPMENT_TYPES[typeId as keyof typeof EQUIPMENT_TYPES]}
+            </button>
+          ))}
+        </div>
+
+        <div className="equipment-panel-content">
+          {equipmentList
+            .filter(eq => equipmentTypeFilter === 'all' || eq.api_type[2] === equipmentTypeFilter)
+            .map(equipment => (
+              <div 
+                key={equipment.api_id}
+                className="equipment-item"
+                draggable
+                onDragStart={(e) => {
+                  setDraggedEquipment(equipment)
+                  e.dataTransfer.effectAllowed = 'copy'
+                }}
+                onDragEnd={() => setDraggedEquipment(null)}
+                onClick={() => {
+                  handleEquipmentSelect(equipment)
+                  setIsEquipmentPanelOpen(false)
+                }}
+              >
+                <div className="equipment-item-icon">⚙</div>
+                <div className="equipment-item-info">
+                  <div className="equipment-item-name">{equipment.api_name}</div>
+                  <div className="equipment-item-stats">
+                    {equipment.api_houg > 0 && <span className="stat-tag">火力+{equipment.api_houg}</span>}
+                    {equipment.api_raig > 0 && <span className="stat-tag">雷装+{equipment.api_raig}</span>}
+                    {equipment.api_tyku > 0 && <span className="stat-tag">対空+{equipment.api_tyku}</span>}
+                    {equipment.api_tais > 0 && <span className="stat-tag">対潜+{equipment.api_tais}</span>}
+                    {equipment.api_souk > 0 && <span className="stat-tag">装甲+{equipment.api_souk}</span>}
+                    {equipment.api_houm > 0 && <span className="stat-tag">命中+{equipment.api_houm}</span>}
+                    {equipment.api_houk > 0 && <span className="stat-tag">回避+{equipment.api_houk}</span>}
+                    {equipment.api_saku > 0 && <span className="stat-tag">索敵+{equipment.api_saku}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
     </div>
   )
 }
