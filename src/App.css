@@ -11968,4 +11968,26 @@ h4 .material-icons {
   color: white;
 }
 
+/* 装備アイコン画像 */
+.equipment-type-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.equipment-slot-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.equipment-fallback-icon {
+  font-size: 1.5rem;
+  color: #64B5F6;
+}
+
+.equipment-fallback-icon.hidden {
+  display: none;
+}
+
 
