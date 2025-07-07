@@ -823,6 +823,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     }
   }
 
+
   // ドラッグ開始
   const handleDragStart = (e: React.DragEvent, ship: Ship, fromSlot?: number) => {
     console.log('🔧 DEBUG: Drag start for ship:', ship.name, 'from slot:', fromSlot)
@@ -2315,8 +2316,33 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
               return groups
             }, {} as Record<string, { equipment: Equipment; count: number; items: Equipment[] }>)
             
+            // 装備使用数をカウントして残り個数を計算
+            const equipmentUsageCount = new Map<string, number>()
+            fleetSlots.forEach(slot => {
+              if (slot.ship && slot.ship.equipments) {
+                slot.ship.equipments.forEach(equipment => {
+                  if (equipment) {
+                    const key = `${equipment.original_id || equipment.api_id}_${equipment.improvement_level || 0}`
+                    equipmentUsageCount.set(key, (equipmentUsageCount.get(key) || 0) + 1)
+                  }
+                })
+              }
+            })
+            
+            // 装備グループに残り個数を設定
+            Object.values(groupedEquipment).forEach(group => {
+              const key = `${group.equipment.original_id || group.equipment.api_id}_${group.equipment.improvement_level || 0}`
+              const usedCount = equipmentUsageCount.get(key) || 0
+              group.count = Math.max(0, group.count - usedCount)
+            })
+            
+            // 残り個数が0の装備グループを除外
+            const availableGroupedEquipment = Object.fromEntries(
+              Object.entries(groupedEquipment).filter(([_, group]) => group.count > 0)
+            )
+            
             // グループ化された装備をソート
-            const sortedGroups = Object.values(groupedEquipment).sort((a, b) => {
+            const sortedGroups = Object.values(availableGroupedEquipment).sort((a, b) => {
               switch (equipmentSortType) {
                 case 'name':
                   return a.equipment.api_name.localeCompare(b.equipment.api_name, 'ja')
@@ -2351,8 +2377,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                 }}
                 onDragEnd={() => setDraggedEquipment(null)}
                 onClick={() => {
-                  handleEquipmentSelect(group.equipment)
-                  setIsEquipmentPanelOpen(false)
+                  if (group.count > 0) {
+                    handleEquipmentSelect(group.equipment)
+                    setIsEquipmentPanelOpen(false)
+                  }
                 }}
               >
                 <div className="equipment-item-icon">
