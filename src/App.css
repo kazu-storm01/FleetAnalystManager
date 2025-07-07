@@ -11767,18 +11767,19 @@ h4 .material-icons {
 
 /* .overview-button の重複定義を削除（259行目の定義を使用） */
 
-/* ===== 装備選択パネル ===== */
+/* ===== 装備選択パネル（左側サイドバーと統一デザイン） ===== */
 .equipment-panel {
   position: fixed;
   top: 0;
   right: 0;
-  width: 400px;
+  width: 320px;
   height: 100vh;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.5);
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border-left: 2px solid rgba(100, 181, 246, 0.3);
+  z-index: 1000;
+  transition: all 0.3s ease;
   transform: translateX(100%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 1002;
   display: flex;
   flex-direction: column;
 }
@@ -11788,22 +11789,21 @@ h4 .material-icons {
 }
 
 .equipment-panel-header {
-  padding: 20px;
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 16px;
+  border-bottom: 1px solid rgba(100, 181, 246, 0.2);
 }
 
 .equipment-panel-title {
-  font-size: 1.2rem;
-  font-weight: 600;
+  color: white;
   margin: 0;
+  font-size: 1.1rem;
 }
 
 .equipment-panel-ship-info {
+  color: #90caf9;
   font-size: 0.9rem;
   opacity: 0.9;
   margin-left: 8px;
@@ -11812,52 +11812,83 @@ h4 .material-icons {
 .equipment-panel-close {
   background: none;
   border: none;
-  color: white;
+  color: #90caf9;
+  font-size: 1.5rem;
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
-  transition: background 0.2s;
+  transition: background-color 0.2s ease;
 }
 
 .equipment-panel-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(100, 181, 246, 0.2);
+}
+
+/* タブナビゲーション */
+.equipment-panel-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid rgba(100, 181, 246, 0.3);
+}
+
+.equipment-tab-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  color: rgba(144, 202, 249, 0.7);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.equipment-tab-btn:hover {
+  background: rgba(100, 181, 246, 0.1);
+  color: #90caf9;
+}
+
+.equipment-tab-btn.active {
+  background: rgba(100, 181, 246, 0.2);
+  color: #90caf9;
+  border-bottom-color: #64B5F6;
 }
 
 .equipment-panel-filters {
-  padding: 15px;
+  padding: 8px;
   background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(100, 181, 246, 0.2);
   display: flex;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: wrap;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .equipment-filter-btn {
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  padding: 4px 8px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  background: rgba(100, 181, 246, 0.1);
+  color: rgba(144, 202, 249, 0.8);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .equipment-filter-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(100, 181, 246, 0.2);
+  border-color: rgba(100, 181, 246, 0.5);
 }
 
 .equipment-filter-btn.active {
-  background: #2196F3;
-  color: white;
-  border-color: #2196F3;
+  background: rgba(100, 181, 246, 0.3);
+  color: #90caf9;
+  border-color: rgba(100, 181, 246, 0.6);
 }
 
 .equipment-panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 10px;
+  padding: 8px;
 }
 
 .equipment-item {
@@ -11865,17 +11896,18 @@ h4 .material-icons {
   align-items: center;
   padding: 12px;
   margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(100, 181, 246, 0.1);
+  border: 1px solid rgba(100, 181, 246, 0.3);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .equipment-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #2196F3;
-  transform: translateX(-4px);
+  background: rgba(100, 181, 246, 0.15);
+  border-color: rgba(100, 181, 246, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .equipment-item-icon {
@@ -11890,22 +11922,24 @@ h4 .material-icons {
 
 .equipment-item-name {
   font-weight: 500;
-  color: white;
+  color: #90caf9;
   margin-bottom: 4px;
+  font-size: 0.9rem;
 }
 
 .equipment-item-stats {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
 .stat-tag {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   padding: 2px 6px;
-  background: rgba(76, 175, 80, 0.2);
-  color: #81C784;
+  background: rgba(100, 181, 246, 0.2);
+  color: #90caf9;
   border-radius: 3px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
 }
 
 /* 装備スロット（艦娘カード内） */
