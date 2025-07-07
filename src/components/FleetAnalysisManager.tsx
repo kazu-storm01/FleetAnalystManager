@@ -82,6 +82,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [fleetEntries, setFleetEntries] = useState<FleetEntry[]>([])
   const [fleetData, setFleetData] = useState<string>('')
   const [persistedFleetData, setPersistedFleetData] = useState<string>('')  // 内部的な艦隊データ保持用
+  const [equipmentData, setEquipmentData] = useState<string>('')  // 装備データ
 
   // fleetDataが変更された時に親コンポーネントに通知
   useEffect(() => {
@@ -245,6 +246,25 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         throw error
       }
       throw new Error('JSON解析に失敗しました。正しい艦隊JSONデータを入力してください。')
+    }
+  }
+
+  // 装備データの更新を処理
+  const handleEquipmentDataUpdate = () => {
+    if (!equipmentData.trim()) return
+    
+    try {
+      const parsedEquipmentData = JSON.parse(equipmentData)
+      
+      // 装備データをLocalStorageに保存
+      localStorage.setItem(`${admiralName}_equipmentData`, JSON.stringify(parsedEquipmentData))
+      
+      showToast('装備データを保存しました', 'success')
+      console.log('✅ 装備データ保存完了:', parsedEquipmentData.length, '個')
+      
+    } catch (error) {
+      console.error('❌ 装備データ解析エラー:', error)
+      showToast('装備データの解析に失敗しました。正しいJSONデータか確認してください。', 'error')
     }
   }
 
@@ -1792,6 +1812,29 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               title="艦隊データを反映"
             >
               <span className="material-symbols-outlined">send</span>
+            </button>
+          </div>
+          
+          <div className="fleet-input-wrapper">
+            <input
+              type="text"
+              value={equipmentData}
+              onChange={(e) => setEquipmentData(e.target.value)}
+              placeholder={'装備のJSONデータをここに貼り付けてください...'}
+              className="fleet-data-input"
+            />
+            <button
+              onClick={() => {
+                console.log('🖱️ 装備読み込みボタンクリック:', { equipmentDataLength: equipmentData.length })
+                handleEquipmentDataUpdate()
+                // データ処理後にテキストフィールドをクリア
+                setEquipmentData('')
+              }}
+              className="fleet-update-btn-inside"
+              disabled={!equipmentData.trim()}
+              title="装備データを反映"
+            >
+              <span className="material-symbols-outlined">military_tech</span>
             </button>
           </div>
         </div>
