@@ -8,8 +8,8 @@ import { useShipData } from '../hooks/useShipData'
 import { parseImprovements } from '../utils/shipStatsCalculator'
 import ShipStatusDisplay from './ShipStatusDisplay'
 
-// 装備データの型定義
-interface Equipment {
+// 装備マスターデータの型定義
+interface EquipmentMaster {
   api_id: number
   api_sortno: number
   api_name: string
@@ -24,6 +24,18 @@ interface Equipment {
   api_saku: number  // 索敵
   api_leng: number  // 射程
   api_rare: number  // レア度
+}
+
+// 所持装備データの型定義
+interface OwnedEquipment {
+  api_slotitem_id: number  // マスターデータのID
+  api_level: number        // 改修値
+}
+
+// 装備データ（マスター + 所持情報）
+interface Equipment extends EquipmentMaster {
+  improvement_level?: number  // 改修値
+  original_id?: number        // 元のマスターデータID
 }
 
 // 装備種別の定義（api_type[2]の値に基づく）
@@ -505,29 +517,86 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [isDraggingShip, setIsDraggingShip] = useState(false)
   
   // 装備関連の状態
+  const [equipmentMasterList, setEquipmentMasterList] = useState<EquipmentMaster[]>([])
+  const [ownedEquipmentList, setOwnedEquipmentList] = useState<OwnedEquipment[]>([])
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([])
   const [selectedShipSlot, setSelectedShipSlot] = useState<{position: number, slotIndex: number} | null>(null)
   const [isEquipmentPanelOpen, setIsEquipmentPanelOpen] = useState(false)
   const [equipmentTypeFilter, setEquipmentTypeFilter] = useState<number | 'all'>('all')
   const [equipmentCategoryTab, setEquipmentCategoryTab] = useState<'gun' | 'torpedo' | 'aircraft' | 'radar' | 'other'>('gun')
+  const [equipmentSortType, setEquipmentSortType] = useState<'name' | 'rarity' | 'improvement'>('name')
   const [draggedEquipment, setDraggedEquipment] = useState<Equipment | null>(null)
 
   // 高速化されたShipDataフック
   const { getShipData, isFullDataLoaded, loadingProgress } = useShipData()
 
-  // 装備データの読み込み
+  // 装備マスターデータの読み込み
   useEffect(() => {
-    const loadEquipmentData = async () => {
+    const loadEquipmentMasterData = async () => {
       try {
         const response = await fetch('/FleetAnalystManager/gear.json')
         const data = await response.json()
-        setEquipmentList(data)
+        setEquipmentMasterList(data)
       } catch (error) {
-        console.error('装備データの読み込みに失敗:', error)
+        console.error('装備マスターデータの読み込みに失敗:', error)
       }
     }
-    loadEquipmentData()
+    loadEquipmentMasterData()
   }, [])
+
+  // 保存された装備データの読み込み
+  useEffect(() => {
+    const loadSavedEquipmentData = () => {
+      try {
+        const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || localStorage.getItem('admiralName') || '提督'
+        const saved = localStorage.getItem(`${admiralName}_equipmentData`)
+        if (saved) {
+          const parsedData = JSON.parse(saved)
+          setOwnedEquipmentList(parsedData)
+          console.log('✅ 装備データ読み込み完了:', parsedData.length, '個')
+        }
+      } catch (error) {
+        console.error('❌ 装備データ読み込みエラー:', error)
+      }
+    }
+
+    // 初回読み込み
+    loadSavedEquipmentData()
+
+    // StorageEventでLocalStorageの変更を監視
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.endsWith('_equipmentData')) {
+        loadSavedEquipmentData()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  // 所持装備データと装備一覧の更新
+  useEffect(() => {
+    if (equipmentMasterList.length === 0 || ownedEquipmentList.length === 0) {
+      setEquipmentList([])
+      return
+    }
+
+    // 所持装備とマスターデータを結合（ユニークIDを生成）
+    const combinedEquipment: Equipment[] = ownedEquipmentList.map((owned, index) => {
+      const master = equipmentMasterList.find(m => m.api_id === owned.api_slotitem_id)
+      if (master) {
+        return {
+          ...master,
+          api_id: master.api_id * 10000 + index, // ユニークIDを生成
+          original_id: master.api_id, // 元のIDを保持
+          improvement_level: owned.api_level
+        }
+      }
+      return null
+    }).filter(Boolean) as Equipment[]
+
+    setEquipmentList(combinedEquipment)
+  }, [equipmentMasterList, ownedEquipmentList])
 
   // サイドバーが閉じられた時の処理
   useEffect(() => {
@@ -2156,9 +2225,50 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           })()}
         </div>
 
+        {/* ソート選択 */}
+        <div className="equipment-panel-sort">
+          <button
+            className={`equipment-sort-btn ${equipmentSortType === 'name' ? 'active' : ''}`}
+            onClick={() => setEquipmentSortType('name')}
+          >
+            名前順
+          </button>
+          <button
+            className={`equipment-sort-btn ${equipmentSortType === 'rarity' ? 'active' : ''}`}
+            onClick={() => setEquipmentSortType('rarity')}
+          >
+            レア度順
+          </button>
+          <button
+            className={`equipment-sort-btn ${equipmentSortType === 'improvement' ? 'active' : ''}`}
+            onClick={() => setEquipmentSortType('improvement')}
+          >
+            改修順
+          </button>
+        </div>
+
         <div className="equipment-panel-content">
-          {equipmentList
-            .filter(eq => {
+          {/* デバッグ情報 */}
+          <div style={{padding: '8px', fontSize: '0.8rem', color: '#90caf9', borderBottom: '1px solid rgba(100, 181, 246, 0.2)'}}>
+            総装備数: {equipmentList.length} | 
+            現在のタブ: {equipmentCategoryTab} | 
+            フィルター: {equipmentTypeFilter} |
+            表示数: {equipmentList.filter(eq => {
+              let tabFilter = false
+              switch (equipmentCategoryTab) {
+                case 'gun': tabFilter = [1, 2, 3, 4, 18, 19].includes(eq.api_type[2]); break
+                case 'torpedo': tabFilter = [5, 32].includes(eq.api_type[2]); break
+                case 'aircraft': tabFilter = [6, 7, 8, 9, 10, 11, 45, 47, 48, 57].includes(eq.api_type[2]); break
+                case 'radar': tabFilter = [12, 13, 14, 15, 51].includes(eq.api_type[2]); break
+                case 'other': tabFilter = [17, 21, 22, 23, 24, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 46, 50, 52, 53, 54].includes(eq.api_type[2]); break
+              }
+              const typeFilter = equipmentTypeFilter === 'all' || eq.api_type[2] === equipmentTypeFilter
+              return tabFilter && typeFilter
+            }).length}
+          </div>
+          {(() => {
+            // 装備をフィルタリング
+            const filteredEquipment = equipmentList.filter(eq => {
               // タブによる大分類フィルター
               let tabFilter = false
               switch (equipmentCategoryTab) {
@@ -2179,30 +2289,76 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   break
               }
               
-              // 詳細フィルター
+              // 詳細フィルター（タブフィルターが通った装備の中で更に詳細フィルタリング）
               const typeFilter = equipmentTypeFilter === 'all' || eq.api_type[2] === equipmentTypeFilter
+              
+              // デバッグログ（問題の原因確認用）
+              if (equipmentCategoryTab === 'gun' && !tabFilter) {
+                console.log('Gun filter failed for:', eq.api_name, 'type:', eq.api_type[2])
+              }
               
               return tabFilter && typeFilter
             })
-            .map(equipment => (
+            
+            // 装備をグループ化（同じoriginal_idと改修値でグループ化）
+            const groupedEquipment = filteredEquipment.reduce((groups, equipment) => {
+              const key = `${equipment.original_id || equipment.api_id}_${equipment.improvement_level || 0}`
+              if (!groups[key]) {
+                groups[key] = {
+                  equipment: equipment,
+                  count: 0,
+                  items: []
+                }
+              }
+              groups[key].count += 1
+              groups[key].items.push(equipment)
+              return groups
+            }, {} as Record<string, { equipment: Equipment; count: number; items: Equipment[] }>)
+            
+            // グループ化された装備をソート
+            const sortedGroups = Object.values(groupedEquipment).sort((a, b) => {
+              switch (equipmentSortType) {
+                case 'name':
+                  return a.equipment.api_name.localeCompare(b.equipment.api_name, 'ja')
+                case 'rarity':
+                  // レア度降順（高い方が先）、同じレア度なら名前順
+                  if (b.equipment.api_rare !== a.equipment.api_rare) {
+                    return b.equipment.api_rare - a.equipment.api_rare
+                  }
+                  return a.equipment.api_name.localeCompare(b.equipment.api_name, 'ja')
+                case 'improvement':
+                  // 改修値降順（高い方が先）、同じ改修値なら名前順
+                  const aImprovement = a.equipment.improvement_level || 0
+                  const bImprovement = b.equipment.improvement_level || 0
+                  if (bImprovement !== aImprovement) {
+                    return bImprovement - aImprovement
+                  }
+                  return a.equipment.api_name.localeCompare(b.equipment.api_name, 'ja')
+                default:
+                  return 0
+              }
+            })
+            
+            // グループ化された装備を表示
+            return sortedGroups.map(group => (
               <div 
-                key={equipment.api_id}
+                key={`${group.equipment.original_id || group.equipment.api_id}_${group.equipment.improvement_level || 0}`}
                 className="equipment-item"
                 draggable
                 onDragStart={(e) => {
-                  setDraggedEquipment(equipment)
+                  setDraggedEquipment(group.equipment)
                   e.dataTransfer.effectAllowed = 'copy'
                 }}
                 onDragEnd={() => setDraggedEquipment(null)}
                 onClick={() => {
-                  handleEquipmentSelect(equipment)
+                  handleEquipmentSelect(group.equipment)
                   setIsEquipmentPanelOpen(false)
                 }}
               >
                 <div className="equipment-item-icon">
                   <img 
-                    src={`/FleetAnalystManager/images/type/icon${equipment.api_type[3]}.png`}
-                    alt={equipment.api_name}
+                    src={`/FleetAnalystManager/images/type/icon${group.equipment.api_type[3]}.png`}
+                    alt={group.equipment.api_name}
                     className="equipment-type-icon"
                     onError={(e) => {
                       // 画像が読み込めない場合は代替アイコンを表示
@@ -2213,20 +2369,29 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   <span className="equipment-fallback-icon hidden">⚙</span>
                 </div>
                 <div className="equipment-item-info">
-                  <div className="equipment-item-name">{equipment.api_name}</div>
+                  <div className="equipment-item-name">
+                    {group.equipment.api_name}
+                    {group.equipment.improvement_level && group.equipment.improvement_level > 0 && (
+                      <span className="improvement-level">★{group.equipment.improvement_level}</span>
+                    )}
+                    {group.count > 1 && (
+                      <span className="equipment-count">×{group.count}</span>
+                    )}
+                  </div>
                   <div className="equipment-item-stats">
-                    {equipment.api_houg > 0 && <span className="stat-tag">火力+{equipment.api_houg}</span>}
-                    {equipment.api_raig > 0 && <span className="stat-tag">雷装+{equipment.api_raig}</span>}
-                    {equipment.api_tyku > 0 && <span className="stat-tag">対空+{equipment.api_tyku}</span>}
-                    {equipment.api_tais > 0 && <span className="stat-tag">対潜+{equipment.api_tais}</span>}
-                    {equipment.api_souk > 0 && <span className="stat-tag">装甲+{equipment.api_souk}</span>}
-                    {equipment.api_houm > 0 && <span className="stat-tag">命中+{equipment.api_houm}</span>}
-                    {equipment.api_houk > 0 && <span className="stat-tag">回避+{equipment.api_houk}</span>}
-                    {equipment.api_saku > 0 && <span className="stat-tag">索敵+{equipment.api_saku}</span>}
+                    {group.equipment.api_houg > 0 && <span className="stat-tag">火力+{group.equipment.api_houg}</span>}
+                    {group.equipment.api_raig > 0 && <span className="stat-tag">雷装+{group.equipment.api_raig}</span>}
+                    {group.equipment.api_tyku > 0 && <span className="stat-tag">対空+{group.equipment.api_tyku}</span>}
+                    {group.equipment.api_tais > 0 && <span className="stat-tag">対潜+{group.equipment.api_tais}</span>}
+                    {group.equipment.api_souk > 0 && <span className="stat-tag">装甲+{group.equipment.api_souk}</span>}
+                    {group.equipment.api_houm > 0 && <span className="stat-tag">命中+{group.equipment.api_houm}</span>}
+                    {group.equipment.api_houk > 0 && <span className="stat-tag">回避+{group.equipment.api_houk}</span>}
+                    {group.equipment.api_saku > 0 && <span className="stat-tag">索敵+{group.equipment.api_saku}</span>}
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+          })()}
         </div>
       </div>
     </div>

@@ -11863,6 +11863,38 @@ h4 .material-icons {
   flex-wrap: wrap;
 }
 
+/* 装備ソート */
+.equipment-panel-sort {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(100, 181, 246, 0.2);
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.equipment-sort-btn {
+  padding: 6px 12px;
+  border: 1px solid rgba(100, 181, 246, 0.3);
+  background: rgba(100, 181, 246, 0.1);
+  color: rgba(144, 202, 249, 0.8);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+}
+
+.equipment-sort-btn:hover {
+  background: rgba(100, 181, 246, 0.2);
+  border-color: rgba(100, 181, 246, 0.5);
+}
+
+.equipment-sort-btn.active {
+  background: rgba(100, 181, 246, 0.3);
+  color: #90caf9;
+  border-color: rgba(100, 181, 246, 0.6);
+}
+
 .equipment-filter-btn {
   padding: 4px 8px;
   border: 1px solid rgba(100, 181, 246, 0.3);
@@ -12022,6 +12054,30 @@ h4 .material-icons {
 
 .equipment-fallback-icon.hidden {
   display: none;
+}
+
+/* 改修値表示 */
+.improvement-level {
+  color: #FFD700;
+  font-weight: bold;
+  font-size: 0.8rem;
+  margin-left: 6px;
+  background: rgba(255, 215, 0, 0.2);
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+/* 装備個数表示 */
+.equipment-count {
+  color: #90CAF9;
+  font-weight: bold;
+  font-size: 0.75rem;
+  margin-left: 6px;
+  background: rgba(144, 202, 249, 0.2);
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(144, 202, 249, 0.3);
 }
 
 
