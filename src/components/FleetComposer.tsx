@@ -1480,10 +1480,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                                   </div>
                                   <div className="equipment-name">
                                     {equipment.api_name}
-                                    {(equipment.improvement_level || 0) > 0 && (
-                                      <span className="improvement-level">★{equipment.improvement_level}</span>
-                                    )}
                                   </div>
+                                  {(equipment.improvement_level || 0) > 0 && (
+                                    <div className="improvement-level">★{equipment.improvement_level}</div>
+                                  )}
                                   <button 
                                     className="equipment-remove"
                                     onClick={(e) => {
