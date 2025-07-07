@@ -509,6 +509,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [selectedShipSlot, setSelectedShipSlot] = useState<{position: number, slotIndex: number} | null>(null)
   const [isEquipmentPanelOpen, setIsEquipmentPanelOpen] = useState(false)
   const [equipmentTypeFilter, setEquipmentTypeFilter] = useState<number | 'all'>('all')
+  const [equipmentCategoryTab, setEquipmentCategoryTab] = useState<'gun' | 'torpedo' | 'aircraft' | 'radar' | 'other'>('gun')
   const [draggedEquipment, setDraggedEquipment] = useState<Equipment | null>(null)
 
   // 高速化されたShipDataフック
@@ -2067,6 +2068,56 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           </button>
         </div>
 
+        {/* タブナビゲーション */}
+        <div className="equipment-panel-tabs">
+          <button
+            className={`equipment-tab-btn ${equipmentCategoryTab === 'gun' ? 'active' : ''}`}
+            onClick={() => {
+              setEquipmentCategoryTab('gun')
+              setEquipmentTypeFilter('all')
+            }}
+          >
+            主砲
+          </button>
+          <button
+            className={`equipment-tab-btn ${equipmentCategoryTab === 'torpedo' ? 'active' : ''}`}
+            onClick={() => {
+              setEquipmentCategoryTab('torpedo')
+              setEquipmentTypeFilter('all')
+            }}
+          >
+            魚雷
+          </button>
+          <button
+            className={`equipment-tab-btn ${equipmentCategoryTab === 'aircraft' ? 'active' : ''}`}
+            onClick={() => {
+              setEquipmentCategoryTab('aircraft')
+              setEquipmentTypeFilter('all')
+            }}
+          >
+            艦載機
+          </button>
+          <button
+            className={`equipment-tab-btn ${equipmentCategoryTab === 'radar' ? 'active' : ''}`}
+            onClick={() => {
+              setEquipmentCategoryTab('radar')
+              setEquipmentTypeFilter('all')
+            }}
+          >
+            電探
+          </button>
+          <button
+            className={`equipment-tab-btn ${equipmentCategoryTab === 'other' ? 'active' : ''}`}
+            onClick={() => {
+              setEquipmentCategoryTab('other')
+              setEquipmentTypeFilter('all')
+            }}
+          >
+            その他
+          </button>
+        </div>
+
+        {/* フィルターボタン */}
         <div className="equipment-panel-filters">
           <button
             className={`equipment-filter-btn ${equipmentTypeFilter === 'all' ? 'active' : ''}`}
@@ -2074,21 +2125,65 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           >
             全て
           </button>
-          {/* 主要カテゴリのみ表示 */}
-          {[1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 17, 18, 19, 21, 24, 29, 30, 31, 34, 37, 46, 47, 48].map(typeId => (
-            <button
-              key={typeId}
-              className={`equipment-filter-btn ${equipmentTypeFilter === typeId ? 'active' : ''}`}
-              onClick={() => setEquipmentTypeFilter(typeId)}
-            >
-              {EQUIPMENT_TYPES[typeId as keyof typeof EQUIPMENT_TYPES]}
-            </button>
-          ))}
+          {(() => {
+            let filterIds: number[] = []
+            switch (equipmentCategoryTab) {
+              case 'gun':
+                filterIds = [1, 2, 3, 4, 18, 19] // 小口径主砲、中口径主砲、大口径主砲、副砲、対空強化弾、対艦強化弾
+                break
+              case 'torpedo':
+                filterIds = [5, 32] // 魚雷、潜水艦魚雷
+                break
+              case 'aircraft':
+                filterIds = [6, 7, 8, 9, 10, 11, 45, 47, 48, 57] // 各種艦載機
+                break
+              case 'radar':
+                filterIds = [12, 13, 14, 15, 51] // 小型電探、大型電探、ソナー、爆雷、潜水艦電探
+                break
+              case 'other':
+                filterIds = [17, 21, 22, 23, 24, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 46, 50, 52, 53, 54] // その他装備
+                break
+            }
+            return filterIds.map(typeId => (
+              <button
+                key={typeId}
+                className={`equipment-filter-btn ${equipmentTypeFilter === typeId ? 'active' : ''}`}
+                onClick={() => setEquipmentTypeFilter(typeId)}
+              >
+                {EQUIPMENT_TYPES[typeId as keyof typeof EQUIPMENT_TYPES]}
+              </button>
+            ))
+          })()}
         </div>
 
         <div className="equipment-panel-content">
           {equipmentList
-            .filter(eq => equipmentTypeFilter === 'all' || eq.api_type[2] === equipmentTypeFilter)
+            .filter(eq => {
+              // タブによる大分類フィルター
+              let tabFilter = false
+              switch (equipmentCategoryTab) {
+                case 'gun':
+                  tabFilter = [1, 2, 3, 4, 18, 19].includes(eq.api_type[2])
+                  break
+                case 'torpedo':
+                  tabFilter = [5, 32].includes(eq.api_type[2])
+                  break
+                case 'aircraft':
+                  tabFilter = [6, 7, 8, 9, 10, 11, 45, 47, 48, 57].includes(eq.api_type[2])
+                  break
+                case 'radar':
+                  tabFilter = [12, 13, 14, 15, 51].includes(eq.api_type[2])
+                  break
+                case 'other':
+                  tabFilter = [17, 21, 22, 23, 24, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 46, 50, 52, 53, 54].includes(eq.api_type[2])
+                  break
+              }
+              
+              // 詳細フィルター
+              const typeFilter = equipmentTypeFilter === 'all' || eq.api_type[2] === equipmentTypeFilter
+              
+              return tabFilter && typeFilter
+            })
             .map(equipment => (
               <div 
                 key={equipment.api_id}
