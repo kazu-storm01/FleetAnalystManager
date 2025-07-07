@@ -12006,22 +12006,24 @@ h4 .material-icons {
 
 .equipment-remove {
   position: absolute;
-  right: 4px;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
-  background: rgba(244, 67, 54, 0.2);
-  border: 1px solid rgba(244, 67, 54, 0.4);
-  color: #FF8A80;
-  width: 20px;
-  height: 20px;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: all 0.2s;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
 }
 
 .equipment-slot-field:hover .equipment-remove {
@@ -12029,9 +12031,17 @@ h4 .material-icons {
 }
 
 .equipment-remove:hover {
-  background: rgba(244, 67, 54, 0.4);
-  border-color: #F44336;
-  color: white;
+  background: transparent;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0 0 6px rgba(244, 67, 54, 0.8);
+}
+
+.equipment-remove:focus {
+  outline: none;
+}
+
+.equipment-remove:active {
+  outline: none;
 }
 
 /* 装備アイコン画像 */
