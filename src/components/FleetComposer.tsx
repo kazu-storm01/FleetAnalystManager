@@ -1397,7 +1397,16 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                             <div className="equipment-slot-content">
                               {equipment ? (
                                 <>
-                                  <div className="equipment-icon equipped">⚙</div>
+                                  <div className="equipment-icon equipped">
+                                    <img 
+                                      src={`/FleetAnalystManager/images/type/icon${equipment.api_type[3]}.png`}
+                                      alt={equipment.api_name}
+                                      className="equipment-slot-icon"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
                                   <div className="equipment-name">{equipment.api_name}</div>
                                   <button 
                                     className="equipment-remove"
@@ -2095,7 +2104,19 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   setIsEquipmentPanelOpen(false)
                 }}
               >
-                <div className="equipment-item-icon">⚙</div>
+                <div className="equipment-item-icon">
+                  <img 
+                    src={`/FleetAnalystManager/images/type/icon${equipment.api_type[3]}.png`}
+                    alt={equipment.api_name}
+                    className="equipment-type-icon"
+                    onError={(e) => {
+                      // 画像が読み込めない場合は代替アイコンを表示
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <span className="equipment-fallback-icon hidden">⚙</span>
+                </div>
                 <div className="equipment-item-info">
                   <div className="equipment-item-name">{equipment.api_name}</div>
                   <div className="equipment-item-stats">
