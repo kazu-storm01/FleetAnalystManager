@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { StatIcon } from './ShipStatusDisplay'
 import { getShipBannerPath } from '../utils/imagePaths'
-import { getShipMasterDataSync } from '../data/shipMasterDataCore'
 import { parseImprovements } from '../utils/shipStatsCalculator'
 import { useShipData } from '../hooks/useShipData'
 
@@ -1045,12 +1044,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       const improvements = parseImprovements(targetShip.api_kyouka || targetShip.st || [])
       
       // APIステータス値を取得（FleetComposerと同じフォールバック順序）
-      const apiFirepower = targetShip.api_karyoku ? targetShip.api_karyoku[0] : (targetShip.karyoku ? targetShip.karyoku[0] : masterData.initialStats.firepower)
-      const apiTorpedo = targetShip.api_raisou ? targetShip.api_raisou[0] : (targetShip.raisou ? targetShip.raisou[0] : masterData.initialStats.torpedo)
-      const apiAA = targetShip.api_taiku ? targetShip.api_taiku[0] : (targetShip.taiku ? targetShip.taiku[0] : masterData.initialStats.aa)
-      const apiArmor = targetShip.api_soukou ? targetShip.api_soukou[0] : (targetShip.soukou ? targetShip.soukou[0] : masterData.initialStats.armor)
+      // const apiFirepower = targetShip.api_karyoku ? targetShip.api_karyoku[0] : (targetShip.karyoku ? targetShip.karyoku[0] : masterData.initialStats.firepower)
+      // const apiTorpedo = targetShip.api_raisou ? targetShip.api_raisou[0] : (targetShip.raisou ? targetShip.raisou[0] : masterData.initialStats.torpedo)
+      // const apiAA = targetShip.api_taiku ? targetShip.api_taiku[0] : (targetShip.taiku ? targetShip.taiku[0] : masterData.initialStats.aa)
+      // const apiArmor = targetShip.api_soukou ? targetShip.api_soukou[0] : (targetShip.soukou ? targetShip.soukou[0] : masterData.initialStats.armor)
       const apiLuck = targetShip.api_lucky ? targetShip.api_lucky[0] : (targetShip.lucky ? targetShip.lucky[0] : masterData.initialStats.luck)
-      const apiAsw = targetShip.api_taisen ? targetShip.api_taisen[0] : (targetShip.taisen ? targetShip.taisen[0] : undefined)
+      // const apiAsw = targetShip.api_taisen ? targetShip.api_taisen[0] : (targetShip.taisen ? targetShip.taisen[0] : undefined)
       
       // レベル依存ステータス（最大値の取得）- FleetComposerと同じ計算
       let aswMax = masterData.initialStats.aswMax || (
@@ -1062,12 +1061,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         aswMax = 94  // FleetComposerで実際に使用されている値
         console.log('🔧 吹雪改二の aswMax をFleetComposer準拠の94に設定')
       }
-      const evasionMax = masterData.initialStats.evasionMax || (
-        masterData.initialStats.evasion > 0 ? masterData.initialStats.evasion + 30 : masterData.initialStats.evasion
-      )
-      const losMax = masterData.initialStats.losMax || (
-        masterData.initialStats.los > 0 ? masterData.initialStats.los + 20 : masterData.initialStats.los
-      )
+      // const evasionMax = masterData.initialStats.evasionMax || (
+      //   masterData.initialStats.evasion > 0 ? masterData.initialStats.evasion + 30 : masterData.initialStats.evasion
+      // )
+      // const losMax = masterData.initialStats.losMax || (
+      //   masterData.initialStats.los > 0 ? masterData.initialStats.los + 20 : masterData.initialStats.los
+      // )
       
       // レベル成長ステータスを計算
       const levelBasedAsw = calculateStatFromLevel(level, masterData.initialStats.asw, aswMax)
@@ -1204,7 +1203,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           
           // APIステータス値を取得（FleetComposerと同じフォールバック順序）
           const apiLuck = matchingShip.api_lucky ? matchingShip.api_lucky[0] : (matchingShip.lucky ? matchingShip.lucky[0] : masterData.initialStats.luck)
-          const apiAsw = matchingShip.api_taisen ? matchingShip.api_taisen[0] : (matchingShip.taisen ? matchingShip.taisen[0] : undefined)
+          // const apiAsw = matchingShip.api_taisen ? matchingShip.api_taisen[0] : (matchingShip.taisen ? matchingShip.taisen[0] : undefined)
           
           // レベル依存ステータス（最大値の取得）- FleetComposerと同じ計算
           let aswMax = masterData.initialStats.aswMax || (
