@@ -99,9 +99,7 @@ interface ImprovementItem {
   id: number
   equipmentId: number
   equipmentName: string
-  targetLevel: number
   currentLevel: number
-  priority: 'high' | 'medium' | 'low'
   materials: {
     fuel?: number
     ammo?: number
@@ -113,7 +111,6 @@ interface ImprovementItem {
   }
   notes?: string
   createdAt: string
-  completedAt?: string
 }
 
 // 艦娘データの型定義
@@ -2303,8 +2300,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                         equipmentId: equipment.original_id || equipment.api_id,
                         equipmentName: equipment.api_name,
                         currentLevel: equipment.improvement_level || 0,
-                        targetLevel: 10, // デフォルトは★10
-                        priority: 'medium',
                         materials: {},
                         notes: '',
                         createdAt: new Date().toISOString()
@@ -2344,70 +2339,37 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   </div>
                 ) : (
                   improvementItems.map(item => (
-                    <div key={item.id} className={`improvement-item priority-${item.priority}`}>
+                    <div key={item.id} className="improvement-item">
                       <div className="improvement-item-header">
                         <div className="improvement-equipment-name">{item.equipmentName}</div>
-                        <div className={`improvement-priority priority-${item.priority}`}>
-                          {item.priority === 'high' ? '高' : 
-                           item.priority === 'medium' ? '中' : '低'}
-                        </div>
-                      </div>
-                      
-                      <div className="improvement-progress">
-                        <div className="improvement-levels">
-                          <div className="level-input-group">
-                            <span className="level-prefix">★</span>
-                            <input 
-                              type="number"
-                              min="0"
-                              max="10"
-                              value={item.currentLevel}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0
-                                if (value >= 0 && value <= 10) {
-                                  setImprovementItems(prev => prev.map(i => 
-                                    i.id === item.id 
-                                      ? { ...i, currentLevel: value }
-                                      : i
-                                  ))
-                                }
-                              }}
-                              className="level-input current-level-input"
-                            />
-                          </div>
-                          <span className="level-arrow">→</span>
-                          <div className="level-input-group">
-                            <span className="level-prefix">★</span>
-                            <input 
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={item.targetLevel}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 10
-                                if (value >= 1 && value <= 10) {
-                                  setImprovementItems(prev => prev.map(i => 
-                                    i.id === item.id 
-                                      ? { ...i, targetLevel: value }
-                                      : i
-                                  ))
-                                }
-                              }}
-                              className="level-input target-level-input"
-                            />
-                          </div>
-                        </div>
-                        <div className="improvement-progress-bar">
-                          <div 
-                            className="improvement-progress-fill"
-                            style={{
-                              width: `${Math.min((item.currentLevel / item.targetLevel) * 100, 100)}%`
+                        <div className="level-input-group">
+                          <span className="level-prefix">★</span>
+                          <input 
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={item.currentLevel}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0
+                              if (value >= 0 && value <= 10) {
+                                setImprovementItems(prev => prev.map(i => 
+                                  i.id === item.id 
+                                    ? { ...i, currentLevel: value }
+                                    : i
+                                ))
+                              }
                             }}
+                            className="level-input current-level-input"
                           />
                         </div>
-                        <div className="improvement-progress-text">
-                          {item.currentLevel}/{item.targetLevel} ({Math.round((item.currentLevel / item.targetLevel) * 100)}%)
-                        </div>
+                        <button 
+                          className="remove-button-fleet"
+                          onClick={() => {
+                            setImprovementItems(prev => prev.filter(i => i.id !== item.id))
+                          }}
+                          title="改修予定を削除"
+                        >
+                        </button>
                       </div>
 
                       {item.materials && Object.keys(item.materials).length > 0 && (
@@ -2447,31 +2409,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                         </div>
                       )}
 
-                      <div className="improvement-actions">
-                        <button 
-                          className="complete-improvement-btn"
-                          onClick={() => {
-                            // 改修完了処理
-                            const updatedItems = improvementItems.map(i => 
-                              i.id === item.id 
-                                ? { ...i, currentLevel: i.currentLevel + 1 }
-                                : i
-                            )
-                            setImprovementItems(updatedItems)
-                          }}
-                          disabled={item.currentLevel >= item.targetLevel}
-                        >
-                          <span className="material-icons">upgrade</span>
-                        </button>
-                        <button 
-                          className="delete-improvement-btn"
-                          onClick={() => {
-                            setImprovementItems(prev => prev.filter(i => i.id !== item.id))
-                          }}
-                        >
-                          <span className="material-icons">delete</span>
-                        </button>
-                      </div>
                     </div>
                   ))
                 )}
