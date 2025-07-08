@@ -120,6 +120,21 @@ interface Ship {
     speed: number
     aircraft: number
   }
+  // 装備込み最終ステータス（装備補正を含む）
+  finalStats?: {
+    hp: number
+    firepower: number
+    torpedo: number
+    aa: number
+    armor: number
+    evasion: number
+    asw: number
+    los: number
+    luck: number
+    range: number
+    speed: number
+    aircraft: number
+  }
   // 改修値
   improvements: {
     firepower: number
@@ -272,7 +287,7 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
       // 艦種の取得（マスターデータのshipTypeから）
       const shipType = getShipTypeByShipType(masterData.shipType)
       
-      return {
+      const shipData: Ship = {
         id: ship.api_id || ship.id || index + 1,
         shipId,
         name: masterData.name,
@@ -282,10 +297,13 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
         slotCount: masterData.slotCount || 2, // マスターデータから取得
         aircraftSlots: masterData.aircraft || [], // 搭載数配列を追加
         currentStats,
+        finalStats: { ...currentStats }, // 初期状態では装備がないので、finalStatsはcurrentStatsと同じ
         improvements,
         isMarried,
         avatarUrl: `/FleetAnalystManager/images/ships/card/${shipId}.png`
       }
+
+      return shipData
     }).filter((ship: Ship) => ship.shipId > 0) // 無効な艦娘をフィルター
   } catch (error) {
     console.error('艦隊データの解析に失敗しました:', error)
@@ -778,6 +796,66 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     return stats
   }
 
+  // 装備補正値計算関数
+  const calculateEquipmentBonus = (equipments: (Equipment | null)[]): {
+    firepower: number
+    torpedo: number
+    aa: number
+    armor: number
+    asw: number
+    evasion: number
+    accuracy: number
+    los: number
+  } => {
+    const bonus = {
+      firepower: 0,
+      torpedo: 0,
+      aa: 0,
+      armor: 0,
+      asw: 0,
+      evasion: 0,
+      accuracy: 0,
+      los: 0
+    }
+
+    if (!equipments) return bonus
+
+    equipments.forEach(equipment => {
+      if (equipment) {
+        bonus.firepower += equipment.api_houg || 0
+        bonus.torpedo += equipment.api_raig || 0
+        bonus.aa += equipment.api_tyku || 0
+        bonus.armor += equipment.api_souk || 0
+        bonus.asw += equipment.api_tais || 0
+        bonus.evasion += equipment.api_houk || 0
+        bonus.accuracy += equipment.api_houm || 0
+        bonus.los += equipment.api_saku || 0
+      }
+    })
+
+    return bonus
+  }
+
+  // 装備込みステータス計算関数
+  const calculateFinalStats = (ship: Ship) => {
+    const equipmentBonus = calculateEquipmentBonus(ship.equipments || [])
+    
+    return {
+      hp: ship.currentStats.hp, // 耐久は装備で増加しない
+      firepower: ship.currentStats.firepower + equipmentBonus.firepower,
+      torpedo: ship.currentStats.torpedo + equipmentBonus.torpedo,
+      aa: ship.currentStats.aa + equipmentBonus.aa,
+      armor: ship.currentStats.armor + equipmentBonus.armor,
+      evasion: ship.currentStats.evasion + equipmentBonus.evasion,
+      asw: ship.currentStats.asw + equipmentBonus.asw,
+      los: ship.currentStats.los + equipmentBonus.los,
+      luck: ship.currentStats.luck, // 運は装備で変化しない（通常）
+      range: ship.currentStats.range,
+      speed: ship.currentStats.speed,
+      aircraft: ship.currentStats.aircraft
+    }
+  }
+
   // 装備スロットクリックハンドラー
   const handleEquipmentSlotClick = (e: React.MouseEvent, position: number, slotIndex: number) => {
     e.stopPropagation() // 親要素のクリックイベントを停止
@@ -801,7 +879,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       // 装備を設定
       targetSlot.ship.equipments[selectedShipSlot.slotIndex] = equipment
       
-      // TODO: 装備によるステータス変化を計算
+      // 装備込みステータスを再計算
+      const finalStats = calculateFinalStats(targetSlot.ship)
+      targetSlot.ship.finalStats = finalStats
       
       setFleetSlots(updatedSlots)
       saveFleetCompositionToStorage(updatedSlots, fleetName)
@@ -816,7 +896,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     if (targetSlot.ship && targetSlot.ship.equipments) {
       targetSlot.ship.equipments[slotIndex] = null
       
-      // TODO: 装備除去によるステータス変化を計算
+      // 装備込みステータスを再計算
+      const finalStats = calculateFinalStats(targetSlot.ship)
+      targetSlot.ship.finalStats = finalStats
       
       setFleetSlots(updatedSlots)
       saveFleetCompositionToStorage(updatedSlots, fleetName)
@@ -948,6 +1030,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       // __fromSlotプロパティを削除（艦娘データに含めない）
       const cleanShipData: Ship = { ...shipToDrop } as Ship
       delete (cleanShipData as any).__fromSlot
+      
+      // 配置時にfinalStatsを初期化（装備がない場合はcurrentStatsと同じ）
+      if (!cleanShipData.finalStats) {
+        cleanShipData.finalStats = { ...cleanShipData.currentStats }
+      }
       
       if (fromSlot !== null && fromSlot !== undefined) {
         // スロット間の入れ替え（既存の編成済み艦娘の移動）
@@ -1521,8 +1608,14 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                     {/* fleethub式のステータス表示 */}
                     <div className="ship-stats-fleethub">
                       <ShipStatusDisplay 
-                        ship={slot.ship}
+                        ship={{
+                          ...slot.ship,
+                          // 装備込みステータスがあれば使用、なければ基本ステータス
+                          currentStats: slot.ship.finalStats || slot.ship.currentStats
+                        }}
                         className="fleet-slot-stats"
+                        // 装備による補正値を計算してbonusとして渡す
+                        bonus={calculateEquipmentBonus(slot.ship.equipments || [])}
                       />
                     </div>
                   </div>

@@ -198,11 +198,22 @@ interface FleetComposerShip {
 interface ShipStatusDisplayProps {
   ship: FleetComposerShip;
   className?: string;
+  bonus?: {
+    firepower: number;
+    torpedo: number;
+    aa: number;
+    armor: number;
+    asw: number;
+    evasion: number;
+    accuracy: number;
+    los: number;
+  };
 }
 
 const ShipStatusDisplay: React.FC<ShipStatusDisplayProps> = ({ 
   ship,
-  className 
+  className,
+  bonus 
 }) => {
   // FleetComposerの既存データをfleethub形式で表示
   const getStatValue = (statKey: ShipStatKey): number => {
@@ -233,18 +244,35 @@ const ShipStatusDisplay: React.FC<ShipStatusDisplayProps> = ({
     }
   };
 
+  const getBonusValue = (statKey: ShipStatKey): number => {
+    if (!bonus) return 0;
+    
+    switch (statKey) {
+      case 'firepower': return bonus.firepower || 0;
+      case 'torpedo': return bonus.torpedo || 0;
+      case 'anti_air': return bonus.aa || 0;
+      case 'armor': return bonus.armor || 0;
+      case 'asw': return bonus.asw || 0;
+      case 'evasion': return bonus.evasion || 0;
+      case 'accuracy': return bonus.accuracy || 0;
+      case 'los': return bonus.los || 0;
+      default: return 0;
+    }
+  };
+
   return (
     <div className={`ship-status-display ${className || ''}`}>
       {SHIP_STAT_KEYS.map((statKey) => {
         const value = getStatValue(statKey);
         const improvement = getImprovementValue(statKey);
+        const equipmentBonus = getBonusValue(statKey);
         
         return (
           <ShipStatLabel
             key={statKey}
             statKey={statKey}
             value={value}
-            bonus={0} // 装備ボーナスは現在計算していない
+            bonus={equipmentBonus} // 装備による補正値
             mod={improvement > 0 ? improvement : 0} // 改修値は正の値のみ表示
           />
         );
