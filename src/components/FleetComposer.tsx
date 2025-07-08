@@ -779,7 +779,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   }
 
   // 装備スロットクリックハンドラー
-  const handleEquipmentSlotClick = (position: number, slotIndex: number) => {
+  const handleEquipmentSlotClick = (e: React.MouseEvent, position: number, slotIndex: number) => {
+    e.stopPropagation() // 親要素のクリックイベントを停止
     setSelectedShipSlot({ position, slotIndex })
     setIsEquipmentPanelOpen(true)
   }
@@ -1379,6 +1380,15 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
               onDragOver={(e) => handleDragOver(e, slot.position)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, slot.position)}
+              onClick={() => {
+                // 艦娘スロットクリックで下部ドロワーを展開
+                if (!isDrawerOpen) {
+                  setIsDrawerOpen(true)
+                  showToast('艦娘一覧を開きました', 'success')
+                }
+              }}
+              style={{ cursor: 'pointer' }}
+              title="クリックで艦娘一覧を開く"
             >
               {slot.ship ? (
                 <div className={`ship-card-fleet-slot ${isDraggingShip && isSidebarOpen && sidebarActiveTab === 'training' ? 'dragging-to-training' : ''}`}
@@ -1448,7 +1458,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                           <div 
                             key={slotIndex} 
                             className="equipment-slot-field clickable"
-                            onClick={() => handleEquipmentSlotClick(slot.position, slotIndex)}
+                            onClick={(e) => handleEquipmentSlotClick(e, slot.position, slotIndex)}
                             onDragOver={(e) => {
                               if (draggedEquipment) {
                                 e.preventDefault()
@@ -2125,6 +2135,17 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
 
       {/* 装備選択パネル */}
       <div className={`equipment-panel ${isEquipmentPanelOpen ? 'open' : 'closed'}`}>
+        {/* 装備パネル用ドロワーハンドル */}
+        <div 
+          className="equipment-drawer-handle"
+          onClick={() => setIsEquipmentPanelOpen(!isEquipmentPanelOpen)}
+        >
+          <div className="equipment-handle-bar"></div>
+          <span className="equipment-handle-text">
+            装備
+          </span>
+        </div>
+        
         <div className="equipment-panel-header">
           <h3 className="equipment-panel-title">
             装備選択
