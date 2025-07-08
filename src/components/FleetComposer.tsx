@@ -737,6 +737,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       return () => clearTimeout(timer)
     }
   }, [toast])
+
+  // 改修リストの自動保存
+  useEffect(() => {
+    saveImprovementItemsToStorage(improvementItems)
+  }, [improvementItems])
   
   useEffect(() => {
     if (ships.length > 0 && !hasRestoredComposition) {
@@ -1827,7 +1832,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
 
       {/* 統合サイドバー（編成管理 + 育成リスト） */}
       <div 
-        className={`formation-sidebar ${isSidebarOpen ? 'open' : 'closed'} ${isDraggingShip && sidebarActiveTab === 'training' ? 'drag-over' : ''} ${isDraggingOverTrainingArea ? 'drag-highlight' : ''}`}
+        className={`formation-sidebar ${isSidebarOpen ? 'open' : 'closed'} ${isDraggingShip && sidebarActiveTab === 'training' ? 'drag-over' : ''} ${isDraggingOverTrainingArea ? 'drag-highlight' : ''} ${isDragOverImprovementList && sidebarActiveTab === 'improvements' ? 'improvement-drag-over' : ''}`}
         onDragOver={(e) => {
           if (sidebarActiveTab === 'training') {
             e.preventDefault()
@@ -1835,6 +1840,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             e.dataTransfer.dropEffect = 'copy'
             setIsDraggingOverTrainingArea(true)
             console.log('🔧 DEBUG: Drag over formation-sidebar (training mode)')
+          } else if (sidebarActiveTab === 'improvements') {
+            e.preventDefault()
+            e.stopPropagation()
+            e.dataTransfer.dropEffect = 'copy'
+            setIsDragOverImprovementList(true)
+            console.log('🔧 DEBUG: Drag over formation-sidebar (improvements mode)')
           }
         }}
         onDragLeave={(e) => {
@@ -1842,6 +1853,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             const relatedTarget = e.relatedTarget as Element
             if (!relatedTarget || !relatedTarget.closest('.formation-sidebar')) {
               setIsDraggingOverTrainingArea(false)
+            }
+          } else if (sidebarActiveTab === 'improvements') {
+            const relatedTarget = e.relatedTarget as Element
+            if (!relatedTarget || !relatedTarget.closest('.formation-sidebar')) {
+              setIsDragOverImprovementList(false)
             }
           }
         }}
@@ -1869,6 +1885,41 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             if (shipToAdd) {
               handleAddToTrainingCandidates(shipToAdd)
             }
+          } else if (sidebarActiveTab === 'improvements') {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('🔧 DEBUG: Drop on formation-sidebar (improvements tab)')
+            
+            try {
+              const jsonData = e.dataTransfer.getData('application/json')
+              if (jsonData) {
+                const dropData = JSON.parse(jsonData)
+                console.log('🔧 DEBUG: Drop data:', dropData)
+                
+                if (dropData.type === 'equipment-for-improvement' && dropData.equipment) {
+                  const equipment = dropData.equipment
+                  
+                  // 装備から改修リストアイテムを作成
+                  const newItem: ImprovementItem = {
+                    id: Date.now(),
+                    equipmentId: equipment.original_id || equipment.api_id,
+                    equipmentName: equipment.api_name,
+                    currentLevel: equipment.improvement_level || 0,
+                    materials: {},
+                    notes: '',
+                    createdAt: new Date().toISOString()
+                  }
+                  
+                  // 改修リストに追加
+                  setImprovementItems(prev => [...prev, newItem])
+                  showToast(`${equipment.api_name} ★${equipment.improvement_level || 0} を改修リストに追加しました`, 'success')
+                }
+              }
+            } catch (error) {
+              console.error('🔧 ERROR: Failed to parse drop data:', error)
+            }
+            
+            setIsDragOverImprovementList(false)
           }
         }}
       >
@@ -2260,71 +2311,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                 )}
               </div>
             </div>
-          ) : (
-            /* 改修リストコンテンツ */
-            <div 
-              className={`improvement-list-content ${isDragOverImprovementList ? 'drag-over' : ''}`}
-              onDragOver={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                e.dataTransfer.dropEffect = 'copy'
-                setIsDragOverImprovementList(true)
-              }}
-              onDragEnter={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setIsDragOverImprovementList(true)
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setIsDragOverImprovementList(false)
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                console.log('🔧 DEBUG: Drop on improvement list')
-                
-                try {
-                  const jsonData = e.dataTransfer.getData('application/json')
-                  if (jsonData) {
-                    const dropData = JSON.parse(jsonData)
-                    console.log('🔧 DEBUG: Drop data:', dropData)
-                    
-                    if (dropData.type === 'equipment-for-improvement' && dropData.equipment) {
-                      const equipment = dropData.equipment
-                      
-                      // 装備から改修リストアイテムを作成
-                      const newItem: ImprovementItem = {
-                        id: Date.now(),
-                        equipmentId: equipment.original_id || equipment.api_id,
-                        equipmentName: equipment.api_name,
-                        currentLevel: equipment.improvement_level || 0,
-                        materials: {},
-                        notes: '',
-                        createdAt: new Date().toISOString()
-                      }
-                      
-                      // 重複チェック
-                      const isDuplicate = improvementItems.some(item => 
-                        item.equipmentName === equipment.api_name && 
-                        item.currentLevel === (equipment.improvement_level || 0)
-                      )
-                      
-                      if (!isDuplicate) {
-                        setImprovementItems(prev => [...prev, newItem])
-                        showToast(`${equipment.api_name} を改修リストに追加しました`, 'success')
-                      } else {
-                        showToast('同じ装備が既に改修リストに存在します', 'error')
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error('🔧 ERROR: Failed to parse drop data:', error)
-                }
-                setIsDragOverImprovementList(false)
-              }}
-            >
+          ) : sidebarActiveTab === 'improvements' ? (
+            /* 改修リストコンテンツ - ドロップ処理はサイドパネル全体で処理 */
+            <div className="improvement-list-wrapper">
+              <div className="improvement-list-content">
               {/* 改修リスト */}
               <div className="improvement-items">
                 {improvementItems.length === 0 ? (
@@ -2413,8 +2403,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   ))
                 )}
               </div>
+              </div>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
