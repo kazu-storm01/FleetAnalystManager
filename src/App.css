@@ -12244,4 +12244,261 @@ h4 .material-icons {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
+/* 改修リストスタイル */
+.improvement-list-content {
+  padding: 10px;
+  height: 100%;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+.improvement-list-content.drag-over {
+  background: rgba(0, 212, 255, 0.1);
+  border: 2px dashed rgba(0, 212, 255, 0.5);
+  border-radius: 8px;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+}
+
+
+
+.improvement-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.no-improvements {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 40px 20px;
+}
+
+.no-improvements-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.no-improvements-text {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.improvement-item {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.improvement-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.improvement-item.priority-high {
+  border-left: 4px solid #ff6b6b;
+}
+
+.improvement-item.priority-medium {
+  border-left: 4px solid #ffd700;
+}
+
+.improvement-item.priority-low {
+  border-left: 4px solid #4caf50;
+}
+
+.improvement-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.improvement-equipment-name {
+  font-weight: bold;
+  color: #00d4ff;
+  font-size: 0.9rem;
+}
+
+.improvement-priority {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: white;
+}
+
+.improvement-priority.priority-high {
+  background: #ff6b6b;
+}
+
+.improvement-priority.priority-medium {
+  background: #ffd700;
+  color: #333;
+}
+
+.improvement-priority.priority-low {
+  background: #4caf50;
+}
+
+.improvement-progress {
+  margin-bottom: 8px;
+}
+
+.improvement-levels {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.level-input-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.level-prefix {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.5);
+}
+
+.level-input {
+  width: 40px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.level-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+}
+
+.level-arrow {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: bold;
+}
+
+.improvement-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.improvement-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff 0%, #4facfe 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.improvement-progress-text {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+.improvement-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.material-item {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.material-icon {
+  font-size: 0.9rem;
+}
+
+.improvement-notes {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 6px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.notes-icon {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.improvement-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.complete-improvement-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.complete-improvement-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+}
+
+.complete-improvement-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-improvement-btn {
+  background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.delete-improvement-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+}
+
 
