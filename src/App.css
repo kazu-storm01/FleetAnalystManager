@@ -12245,6 +12245,14 @@ h4 .material-icons {
 }
 
 /* 改修リストスタイル */
+.improvement-list-wrapper {
+  height: 100%;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* コンテンツエリアのガイドメッセージは削除（サイドパネル全体で表示するため） */
+
 .improvement-list-content {
   padding: 10px;
   height: 100%;
@@ -12252,12 +12260,38 @@ h4 .material-icons {
   transition: all 0.3s ease;
 }
 
-.improvement-list-content.drag-over {
-  background: rgba(0, 212, 255, 0.1);
-  border: 2px dashed rgba(0, 212, 255, 0.5);
-  border-radius: 8px;
-  transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+/* サイドパネル全体の改修リスト用ドラッグオーバー効果 */
+.formation-sidebar.improvement-drag-over {
+  background: rgba(0, 212, 255, 0.15);
+  border-left: 4px solid rgba(0, 212, 255, 0.8);
+  box-shadow: -4px 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.formation-sidebar.improvement-drag-over::before {
+  content: '装備をドロップ\A改修リストに追加';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(0, 212, 255, 0.9);
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.8);
+  text-align: center;
+  z-index: 1000;
+  pointer-events: none;
+  white-space: pre-line;
+  line-height: 1.3;
+  width: 85%;
+  max-width: 240px;
+  padding: 12px;
+  background: rgba(0, 212, 255, 0.2);
+  border-radius: 10px;
+  border: 2px dashed rgba(0, 212, 255, 0.7);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.25);
+  box-sizing: border-box;
+  margin: 0 auto;
 }
 
 
