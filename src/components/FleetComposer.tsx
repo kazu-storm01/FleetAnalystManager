@@ -524,7 +524,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [isEquipmentPanelOpen, setIsEquipmentPanelOpen] = useState(false)
   const [equipmentTypeFilter, setEquipmentTypeFilter] = useState<number | 'all'>('all')
   const [equipmentCategoryTab, setEquipmentCategoryTab] = useState<'gun' | 'torpedo' | 'aircraft' | 'radar' | 'other'>('gun')
-  const [equipmentSortType, setEquipmentSortType] = useState<'name' | 'rarity' | 'improvement'>('name')
   const [draggedEquipment, setDraggedEquipment] = useState<Equipment | null>(null)
 
   // 高速化されたShipDataフック
@@ -2231,47 +2230,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           })()}
         </div>
 
-        {/* ソート選択 */}
-        <div className="equipment-panel-sort">
-          <button
-            className={`equipment-sort-btn ${equipmentSortType === 'name' ? 'active' : ''}`}
-            onClick={() => setEquipmentSortType('name')}
-          >
-            名前順
-          </button>
-          <button
-            className={`equipment-sort-btn ${equipmentSortType === 'rarity' ? 'active' : ''}`}
-            onClick={() => setEquipmentSortType('rarity')}
-          >
-            レア度順
-          </button>
-          <button
-            className={`equipment-sort-btn ${equipmentSortType === 'improvement' ? 'active' : ''}`}
-            onClick={() => setEquipmentSortType('improvement')}
-          >
-            改修順
-          </button>
-        </div>
 
         <div className="equipment-panel-content">
-          {/* デバッグ情報 */}
-          <div style={{padding: '8px', fontSize: '0.8rem', color: '#90caf9', borderBottom: '1px solid rgba(100, 181, 246, 0.2)'}}>
-            総装備数: {equipmentList.length} | 
-            現在のタブ: {equipmentCategoryTab} | 
-            フィルター: {equipmentTypeFilter} |
-            表示数: {equipmentList.filter(eq => {
-              let tabFilter = false
-              switch (equipmentCategoryTab) {
-                case 'gun': tabFilter = [1, 2, 3, 4, 18, 19].includes(eq.api_type[2]); break
-                case 'torpedo': tabFilter = [5, 32].includes(eq.api_type[2]); break
-                case 'aircraft': tabFilter = [6, 7, 8, 9, 10, 11, 45, 47, 48, 57].includes(eq.api_type[2]); break
-                case 'radar': tabFilter = [12, 13, 14, 15, 51].includes(eq.api_type[2]); break
-                case 'other': tabFilter = [17, 21, 22, 23, 24, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 46, 50, 52, 53, 54].includes(eq.api_type[2]); break
-              }
-              const typeFilter = equipmentTypeFilter === 'all' || eq.api_type[2] === equipmentTypeFilter
-              return tabFilter && typeFilter
-            }).length}
-          </div>
           {(() => {
             // 装備をフィルタリング
             const filteredEquipment = equipmentList.filter(eq => {
@@ -2346,32 +2306,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
               Object.entries(groupedEquipment).filter(([_, group]) => group.count > 0)
             )
             
-            // グループ化された装備をソート
-            const sortedGroups = Object.values(availableGroupedEquipment).sort((a, b) => {
-              switch (equipmentSortType) {
-                case 'name':
-                  return a.equipment.api_name.localeCompare(b.equipment.api_name, 'ja')
-                case 'rarity':
-                  // レア度降順（高い方が先）、同じレア度なら名前順
-                  if (b.equipment.api_rare !== a.equipment.api_rare) {
-                    return b.equipment.api_rare - a.equipment.api_rare
-                  }
-                  return a.equipment.api_name.localeCompare(b.equipment.api_name, 'ja')
-                case 'improvement':
-                  // 改修値降順（高い方が先）、同じ改修値なら名前順
-                  const aImprovement = a.equipment.improvement_level || 0
-                  const bImprovement = b.equipment.improvement_level || 0
-                  if (bImprovement !== aImprovement) {
-                    return bImprovement - aImprovement
-                  }
-                  return a.equipment.api_name.localeCompare(b.equipment.api_name, 'ja')
-                default:
-                  return 0
-              }
-            })
-            
             // グループ化された装備を表示
-            return sortedGroups.map(group => (
+            return Object.values(availableGroupedEquipment).map(group => (
               <div 
                 key={`${group.equipment.original_id || group.equipment.api_id}_${group.equipment.improvement_level || 0}`}
                 className="equipment-item"

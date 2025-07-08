@@ -248,22 +248,53 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }
 
+  // 装備データフォーマットを検出して正規化
+  const normalizeEquipmentData = (data: any): any[] => {
+    if (!Array.isArray(data)) {
+      throw new Error('装備データは配列形式である必要があります')
+    }
+    
+    // 空の配列の場合はそのまま返す
+    if (data.length === 0) return data
+    
+    // 最初の要素でフォーマットを判定
+    const firstItem = data[0]
+    
+    // 新しいフォーマット: [{"id":23,"lv":4}, {"id":16,"lv":0}, ...]
+    if (firstItem && typeof firstItem === 'object' && 'id' in firstItem && 'lv' in firstItem) {
+      console.log('✅ 新しい装備データフォーマットを検出しました')
+      return data.map((item: any) => ({
+        api_slotitem_id: item.id,  // FleetComposerで期待される形式
+        api_level: item.lv
+      }))
+    }
+    
+    // 従来のフォーマット: [{"api_id":1,"api_name":"12cm単装砲",...}, ...]
+    if (firstItem && typeof firstItem === 'object' && 'api_id' in firstItem) {
+      console.log('✅ 従来の装備データフォーマットを検出しました')
+      return data
+    }
+    
+    throw new Error('サポートされていない装備データフォーマットです')
+  }
+
   // 装備データの更新を処理
   const handleEquipmentDataUpdate = () => {
     if (!equipmentData.trim()) return
     
     try {
       const parsedEquipmentData = JSON.parse(equipmentData)
+      const normalizedData = normalizeEquipmentData(parsedEquipmentData)
       
       // 装備データをLocalStorageに保存
-      localStorage.setItem(`${admiralName}_equipmentData`, JSON.stringify(parsedEquipmentData))
+      localStorage.setItem(`${admiralName}_equipmentData`, JSON.stringify(normalizedData))
       
       showToast('装備データを保存しました', 'success')
-      console.log('✅ 装備データ保存完了:', parsedEquipmentData.length, '個')
+      console.log('✅ 装備データ保存完了:', normalizedData.length, '個')
       
     } catch (error) {
       console.error('❌ 装備データ解析エラー:', error)
-      showToast('装備データの解析に失敗しました。正しいJSONデータか確認してください。', 'error')
+      showToast(`装備データの解析に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`, 'error')
     }
   }
 
