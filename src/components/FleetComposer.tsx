@@ -94,6 +94,28 @@ const EQUIPMENT_TYPES = {
   57: '噴式機'
 }
 
+// 改修リストアイテムの型定義
+interface ImprovementItem {
+  id: number
+  equipmentId: number
+  equipmentName: string
+  targetLevel: number
+  currentLevel: number
+  priority: 'high' | 'medium' | 'low'
+  materials: {
+    fuel?: number
+    ammo?: number
+    steel?: number
+    bauxite?: number
+    devMat?: number
+    improveMat?: number
+    screw?: number
+  }
+  notes?: string
+  createdAt: string
+  completedAt?: string
+}
+
 // 艦娘データの型定義
 interface Ship {
   id: number
@@ -315,6 +337,7 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
 const FLEET_DATA_STORAGE_KEY = 'fleetComposer_fleetData'
 const FLEET_COMPOSITION_STORAGE_KEY = 'fleetComposer_composition'
 const SAVED_FORMATIONS_STORAGE_KEY = 'fleetComposer_savedFormations'
+const IMPROVEMENT_ITEMS_STORAGE_KEY = 'fleetComposer_improvementItems'
 const TRAINING_CANDIDATES_STORAGE_KEY = 'fleetComposer_trainingCandidates'
 
 // 保存された編成の型定義
@@ -509,6 +532,26 @@ const deleteFormationFromStorage = (formationId: string) => {
   }
 }
 
+// 改修リスト用LocalStorage関数
+const saveImprovementItemsToStorage = (items: ImprovementItem[]) => {
+  try {
+    localStorage.setItem(IMPROVEMENT_ITEMS_STORAGE_KEY, JSON.stringify(items))
+    console.log('改修リストを保存しました')
+  } catch (error) {
+    console.error('改修リストの保存に失敗:', error)
+  }
+}
+
+const getImprovementItemsFromStorage = (): ImprovementItem[] => {
+  try {
+    const saved = localStorage.getItem(IMPROVEMENT_ITEMS_STORAGE_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch (error) {
+    console.error('改修リストの読み込みに失敗:', error)
+    return []
+  }
+}
+
 const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<string>('all')
@@ -530,9 +573,13 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [savedFormations, setSavedFormations] = useState<SavedFormation[]>([])
   const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>(getTrainingCandidatesFromStorage())
   const [isDroppedOnTrainingCandidates, setIsDroppedOnTrainingCandidates] = useState(false)
-  const [sidebarActiveTab, setSidebarActiveTab] = useState<'formations' | 'training'>('formations')
+  const [sidebarActiveTab, setSidebarActiveTab] = useState<'formations' | 'training' | 'improvements'>('formations')
   const [isDraggingOverTrainingArea, setIsDraggingOverTrainingArea] = useState(false)
   const [isDraggingShip, setIsDraggingShip] = useState(false)
+  
+  // 改修リスト関連の状態
+  const [improvementItems, setImprovementItems] = useState<ImprovementItem[]>(getImprovementItemsFromStorage())
+  const [isDragOverImprovementList, setIsDragOverImprovementList] = useState(false)
   
   // 装備関連の状態
   const [equipmentMasterList, setEquipmentMasterList] = useState<EquipmentMaster[]>([])
@@ -723,6 +770,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     }
   }, [fleetSlots, fleetName, hasRestoredComposition]) // shipsを除去して無限ループを防止
 
+  // 改修リストの自動保存
+  useEffect(() => {
+    saveImprovementItemsToStorage(improvementItems)
+  }, [improvementItems])
 
   // ソート関数
   const sortShips = (ships: Ship[], sortType: string): Ship[] => {
@@ -1826,7 +1877,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       >
         <div className="sidebar-header">
           <h3>
-            {sidebarActiveTab === 'formations' ? '保存済み編成' : '育成リスト'}
+            {sidebarActiveTab === 'formations' ? '保存済み編成' : 
+             sidebarActiveTab === 'training' ? '育成リスト' : '改修リスト'}
           </h3>
           <button 
             className="close-sidebar-btn"
@@ -1849,6 +1901,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             onClick={() => setSidebarActiveTab('training')}
           >
             <span className="material-icons">note_alt</span> 育成リスト
+          </button>
+          <button 
+            className={`sidebar-tab ${sidebarActiveTab === 'improvements' ? 'active' : ''}`}
+            onClick={() => setSidebarActiveTab('improvements')}
+          >
+            <span className="material-icons">build</span> 改修リスト
           </button>
         </div>
         
@@ -1917,7 +1975,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                 ))
               )}
             </div>
-          ) : (
+          ) : sidebarActiveTab === 'training' ? (
             <div 
               className="training-candidates-content"
               onDragOver={(e) => {
@@ -2205,6 +2263,220 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                 )}
               </div>
             </div>
+          ) : (
+            /* 改修リストコンテンツ */
+            <div 
+              className={`improvement-list-content ${isDragOverImprovementList ? 'drag-over' : ''}`}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                e.dataTransfer.dropEffect = 'copy'
+                setIsDragOverImprovementList(true)
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsDragOverImprovementList(true)
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsDragOverImprovementList(false)
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('🔧 DEBUG: Drop on improvement list')
+                
+                try {
+                  const jsonData = e.dataTransfer.getData('application/json')
+                  if (jsonData) {
+                    const dropData = JSON.parse(jsonData)
+                    console.log('🔧 DEBUG: Drop data:', dropData)
+                    
+                    if (dropData.type === 'equipment-for-improvement' && dropData.equipment) {
+                      const equipment = dropData.equipment
+                      
+                      // 装備から改修リストアイテムを作成
+                      const newItem: ImprovementItem = {
+                        id: Date.now(),
+                        equipmentId: equipment.original_id || equipment.api_id,
+                        equipmentName: equipment.api_name,
+                        currentLevel: equipment.improvement_level || 0,
+                        targetLevel: 10, // デフォルトは★10
+                        priority: 'medium',
+                        materials: {},
+                        notes: '',
+                        createdAt: new Date().toISOString()
+                      }
+                      
+                      // 重複チェック
+                      const isDuplicate = improvementItems.some(item => 
+                        item.equipmentName === equipment.api_name && 
+                        item.currentLevel === (equipment.improvement_level || 0)
+                      )
+                      
+                      if (!isDuplicate) {
+                        setImprovementItems(prev => [...prev, newItem])
+                        showToast(`${equipment.api_name} を改修リストに追加しました`, 'success')
+                      } else {
+                        showToast('同じ装備が既に改修リストに存在します', 'error')
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error('🔧 ERROR: Failed to parse drop data:', error)
+                }
+                setIsDragOverImprovementList(false)
+              }}
+            >
+              {/* 改修リスト */}
+              <div className="improvement-items">
+                {improvementItems.length === 0 ? (
+                  <div className="no-improvements">
+                    <div className="no-improvements-icon">
+                      <span className="material-icons">build</span>
+                    </div>
+                    <div className="no-improvements-text">
+                      改修予定がありません<br/>
+                      装備パネルから装備をドラッグして改修計画を作成
+                    </div>
+                  </div>
+                ) : (
+                  improvementItems.map(item => (
+                    <div key={item.id} className={`improvement-item priority-${item.priority}`}>
+                      <div className="improvement-item-header">
+                        <div className="improvement-equipment-name">{item.equipmentName}</div>
+                        <div className={`improvement-priority priority-${item.priority}`}>
+                          {item.priority === 'high' ? '高' : 
+                           item.priority === 'medium' ? '中' : '低'}
+                        </div>
+                      </div>
+                      
+                      <div className="improvement-progress">
+                        <div className="improvement-levels">
+                          <div className="level-input-group">
+                            <span className="level-prefix">★</span>
+                            <input 
+                              type="number"
+                              min="0"
+                              max="10"
+                              value={item.currentLevel}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0
+                                if (value >= 0 && value <= 10) {
+                                  setImprovementItems(prev => prev.map(i => 
+                                    i.id === item.id 
+                                      ? { ...i, currentLevel: value }
+                                      : i
+                                  ))
+                                }
+                              }}
+                              className="level-input current-level-input"
+                            />
+                          </div>
+                          <span className="level-arrow">→</span>
+                          <div className="level-input-group">
+                            <span className="level-prefix">★</span>
+                            <input 
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={item.targetLevel}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 10
+                                if (value >= 1 && value <= 10) {
+                                  setImprovementItems(prev => prev.map(i => 
+                                    i.id === item.id 
+                                      ? { ...i, targetLevel: value }
+                                      : i
+                                  ))
+                                }
+                              }}
+                              className="level-input target-level-input"
+                            />
+                          </div>
+                        </div>
+                        <div className="improvement-progress-bar">
+                          <div 
+                            className="improvement-progress-fill"
+                            style={{
+                              width: `${Math.min((item.currentLevel / item.targetLevel) * 100, 100)}%`
+                            }}
+                          />
+                        </div>
+                        <div className="improvement-progress-text">
+                          {item.currentLevel}/{item.targetLevel} ({Math.round((item.currentLevel / item.targetLevel) * 100)}%)
+                        </div>
+                      </div>
+
+                      {item.materials && Object.keys(item.materials).length > 0 && (
+                        <div className="improvement-materials">
+                          {item.materials.fuel && (
+                            <span className="material-item">
+                              <span className="material-icon">⛽</span>{item.materials.fuel}
+                            </span>
+                          )}
+                          {item.materials.ammo && (
+                            <span className="material-item">
+                              <span className="material-icon">🔫</span>{item.materials.ammo}
+                            </span>
+                          )}
+                          {item.materials.steel && (
+                            <span className="material-item">
+                              <span className="material-icon">🔧</span>{item.materials.steel}
+                            </span>
+                          )}
+                          {item.materials.bauxite && (
+                            <span className="material-item">
+                              <span className="material-icon">✈️</span>{item.materials.bauxite}
+                            </span>
+                          )}
+                          {item.materials.screw && (
+                            <span className="material-item">
+                              <span className="material-icon">🔩</span>{item.materials.screw}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {item.notes && (
+                        <div className="improvement-notes">
+                          <span className="material-icons notes-icon">sticky_note_2</span>
+                          {item.notes}
+                        </div>
+                      )}
+
+                      <div className="improvement-actions">
+                        <button 
+                          className="complete-improvement-btn"
+                          onClick={() => {
+                            // 改修完了処理
+                            const updatedItems = improvementItems.map(i => 
+                              i.id === item.id 
+                                ? { ...i, currentLevel: i.currentLevel + 1 }
+                                : i
+                            )
+                            setImprovementItems(updatedItems)
+                          }}
+                          disabled={item.currentLevel >= item.targetLevel}
+                        >
+                          <span className="material-icons">upgrade</span>
+                        </button>
+                        <button 
+                          className="delete-improvement-btn"
+                          onClick={() => {
+                            setImprovementItems(prev => prev.filter(i => i.id !== item.id))
+                          }}
+                        >
+                          <span className="material-icons">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -2429,6 +2701,16 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                 onDragStart={(e) => {
                   setDraggedEquipment(group.equipment)
                   e.dataTransfer.effectAllowed = 'copy'
+                  
+                  // 改修リスト用のデータも設定
+                  const equipmentForImprovement = {
+                    type: 'equipment-for-improvement',
+                    equipment: group.equipment
+                  }
+                  e.dataTransfer.setData('application/json', JSON.stringify(equipmentForImprovement))
+                  e.dataTransfer.setData('text/plain', `equipment:${group.equipment.api_name}`)
+                  
+                  console.log('🔧 DEBUG: Dragging equipment for improvement:', group.equipment.api_name)
                 }}
                 onDragEnd={() => setDraggedEquipment(null)}
                 onClick={() => {
@@ -2477,6 +2759,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
           })()}
         </div>
       </div>
+
     </div>
   )
 }
