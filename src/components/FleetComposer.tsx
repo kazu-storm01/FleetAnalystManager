@@ -2051,18 +2051,33 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                 e.stopPropagation()
                 console.log('🔧 DEBUG: Drop event on training-candidates-content')
                 
+                // ドロップされたデータを確認
+                let dropData: any = null
+                try {
+                  const jsonData = e.dataTransfer.getData('application/json')
+                  if (jsonData) {
+                    dropData = JSON.parse(jsonData)
+                    console.log('🔧 DEBUG: Drop data parsed:', dropData)
+                  }
+                } catch (error) {
+                  console.log('❌ Failed to parse drop data:', error)
+                }
+                
+                // 装備のドロップは拒否
+                if (dropData && dropData.type === 'equipment-for-improvement') {
+                  console.log('🔧 DEBUG: Rejecting equipment drop on training candidates')
+                  showToast('装備は育成リストに追加できません', 'error')
+                  return
+                }
+                
                 setIsDroppedOnTrainingCandidates(true)
                 
                 let shipToAdd = draggedShip
                 
-                if (!shipToAdd) {
-                  try {
-                    const shipData = e.dataTransfer.getData('application/json')
-                    if (shipData) {
-                      shipToAdd = JSON.parse(shipData)
-                    }
-                  } catch (error) {
-                    console.log('❌ Failed to parse ship data:', error)
+                if (!shipToAdd && dropData) {
+                  // dropDataが艦娘データかどうか確認
+                  if (dropData.id && dropData.name && dropData.shipId) {
+                    shipToAdd = dropData
                   }
                 }
                 
