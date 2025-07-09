@@ -100,6 +100,7 @@ interface ImprovementItem {
   equipmentId: number
   equipmentName: string
   currentLevel: number
+  targetLevel: number
   materials: {
     fuel?: number
     ammo?: number
@@ -539,15 +540,16 @@ const saveImprovementItemsToStorage = (items: ImprovementItem[]) => {
   }
 }
 
-const getImprovementItemsFromStorage = (): ImprovementItem[] => {
-  try {
-    const saved = localStorage.getItem(IMPROVEMENT_ITEMS_STORAGE_KEY)
-    return saved ? JSON.parse(saved) : []
-  } catch (error) {
-    console.error('改修リストの読み込みに失敗:', error)
-    return []
-  }
-}
+// 削除された関数（分析管理画面と同期のため不要）
+// const getImprovementItemsFromStorage = (): ImprovementItem[] => {
+//   try {
+//     const saved = localStorage.getItem(IMPROVEMENT_ITEMS_STORAGE_KEY)
+//     return saved ? JSON.parse(saved) : []
+//   } catch (error) {
+//     console.error('改修リストの読み込みに失敗:', error)
+//     return []
+//   }
+// }
 
 const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -575,7 +577,68 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
   const [isDraggingShip, setIsDraggingShip] = useState(false)
   
   // 改修リスト関連の状態
-  const [improvementItems, setImprovementItems] = useState<ImprovementItem[]>(getImprovementItemsFromStorage())
+  const [improvementItems, setImprovementItems] = useState<ImprovementItem[]>([])
+  
+  // 改修リストを読み込む（分析管理画面と同期）
+  const loadImprovementCandidates = () => {
+    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+    const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+    if (stored) {
+      try {
+        const candidates = JSON.parse(stored)
+        // 分析管理画面の形式をFleetComposerの形式に変換し、targetLevelを含める
+        const items = candidates.map((c: any) => ({
+          id: c.id,
+          equipmentId: c.equipmentId,
+          equipmentName: c.equipmentName,
+          currentLevel: c.currentLevel,
+          targetLevel: c.targetLevel || 10, // 目標レベルを追加
+          materials: {},
+          createdAt: c.addedAt
+        }))
+        setImprovementItems(items)
+      } catch (error) {
+        console.error('改修リスト読み込みエラー:', error)
+      }
+    }
+  }
+  
+  // 改修リストの目標値を更新
+  const updateImprovementTargetLevel = (itemId: number, targetLevel: number) => {
+    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+    const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+    if (stored) {
+      try {
+        const candidates = JSON.parse(stored)
+        const updatedCandidates = candidates.map((c: any) => 
+          c.id === itemId ? { ...c, targetLevel } : c
+        )
+        localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+        
+        // FleetComposerのstateも更新
+        setImprovementItems(prev => prev.map(item => 
+          item.id === itemId ? { ...item, targetLevel } : item
+        ))
+      } catch (error) {
+        console.error('改修リスト目標値更新エラー:', error)
+      }
+    }
+  }
+  
+  // 初回読み込みとLocalStorage変更監視
+  useEffect(() => {
+    loadImprovementCandidates()
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+      if (e.key === `${admiralName}_improvementCandidates`) {
+        loadImprovementCandidates()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
   const [isDragOverImprovementList, setIsDragOverImprovementList] = useState(false)
   
   // 装備関連の状態
@@ -1905,6 +1968,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                     equipmentId: equipment.original_id || equipment.api_id,
                     equipmentName: equipment.api_name,
                     currentLevel: equipment.improvement_level || 0,
+                    targetLevel: 10,
                     materials: {},
                     notes: '',
                     createdAt: new Date().toISOString()
@@ -2328,7 +2392,68 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
             </div>
           ) : sidebarActiveTab === 'improvements' ? (
             /* 改修リストコンテンツ - ドロップ処理はサイドパネル全体で処理 */
-            <div className="improvement-list-wrapper">
+            <div className="improvement-list-wrapper"
+              onDragOver={(e) => {
+                if (draggedEquipment) {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  e.dataTransfer.dropEffect = 'copy'
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                
+                if (draggedEquipment) {
+                  // 分析管理画面と共有する改修リストに追加
+                  const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+                  const newCandidate = {
+                    id: Date.now(),
+                    equipmentId: draggedEquipment.original_id || draggedEquipment.api_id,
+                    equipmentName: draggedEquipment.api_name,
+                    currentLevel: draggedEquipment.improvement_level || 0,
+                    targetLevel: 10,
+                    addedAt: new Date().toISOString(),
+                    equipmentType: draggedEquipment.api_type[2],
+                    equipmentIcon: draggedEquipment.api_type[3]
+                  }
+                  
+                  // LocalStorageから既存の改修リストを読み込み
+                  const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+                  const existingCandidates = stored ? JSON.parse(stored) : []
+                  
+                  // 同じ装備が既に存在するかチェック
+                  const isDuplicate = existingCandidates.some((c: any) => 
+                    c.equipmentId === newCandidate.equipmentId && 
+                    c.currentLevel === newCandidate.currentLevel
+                  )
+                  
+                  if (isDuplicate) {
+                    showToast(`${draggedEquipment.api_name}★${draggedEquipment.improvement_level || 0}は既に改修リストに登録されています`, 'error')
+                  } else {
+                    // 新しい候補を追加
+                    const updatedCandidates = [...existingCandidates, newCandidate]
+                    localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+                    
+                    showToast(`${draggedEquipment.api_name}を改修リストに追加しました`, 'success')
+                    
+                    // FleetComposer内の改修リストも更新（旧形式互換）
+                    const newItem: ImprovementItem = {
+                      id: Date.now(),
+                      equipmentId: draggedEquipment.original_id || draggedEquipment.api_id,
+                      equipmentName: draggedEquipment.api_name,
+                      currentLevel: draggedEquipment.improvement_level || 0,
+                      targetLevel: 10,
+                      materials: {},
+                      createdAt: new Date().toISOString()
+                    }
+                    setImprovementItems(prev => [...prev, newItem])
+                  }
+                  
+                  setDraggedEquipment(null)
+                }
+              }}
+            >
               <div className="improvement-list-content">
               {/* 改修リスト */}
               <div className="improvement-items">
@@ -2347,33 +2472,70 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                     <div key={item.id} className="improvement-item">
                       <div className="improvement-item-header">
                         <div className="improvement-equipment-name">{item.equipmentName}</div>
-                        <div className="level-input-group">
-                          <span className="level-prefix">★</span>
-                          <input 
-                            type="number"
-                            min="0"
-                            max="10"
-                            value={item.currentLevel}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0
-                              if (value >= 0 && value <= 10) {
-                                setImprovementItems(prev => prev.map(i => 
-                                  i.id === item.id 
-                                    ? { ...i, currentLevel: value }
-                                    : i
-                                ))
-                              }
-                            }}
-                            className="level-input current-level-input"
-                          />
+                        <div className="improvement-levels-container">
+                          <div className="level-input-group">
+                            <span className="level-prefix">現在★</span>
+                            <input 
+                              type="number"
+                              min="0"
+                              max="10"
+                              value={item.currentLevel}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0
+                                if (value >= 0 && value <= 10) {
+                                  // 分析管理画面と同期
+                                  const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+                                  const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+                                  if (stored) {
+                                    const candidates = JSON.parse(stored)
+                                    const updatedCandidates = candidates.map((c: any) => 
+                                      c.id === item.id ? { ...c, currentLevel: value } : c
+                                    )
+                                    localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+                                  }
+                                  
+                                  setImprovementItems(prev => prev.map(i => 
+                                    i.id === item.id 
+                                      ? { ...i, currentLevel: value }
+                                      : i
+                                  ))
+                                }
+                              }}
+                              className="level-input current-level-input"
+                            />
+                          </div>
+                          <div className="level-input-group">
+                            <span className="level-prefix">目標★</span>
+                            <input 
+                              type="number"
+                              min={item.currentLevel + 1}
+                              max="10"
+                              value={item.targetLevel}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 10
+                                if (value > item.currentLevel && value <= 10) {
+                                  updateImprovementTargetLevel(item.id, value)
+                                }
+                              }}
+                              className="level-input target-level-input"
+                            />
+                          </div>
                         </div>
                         <button 
                           className="remove-button-fleet"
                           onClick={() => {
+                            const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+                            const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+                            if (stored) {
+                              const candidates = JSON.parse(stored)
+                              const updatedCandidates = candidates.filter((c: any) => c.id !== item.id)
+                              localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+                            }
                             setImprovementItems(prev => prev.filter(i => i.id !== item.id))
                           }}
                           title="改修予定を削除"
                         >
+                          ×
                         </button>
                       </div>
 
