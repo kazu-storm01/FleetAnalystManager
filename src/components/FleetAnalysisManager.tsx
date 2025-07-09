@@ -31,6 +31,17 @@ interface TrainingCandidate {
   mainTaskId?: number
 }
 
+interface ImprovementCandidate {
+  id: number
+  equipmentId: number
+  equipmentName: string
+  currentLevel: number
+  targetLevel: number
+  addedAt: string
+  equipmentType: number
+  equipmentIcon: number
+}
+
 interface FleetEntry {
   id: number
   totalExp: number        // 自動算出: 全艦経験値合計
@@ -107,6 +118,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>([])
   const [hasNewAchievements, setHasNewAchievements] = useState<boolean>(false)
   const [achievedCount, setAchievedCount] = useState<number>(0)
+  const [showImprovementCandidatesModal, setShowImprovementCandidatesModal] = useState<boolean>(false)
+  const [improvementCandidates, setImprovementCandidates] = useState<ImprovementCandidate[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -497,6 +510,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     // 育成リストを読み込み
     loadTrainingCandidates()
   }, [])
+
+  // 改修リストの初回読み込み（提督名が設定されている時のみ）
+  useEffect(() => {
+    if (admiralName) {
+      loadImprovementCandidates()
+    }
+  }, [admiralName])
 
   // localStorageの変更を監視して育成リストを自動更新
   useEffect(() => {
@@ -959,6 +979,59 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setTrainingCandidates([])
     }
   }
+
+  // 改修リストの読み込み
+  const loadImprovementCandidates = () => {
+    try {
+      const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+      if (stored) {
+        const candidates = JSON.parse(stored) as ImprovementCandidate[]
+        setImprovementCandidates(candidates)
+        console.log('🔧 改修リスト読み込み:', candidates.length, '件')
+      } else {
+        setImprovementCandidates([])
+      }
+    } catch (error) {
+      console.error('改修リスト読み込みエラー:', error)
+      setImprovementCandidates([])
+    }
+  }
+
+  // 改修リストへの追加（将来の拡張用）
+  // const addToImprovementCandidates = (equipment: { api_id: number, api_name: string, api_type: number[], improvement_level?: number }) => {
+  //   const newCandidate: ImprovementCandidate = {
+  //     id: Date.now(),
+  //     equipmentId: equipment.api_id,
+  //     equipmentName: equipment.api_name,
+  //     currentLevel: equipment.improvement_level || 0,
+  //     targetLevel: 10, // デフォルトは★10
+  //     addedAt: new Date().toISOString(),
+  //     equipmentType: equipment.api_type[2],
+  //     equipmentIcon: equipment.api_type[3]
+  //   }
+  //   
+  //   const updatedCandidates = [...improvementCandidates, newCandidate]
+  //   setImprovementCandidates(updatedCandidates)
+  //   localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+  //   
+  //   showToast(`${equipment.api_name}を改修リストに追加しました`, 'success')
+  // }
+
+  // 改修リストから削除（将来の拡張用）
+  // const removeFromImprovementCandidates = (candidateId: number) => {
+  //   const updatedCandidates = improvementCandidates.filter(c => c.id !== candidateId)
+  //   setImprovementCandidates(updatedCandidates)
+  //   localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+  // }
+
+  // 改修リストの目標値更新（将来の拡張用）
+  // const updateImprovementTargetLevel = (candidateId: number, targetLevel: number) => {
+  //   const updatedCandidates = improvementCandidates.map(c => 
+  //     c.id === candidateId ? { ...c, targetLevel } : c
+  //   )
+  //   setImprovementCandidates(updatedCandidates)
+  //   localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+  // }
 
   // 個別の育成リストの達成状態をチェック
   const isTrainingCandidateAchieved = (candidate: TrainingCandidate): boolean => {
@@ -2002,6 +2075,24 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   </div>
                 </button>
               </div>
+
+              {/* 改修リスト */}
+              <div className="overview-item overview-clickable">
+                <button 
+                  onClick={() => {
+                    loadImprovementCandidates()
+                    setShowImprovementCandidatesModal(true)
+                  }} 
+                  className="overview-button"
+                  title="改修リストを表示"
+                >
+                  <span className="overview-icon material-symbols-outlined">build</span>
+                  <div className="overview-text">
+                    <span className="overview-label">改修リスト</span>
+                    <span className="overview-value">{improvementCandidates.length}</span>
+                  </div>
+                </button>
+              </div>
         </div>
       )}
 
@@ -2709,6 +2800,95 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                     </div>
                     )
                   })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 改修リストモーダル */}
+      {showImprovementCandidatesModal && (
+        <div className="modal-overlay">
+          <div className="modal-content improvement-candidates-modal">
+            <div className="modal-header">
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">build</span>
+                <div>
+                  <h3>改修リスト</h3>
+                  <span className="modal-header-subtitle">{improvementCandidates.length}個の装備が改修待ち</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowImprovementCandidatesModal(false)}
+                className="modal-close-btn"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              {improvementCandidates.length === 0 ? (
+                <div className="empty-state">
+                  <span className="material-symbols-outlined empty-icon">build</span>
+                  <p>改修リストがありません</p>
+                  <p className="empty-hint">艦隊編成画面で装備を改修リストにドラッグして追加してください</p>
+                </div>
+              ) : (
+                <div className="improvement-candidates-grid">
+                  {improvementCandidates.map(candidate => (
+                    <div key={candidate.id} className="improvement-candidate-card">
+                      <div className="improvement-card-header">
+                        <div className="improvement-equipment-icon">
+                          <img 
+                            src={`/FleetAnalystManager/images/type/icon${candidate.equipmentIcon}.png`}
+                            alt={candidate.equipmentName}
+                            className="equipment-type-icon"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling;
+                              if (fallback) fallback.classList.remove('hidden');
+                            }}
+                          />
+                          <span className="equipment-icon-fallback hidden">⚙</span>
+                        </div>
+                        <div className="improvement-date-badge">
+                          {new Date(candidate.addedAt).toLocaleDateString('ja-JP')}
+                        </div>
+                      </div>
+                      
+                      <div className="improvement-card-body">
+                        <h4 className="improvement-equipment-name">{candidate.equipmentName}</h4>
+                        
+                        <div className="improvement-progress-display">
+                          <div className="improvement-status">
+                            <span className="improvement-label">現在</span>
+                            <span className="improvement-value current">★{candidate.currentLevel}</span>
+                          </div>
+                          <span className="improvement-arrow-icon">→</span>
+                          <div className="improvement-status">
+                            <span className="improvement-label">目標</span>
+                            <span className="improvement-value target">★{candidate.targetLevel}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="improvement-progress-bar">
+                          <div 
+                            className="improvement-progress-fill"
+                            style={{ 
+                              width: `${(candidate.currentLevel / candidate.targetLevel) * 100}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {improvementCandidates.length > 0 && (
+                <div className="modal-footer-hint">
+                  <span className="material-icons">info</span>
+                  <span>改修目標の変更は艦隊編成画面の改修リストタブで行ってください</span>
                 </div>
               )}
             </div>
