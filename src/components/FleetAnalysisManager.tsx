@@ -42,6 +42,12 @@ interface ImprovementCandidate {
   equipmentIcon: number
 }
 
+// gear_api.json形式の装備データ型
+interface GearApiItem {
+  api_slotitem_id: number
+  api_level: number
+}
+
 interface FleetEntry {
   id: number
   totalExp: number        // 自動算出: 全艦経験値合計
@@ -120,6 +126,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [achievedCount, setAchievedCount] = useState<number>(0)
   const [showImprovementCandidatesModal, setShowImprovementCandidatesModal] = useState<boolean>(false)
   const [improvementCandidates, setImprovementCandidates] = useState<ImprovementCandidate[]>([])
+  const [equipmentStats, setEquipmentStats] = useState<{
+    totalCount: number
+    maxLevelCount: number
+    improvementTotal: number
+  } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -273,6 +284,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     // 最初の要素でフォーマットを判定
     const firstItem = data[0]
     
+    // gear_api.json形式: [{"api_slotitem_id":103,"api_level":10}, ...]
+    if (firstItem && typeof firstItem === 'object' && 'api_slotitem_id' in firstItem && 'api_level' in firstItem) {
+      console.log('✅ gear_api.json形式の装備データを検出しました')
+      return data as GearApiItem[]
+    }
+    
     // 新しいフォーマット: [{"id":23,"lv":4}, {"id":16,"lv":0}, ...]
     if (firstItem && typeof firstItem === 'object' && 'id' in firstItem && 'lv' in firstItem) {
       console.log('✅ 新しい装備データフォーマットを検出しました')
@@ -291,6 +308,19 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     throw new Error('サポートされていない装備データフォーマットです')
   }
 
+  // 装備データの統計を計算
+  const calculateEquipmentStats = (data: GearApiItem[]) => {
+    const totalCount = data.length
+    const maxLevelCount = data.filter(item => item.api_level >= 10).length
+    const improvementTotal = data.reduce((sum, item) => sum + item.api_level, 0)
+    
+    return {
+      totalCount,
+      maxLevelCount,
+      improvementTotal
+    }
+  }
+
   // 装備データの更新を処理
   const handleEquipmentDataUpdate = () => {
     if (!equipmentData.trim()) return
@@ -301,6 +331,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       
       // 装備データをLocalStorageに保存
       localStorage.setItem(`${admiralName}_equipmentData`, JSON.stringify(normalizedData))
+      
+      // 統計情報を計算して保存
+      const stats = calculateEquipmentStats(normalizedData)
+      setEquipmentStats(stats)
+      localStorage.setItem(`${admiralName}_equipmentStats`, JSON.stringify(stats))
       
       showToast('装備データを保存しました', 'success')
       console.log('✅ 装備データ保存完了:', normalizedData.length, '個')
@@ -584,6 +619,16 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   // LocalStorageの変更を監視してリアルタイム更新
   useEffect(() => {
     if (!admiralName) return
+
+    // 装備統計を読み込み
+    const savedEquipmentStats = localStorage.getItem(`${admiralName}_equipmentStats`)
+    if (savedEquipmentStats) {
+      try {
+        setEquipmentStats(JSON.parse(savedEquipmentStats))
+      } catch (error) {
+        console.error('装備統計の読み込みエラー:', error)
+      }
+    }
 
     // LocalStorageの継続監視
     const checkLocalStorage = () => {
@@ -2093,6 +2138,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                   </div>
                 </button>
               </div>
+
+              {/* 装備統計 */}
+              {equipmentStats && (
+                <div className="overview-item">
+                  <span className="material-icons overview-icon">military_tech</span>
+                  <div className="overview-text">
+                    <span className="overview-label">装備統計</span>
+                    <span className="overview-value" style={{ fontSize: '14px' }}>
+                      {privacyMode === true ? '*' : `${equipmentStats.totalCount}個`}
+                      <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '4px' }}>
+                        ({privacyMode === true ? '*' : `★max ${equipmentStats.maxLevelCount}`})
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              )}
         </div>
       )}
 
