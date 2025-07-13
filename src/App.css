@@ -278,8 +278,8 @@
 }
 
 .overview-button {
-  background: none;
-  border: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -291,6 +291,36 @@
   z-index: 1;
   border-radius: 12px;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+}
+
+/* overview-button内の要素の基本色 */
+.overview-button .overview-icon {
+  color: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  font-size: 1.6rem;
+}
+
+.overview-button .overview-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.7rem;
+}
+
+.overview-button .overview-value {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font-weight: 700;
+}
+
+.overview-button:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
 }
 
 .overview-button:hover .overview-icon {
@@ -299,6 +329,10 @@
 }
 
 .overview-button:hover .overview-label {
+  color: #64b5f6;
+}
+
+.overview-button:hover .overview-value {
   color: #64b5f6;
 }
 
@@ -312,6 +346,30 @@
 .overview-button:focus {
   outline: 2px solid rgba(100, 181, 246, 0.5);
   outline-offset: 2px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ボタンのアクティブ状態 */
+.overview-button:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* クリック可能であることを示すアイコン */
+.overview-button::after {
+  content: "▶";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.overview-button:hover::after {
+  color: #64b5f6;
+  transform: translateY(-50%) translateX(3px);
 }
 
 /* タスク・艦隊記録モーダル */

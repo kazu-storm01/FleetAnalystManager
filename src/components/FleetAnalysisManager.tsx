@@ -117,8 +117,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [showTrainingTasksOnly, setShowTrainingTasksOnly] = useState<boolean>(false)
   const [forceUpdate, setForceUpdate] = useState<number>(0)
   const [showTaskHistoryModal, setShowTaskHistoryModal] = useState<boolean>(false)
-  const [showPendingTasksModal, setShowPendingTasksModal] = useState<boolean>(false)
-  const [showCompletedTasksModal, setShowCompletedTasksModal] = useState<boolean>(false)
   const [showFleetRecordsModal, setShowFleetRecordsModal] = useState<boolean>(false)
   const [showTrainingCandidatesModal, setShowTrainingCandidatesModal] = useState<boolean>(false)
   const [trainingCandidates, setTrainingCandidates] = useState<TrainingCandidate[]>([])
@@ -126,11 +124,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [achievedCount, setAchievedCount] = useState<number>(0)
   const [showImprovementCandidatesModal, setShowImprovementCandidatesModal] = useState<boolean>(false)
   const [improvementCandidates, setImprovementCandidates] = useState<ImprovementCandidate[]>([])
-  const [equipmentStats, setEquipmentStats] = useState<{
-    totalCount: number
-    maxLevelCount: number
-    improvementTotal: number
-  } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -308,18 +301,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     throw new Error('サポートされていない装備データフォーマットです')
   }
 
-  // 装備データの統計を計算
-  const calculateEquipmentStats = (data: GearApiItem[]) => {
-    const totalCount = data.length
-    const maxLevelCount = data.filter(item => item.api_level >= 10).length
-    const improvementTotal = data.reduce((sum, item) => sum + item.api_level, 0)
-    
-    return {
-      totalCount,
-      maxLevelCount,
-      improvementTotal
-    }
-  }
 
   // 装備データの更新を処理
   const handleEquipmentDataUpdate = () => {
@@ -331,11 +312,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       
       // 装備データをLocalStorageに保存
       localStorage.setItem(`${admiralName}_equipmentData`, JSON.stringify(normalizedData))
-      
-      // 統計情報を計算して保存
-      const stats = calculateEquipmentStats(normalizedData)
-      setEquipmentStats(stats)
-      localStorage.setItem(`${admiralName}_equipmentStats`, JSON.stringify(stats))
       
       showToast('装備データを保存しました', 'success')
       console.log('✅ 装備データ保存完了:', normalizedData.length, '個')
@@ -620,15 +596,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   useEffect(() => {
     if (!admiralName) return
 
-    // 装備統計を読み込み
-    const savedEquipmentStats = localStorage.getItem(`${admiralName}_equipmentStats`)
-    if (savedEquipmentStats) {
-      try {
-        setEquipmentStats(JSON.parse(savedEquipmentStats))
-      } catch (error) {
-        console.error('装備統計の読み込みエラー:', error)
-      }
-    }
 
     // LocalStorageの継続監視
     const checkLocalStorage = () => {
@@ -915,22 +882,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const getTotalEntries = () => {
     console.log('📊 getTotalEntries呼び出し:', fleetEntries.length, 'entries:', fleetEntries.map(e => e.id))
     return fleetEntries.length
-  }
-  const getTotalCompletedTasks = () => {
-    const total = fleetEntries.reduce((total, entry) => {
-      const filteredTasks = filterTasksForDisplay(entry.tasks)
-      const completedCount = filteredTasks.filter(task => task.completed).length
-      console.log(`📊 Entry ${entry.id} 完了タスク数:`, completedCount, '/', filteredTasks.length)
-      return total + completedCount
-    }, 0)
-    console.log('📊 総完了タスク数:', total)
-    return total
-  }
-  const getPendingTasks = () => {
-    const latestEntry = fleetEntries.find(entry => entry.isLatest)
-    if (!latestEntry) return 0
-    const filteredTasks = filterTasksForDisplay(latestEntry.tasks)
-    return filteredTasks.filter(task => !task.completed).length
   }
   const getTotalTasks = () => {
     return fleetEntries.reduce((total, entry) => {
@@ -2049,32 +2000,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               </div>
               <div className="overview-item overview-clickable">
                 <button
-                  onClick={() => setShowCompletedTasksModal(true)}
-                  className="overview-button"
-                  title="達成タスクを表示"
-                >
-                  <span className="material-icons overview-icon">task_alt</span>
-                  <div className="overview-text">
-                    <span className="overview-label">{'累計達成タスク'}</span>
-                    <span className="overview-value">{privacyMode === true ? '*'.repeat(getTotalCompletedTasks().toString().length) : getTotalCompletedTasks()}</span>
-                  </div>
-                </button>
-              </div>
-              <div className="overview-item overview-clickable">
-                <button
-                  onClick={() => setShowPendingTasksModal(true)}
-                  className="overview-button"
-                  title="未達成タスクを表示"
-                >
-                  <span className="material-icons overview-icon">pending_actions</span>
-                  <div className="overview-text">
-                    <span className="overview-label">{'未達成タスク'}</span>
-                    <span className="overview-value">{privacyMode === true ? '*'.repeat(getPendingTasks().toString().length) : getPendingTasks()}</span>
-                  </div>
-                </button>
-              </div>
-              <div className="overview-item overview-clickable">
-                <button
                   onClick={() => setShowTaskHistoryModal(true)}
                   className="overview-button"
                   title="タスク履歴を表示"
@@ -2139,21 +2064,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                 </button>
               </div>
 
-              {/* 装備統計 */}
-              {equipmentStats && (
-                <div className="overview-item">
-                  <span className="material-icons overview-icon">military_tech</span>
-                  <div className="overview-text">
-                    <span className="overview-label">装備統計</span>
-                    <span className="overview-value" style={{ fontSize: '14px' }}>
-                      {privacyMode === true ? '*' : `${equipmentStats.totalCount}個`}
-                      <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '4px' }}>
-                        ({privacyMode === true ? '*' : `★max ${equipmentStats.maxLevelCount}`})
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              )}
         </div>
       )}
 
@@ -2569,115 +2479,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         </div>
       )}
 
-      {/* 未達成タスクモーダル */}
-      {showPendingTasksModal && (
-        <div className="modal-overlay">
-          <div className="modal-content task-modal">
-            <div className="modal-header">
-              <div className="modal-header-content">
-                <span className="material-symbols-outlined modal-header-icon">pending_actions</span>
-                <div>
-                  <h3>未達成タスク一覧</h3>
-                  <span className="modal-header-subtitle">{fleetEntries.reduce((acc, entry) => acc + entry.tasks.filter(t => !t.completed).length, 0)}件の未達成タスク</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowPendingTasksModal(false)}
-                className="modal-close-btn"
-              >
-                <span className="material-icons">close</span>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="task-list">
-                {[...fleetEntries].reverse().map(entry => {
-                  const pendingTasks = entry.tasks.filter(task => !task.completed)
-                  if (pendingTasks.length === 0) return null
-                  
-                  return (
-                    <div key={entry.id} className="task-group">
-                      <div className="task-group-header">
-                        <h4>{new Date(entry.createdAt).toLocaleString('ja-JP')}</h4>
-                        <span className="task-count pending-count">
-                          {pendingTasks.length}件
-                        </span>
-                      </div>
-                      <div className="task-items">
-                        {pendingTasks.map(task => (
-                          <div key={task.id} className="task-item pending">
-                            <div className="task-status">
-                              <span className="material-icons">radio_button_unchecked</span>
-                            </div>
-                            <div className="task-text">{task.text}</div>
-                            <div className="task-created-date">
-                              {new Date(task.createdAt).toLocaleDateString('ja-JP')}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 達成タスクモーダル */}
-      {showCompletedTasksModal && (
-        <div className="modal-overlay">
-          <div className="modal-content task-modal">
-            <div className="modal-header">
-              <div className="modal-header-content">
-                <span className="material-symbols-outlined modal-header-icon">task_alt</span>
-                <div>
-                  <h3>達成タスク一覧</h3>
-                  <span className="modal-header-subtitle">{fleetEntries.reduce((acc, entry) => acc + entry.tasks.filter(t => t.completed).length, 0)}件の達成タスク</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowCompletedTasksModal(false)}
-                className="modal-close-btn"
-              >
-                <span className="material-icons">close</span>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="task-list">
-                {[...fleetEntries].reverse().map(entry => {
-                  const completedTasks = entry.tasks.filter(task => task.completed)
-                  if (completedTasks.length === 0) return null
-                  
-                  return (
-                    <div key={entry.id} className="task-group">
-                      <div className="task-group-header">
-                        <h4>{new Date(entry.createdAt).toLocaleString('ja-JP')}</h4>
-                        <span className="task-count completed-count">
-                          {completedTasks.length}件
-                        </span>
-                      </div>
-                      <div className="task-items">
-                        {completedTasks.map(task => (
-                          <div key={task.id} className="task-item completed">
-                            <div className="task-status">
-                              <span className="material-icons">check_circle</span>
-                            </div>
-                            <div className="task-text">{task.text}</div>
-                            <div className="task-completion-date">
-                              {task.completedAt ? new Date(task.completedAt).toLocaleDateString('ja-JP') : ''}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 艦隊記録モーダル */}
       {showFleetRecordsModal && (
