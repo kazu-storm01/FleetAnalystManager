@@ -623,15 +623,15 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
   
   // 改修リストの目標値を更新
   const updateImprovementTargetLevel = (itemId: number, targetLevel: number) => {
-    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
-    const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+    const actualAdmiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+    const stored = localStorage.getItem(`${actualAdmiralName}_improvementCandidates`)
     if (stored) {
       try {
         const candidates = JSON.parse(stored)
         const updatedCandidates = candidates.map((c: any) => 
           c.id === itemId ? { ...c, targetLevel } : c
         )
-        localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+        localStorage.setItem(`${actualAdmiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
         
         // FleetComposerのstateも更新
         setImprovementItems(prev => prev.map(item => 
@@ -833,10 +833,31 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
   useEffect(() => {
     if (admiralName) {
       try {
-        const stored = localStorage.getItem(getImprovementItemsStorageKey(admiralName))
+        // FleetAnalysisManagerと同じキーから読み込み（まずは統一キーを確認）
+        const actualAdmiralName = localStorage.getItem('fleetAnalysisAdmiralName') || admiralName
+        const stored = localStorage.getItem(`${actualAdmiralName}_improvementCandidates`)
         if (stored) {
-          const items = JSON.parse(stored) as ImprovementItem[]
+          const candidates = JSON.parse(stored)
+          // FleetComposer形式に変換
+          const items = candidates.map((c: any) => ({
+            id: c.id,
+            equipmentId: c.equipmentId,
+            equipmentName: c.equipmentName,
+            currentLevel: c.currentLevel,
+            targetLevel: c.targetLevel || 10,
+            materials: {},
+            createdAt: c.addedAt
+          }))
           setImprovementItems(items)
+        } else {
+          // 従来のキーからも確認（後方互換性）
+          const legacyStored = localStorage.getItem(getImprovementItemsStorageKey(admiralName))
+          if (legacyStored) {
+            const items = JSON.parse(legacyStored) as ImprovementItem[]
+            setImprovementItems(items)
+            // 新しいキーに移行
+            saveImprovementItemsToStorage(items, actualAdmiralName)
+          }
         }
       } catch (error) {
         console.error('改修リストの読み込みに失敗:', error)
@@ -847,7 +868,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
   // 改修リストの自動保存
   useEffect(() => {
     if (admiralName) {
-      saveImprovementItemsToStorage(improvementItems, admiralName)
+      const actualAdmiralName = localStorage.getItem('fleetAnalysisAdmiralName') || admiralName
+      saveImprovementItemsToStorage(improvementItems, actualAdmiralName)
     }
   }, [improvementItems, admiralName])
   
@@ -2447,7 +2469,32 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                 
                 if (draggedEquipment) {
                   // 分析管理画面と共有する改修リストに追加
-                  const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+                  const actualAdmiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+                  
+                  // ベースライン記録のために現在の装備データを取得
+                  const getBaselineLevels = () => {
+                    try {
+                      const fleetData = localStorage.getItem('fleetComposer_fleetData')
+                      if (fleetData) {
+                        const parsedData = JSON.parse(fleetData)
+                        if (parsedData.gear_api) {
+                          const distribution: Record<number, number> = {}
+                          parsedData.gear_api
+                            .filter((gear: any) => gear.api_slotitem_id === (draggedEquipment.original_id || draggedEquipment.api_id))
+                            .forEach((gear: any) => {
+                              const level = gear.api_level || 0
+                              distribution[level] = (distribution[level] || 0) + 1
+                            })
+                          return distribution
+                        }
+                      }
+                      return {}
+                    } catch (error) {
+                      console.error('ベースライン取得エラー:', error)
+                      return {}
+                    }
+                  }
+                  
                   const newCandidate = {
                     id: Date.now(),
                     equipmentId: draggedEquipment.original_id || draggedEquipment.api_id,
@@ -2456,11 +2503,17 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     targetLevel: 10,
                     addedAt: new Date().toISOString(),
                     equipmentType: draggedEquipment.api_type[2],
-                    equipmentIcon: draggedEquipment.api_type[3]
+                    equipmentIcon: draggedEquipment.api_type[3],
+                    // ベースライン記録を追加
+                    baselineLevels: getBaselineLevels(),
+                    requiredCount: 1,
+                    achievedCount: 0,
+                    isAchieved: false,
+                    wasAchieved: false
                   }
                   
                   // LocalStorageから既存の改修リストを読み込み
-                  const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+                  const stored = localStorage.getItem(`${actualAdmiralName}_improvementCandidates`)
                   const existingCandidates = stored ? JSON.parse(stored) : []
                   
                   // 同じ装備が既に存在するかチェック
@@ -2474,7 +2527,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                   } else {
                     // 新しい候補を追加
                     const updatedCandidates = [...existingCandidates, newCandidate]
-                    localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+                    localStorage.setItem(`${actualAdmiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
                     
                     showToast(`${draggedEquipment.api_name}を改修リストに追加しました`, 'success')
                     
@@ -2525,14 +2578,14 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                                 const value = parseInt(e.target.value) || 0
                                 if (value >= 0 && value <= 10) {
                                   // 分析管理画面と同期
-                                  const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
-                                  const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+                                  const actualAdmiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+                                  const stored = localStorage.getItem(`${actualAdmiralName}_improvementCandidates`)
                                   if (stored) {
                                     const candidates = JSON.parse(stored)
                                     const updatedCandidates = candidates.map((c: any) => 
                                       c.id === item.id ? { ...c, currentLevel: value } : c
                                     )
-                                    localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+                                    localStorage.setItem(`${actualAdmiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
                                   }
                                   
                                   setImprovementItems(prev => prev.map(i => 
