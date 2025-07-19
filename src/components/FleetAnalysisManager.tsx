@@ -40,6 +40,12 @@ interface ImprovementCandidate {
   addedAt: string
   equipmentType: number
   equipmentIcon: number
+  // ベースライン記録式自動達成判定用フィールド
+  baselineLevels?: Record<number, number>  // 登録時点のレベル分布 {改修レベル: 所持数}
+  requiredCount?: number                   // 達成必要数（デフォルト1）
+  achievedCount?: number                   // 現在の達成数
+  isAchieved?: boolean                     // 達成フラグ
+  wasAchieved?: boolean                    // 前回の達成状態（通知用）
 }
 
 // gear_api.json形式の装備データ型
@@ -124,6 +130,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [achievedCount, setAchievedCount] = useState<number>(0)
   const [showImprovementCandidatesModal, setShowImprovementCandidatesModal] = useState<boolean>(false)
   const [improvementCandidates, setImprovementCandidates] = useState<ImprovementCandidate[]>([])
+  const [hasNewImprovementAchievements, setHasNewImprovementAchievements] = useState<boolean>(false)
+  const [improvementAchievedCount, setImprovementAchievedCount] = useState<number>(0)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -340,6 +348,36 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           )
         }
       }
+
+      // 改修目標達成チェック（自動判定）
+      if (improvementCandidates.length > 0) {
+        checkImprovementAchievements(improvementCandidates).then(updatedCandidates => {
+          // 新規達成を検知
+          const newlyAchieved = updatedCandidates.filter(candidate => 
+            candidate.isAchieved && !candidate.wasAchieved
+          )
+          
+          if (newlyAchieved.length > 0) {
+            setHasNewImprovementAchievements(true)
+            setImprovementAchievedCount(newlyAchieved.length)
+            
+            // 達成通知
+            newlyAchieved.forEach(achievement => {
+              showToast(
+                `🔧 改修目標達成！ ${achievement.equipmentName}★${achievement.targetLevel} (${achievement.achievedCount}/${achievement.requiredCount || 1})`,
+                'success'
+              )
+            })
+            
+            // LocalStorageを更新
+            localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+          }
+          
+          setImprovementCandidates(updatedCandidates)
+        }).catch(error => {
+          console.error('改修達成判定エラー:', error)
+        })
+      }
       
       // 達成チェック後に新しいエントリーを作成
       console.log('📝 新しいエントリー作成開始')
@@ -501,6 +539,17 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     if (savedAchievedCount !== null) {
       setAchievedCount(parseInt(savedAchievedCount, 10) || 0)
     }
+
+    // 改修リスト通知状態の復元
+    const savedHasNewImprovementAchievements = localStorage.getItem('fleetAnalysis_hasNewImprovementAchievements')
+    const savedImprovementAchievedCount = localStorage.getItem('fleetAnalysis_improvementAchievedCount')
+    
+    if (savedHasNewImprovementAchievements !== null) {
+      setHasNewImprovementAchievements(savedHasNewImprovementAchievements === 'true')
+    }
+    if (savedImprovementAchievedCount !== null) {
+      setImprovementAchievedCount(parseInt(savedImprovementAchievedCount, 10) || 0)
+    }
     
     if (savedAdmiralName) {
       setAdmiralName(savedAdmiralName)
@@ -529,12 +578,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }, [admiralName])
 
-  // localStorageの変更を監視して育成リストを自動更新
+  // localStorageの変更を監視して育成リスト・改修リストを自動更新
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'fleetComposer_trainingCandidates' && e.newValue) {
         console.log('📋 育成リストの変更を検知')
         loadTrainingCandidates()
+      }
+      
+      // 改修リストの監視を追加
+      if (e.key === `${admiralName}_improvementCandidates` && e.newValue) {
+        console.log('🔧 改修リストの変更を検知')
+        loadImprovementCandidates()
       }
     }
 
@@ -544,14 +599,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       loadTrainingCandidates()
     }
 
+    // 改修リスト用のカスタムイベント追加
+    const handleImprovementCandidatesUpdate = () => {
+      console.log('🔧 改修リストの更新イベントを受信')
+      loadImprovementCandidates()
+    }
+
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('trainingCandidatesUpdated', handleTrainingCandidatesUpdate)
+    window.addEventListener('improvementCandidatesUpdated', handleImprovementCandidatesUpdate)
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('trainingCandidatesUpdated', handleTrainingCandidatesUpdate)
+      window.removeEventListener('improvementCandidatesUpdated', handleImprovementCandidatesUpdate)
     }
-  }, [])
+  }, [admiralName])
 
   // プライバシーモードの永続化
   useEffect(() => {
@@ -568,6 +631,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   useEffect(() => {
     localStorage.setItem('fleetAnalysis_achievedCount', achievedCount.toString())
   }, [achievedCount])
+
+  // 改修リスト通知状態の永続化
+  useEffect(() => {
+    localStorage.setItem('fleetAnalysis_hasNewImprovementAchievements', hasNewImprovementAchievements.toString())
+  }, [hasNewImprovementAchievements])
+
+  useEffect(() => {
+    localStorage.setItem('fleetAnalysis_improvementAchievedCount', improvementAchievedCount.toString())
+  }, [improvementAchievedCount])
 
   // 育成リストの達成状態を監視して通知を同期
   useEffect(() => {
@@ -591,6 +663,42 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       setHasNewAchievements(false)
     }
   }, [trainingCandidates, fleetData, persistedFleetData, achievedCount])
+
+  // 改修リストの達成状態を監視して通知を同期（無限ループ修正版）
+  useEffect(() => {
+    if (improvementCandidates.length > 0) {
+      checkImprovementAchievements(improvementCandidates).then(updatedCandidates => {
+        // ベースラインがある（新システム）の達成済み候補数を計算
+        const currentAchievedCount = updatedCandidates.filter(candidate => 
+          candidate.isAchieved && candidate.baselineLevels
+        ).length
+        
+        // 手動完了可能（従来システム）の候補数も追加
+        const manualCompletableCount = updatedCandidates.filter(candidate =>
+          !candidate.baselineLevels && candidate.currentLevel >= candidate.targetLevel
+        ).length
+        
+        const totalAchievableCount = currentAchievedCount + manualCompletableCount
+        
+        // 達成数が変化した場合のみ更新
+        if (totalAchievableCount !== improvementAchievedCount) {
+          setImprovementAchievedCount(totalAchievableCount)
+          setHasNewImprovementAchievements(totalAchievableCount > 0)
+          console.log('🔧 改修達成状態同期:', totalAchievableCount, '件')
+        }
+        
+        // 状態は更新しない（無限ループ防止）
+        // setImprovementCandidates(updatedCandidates) // コメントアウト
+      }).catch(error => {
+        console.error('改修達成状態監視エラー:', error)
+      })
+    }
+    // 改修リストがない場合は通知をクリア
+    else if (improvementCandidates.length === 0) {
+      setImprovementAchievedCount(0)
+      setHasNewImprovementAchievements(false)
+    }
+  }, [improvementCandidates]) // improvementAchievedCountを依存配列から削除
 
   // LocalStorageの変更を監視してリアルタイム更新
   useEffect(() => {
@@ -993,32 +1101,91 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }
 
-  // 改修リストへの追加（将来の拡張用）
-  // const addToImprovementCandidates = (equipment: { api_id: number, api_name: string, api_type: number[], improvement_level?: number }) => {
-  //   const newCandidate: ImprovementCandidate = {
-  //     id: Date.now(),
-  //     equipmentId: equipment.api_id,
-  //     equipmentName: equipment.api_name,
-  //     currentLevel: equipment.improvement_level || 0,
-  //     targetLevel: 10, // デフォルトは★10
-  //     addedAt: new Date().toISOString(),
-  //     equipmentType: equipment.api_type[2],
-  //     equipmentIcon: equipment.api_type[3]
-  //   }
-  //   
-  //   const updatedCandidates = [...improvementCandidates, newCandidate]
-  //   setImprovementCandidates(updatedCandidates)
-  //   localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
-  //   
-  //   showToast(`${equipment.api_name}を改修リストに追加しました`, 'success')
-  // }
+  // 装備レベル分布を取得する関数
+  const getEquipmentLevelDistribution = (gearData: GearApiItem[], equipmentId: number): Record<number, number> => {
+    const distribution: Record<number, number> = {}
+    
+    gearData
+      .filter(gear => gear.api_slotitem_id === equipmentId)
+      .forEach(gear => {
+        const level = gear.api_level || 0
+        distribution[level] = (distribution[level] || 0) + 1
+      })
+    
+    return distribution
+  }
 
-  // 改修リストから削除（将来の拡張用）
-  // const removeFromImprovementCandidates = (candidateId: number) => {
-  //   const updatedCandidates = improvementCandidates.filter(c => c.id !== candidateId)
-  //   setImprovementCandidates(updatedCandidates)
-  //   localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
-  // }
+  // gear_api.jsonからの装備データ取得
+  const getCurrentEquipmentData = async (): Promise<GearApiItem[]> => {
+    try {
+      // FleetComposerから装備データを取得する仕組みを利用
+      const stored = localStorage.getItem('fleetComposer_fleetData')
+      if (stored) {
+        const fleetComposerData = JSON.parse(stored)
+        // gear_api.jsonがある場合はそれを優先、なければ空配列
+        if (fleetComposerData.gear_api) {
+          return fleetComposerData.gear_api as GearApiItem[]
+        }
+      }
+      return []
+    } catch (error) {
+      console.error('装備データ取得エラー:', error)
+      return []
+    }
+  }
+
+  // 改修リストの自動達成判定
+  const checkImprovementAchievements = async (candidates: ImprovementCandidate[]): Promise<ImprovementCandidate[]> => {
+    try {
+      const currentGear = await getCurrentEquipmentData()
+      
+      return candidates.map(candidate => {
+        // ベースラインがない場合はスキップ（既存データ）
+        if (!candidate.baselineLevels) {
+          return candidate
+        }
+        
+        // 現在のレベル分布を取得
+        const currentLevels = getEquipmentLevelDistribution(currentGear, candidate.equipmentId)
+        
+        // 目標レベル以上の装備数を計算
+        const currentTargetCount = Object.entries(currentLevels)
+          .filter(([level, _]) => parseInt(level) >= candidate.targetLevel)
+          .reduce((sum, [_, count]) => sum + count, 0)
+          
+        const baselineTargetCount = Object.entries(candidate.baselineLevels)
+          .filter(([level, _]) => parseInt(level) >= candidate.targetLevel)
+          .reduce((sum, [_, count]) => sum + count, 0)
+          
+        // 増分 = 新たに目標レベルに達した装備数
+        const achievedCount = Math.max(0, currentTargetCount - baselineTargetCount)
+        const requiredCount = candidate.requiredCount || 1
+        const isAchieved = achievedCount >= requiredCount
+        
+        return {
+          ...candidate,
+          achievedCount,
+          isAchieved,
+          wasAchieved: candidate.isAchieved || false  // 前回の状態を保存
+        }
+      })
+    } catch (error) {
+      console.error('改修達成判定エラー:', error)
+      return candidates
+    }
+  }
+
+  // 改修リストから削除
+  const removeFromImprovementCandidates = (candidateId: number) => {
+    const updatedCandidates = improvementCandidates.filter(c => c.id !== candidateId)
+    setImprovementCandidates(updatedCandidates)
+    localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+    
+    const candidate = improvementCandidates.find(c => c.id === candidateId)
+    if (candidate) {
+      showToast(`${candidate.equipmentName}★${candidate.currentLevel}の改修を完了しました！`, 'success')
+    }
+  }
 
   // 改修リストの目標値更新（将来の拡張用）
   // const updateImprovementTargetLevel = (candidateId: number, targetLevel: number) => {
@@ -2049,14 +2216,32 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               {/* 改修リスト */}
               <div className="overview-item overview-clickable">
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     loadImprovementCandidates()
+                    
+                    // モーダル表示時に達成状態を更新（安全に）
+                    try {
+                      const candidates = JSON.parse(localStorage.getItem(`${admiralName}_improvementCandidates`) || '[]')
+                      if (candidates.length > 0) {
+                        const updatedCandidates = await checkImprovementAchievements(candidates)
+                        setImprovementCandidates(updatedCandidates)
+                      }
+                    } catch (error) {
+                      console.error('モーダル表示時の達成状態更新エラー:', error)
+                    }
+                    
                     setShowImprovementCandidatesModal(true)
+                    // 通知クリアは改修完了ボタンを押した時のみ
                   }} 
                   className="overview-button"
                   title="改修リストを表示"
                 >
                   <span className="overview-icon material-symbols-outlined">build</span>
+                  {hasNewImprovementAchievements && (
+                    <span className="notification-badge">
+                      {improvementAchievedCount}
+                    </span>
+                  )}
                   <div className="overview-text">
                     <span className="overview-label">改修リスト</span>
                     <span className="overview-value">{improvementCandidates.length}</span>
@@ -2719,7 +2904,12 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                       </div>
                       
                       <div className="improvement-card-body">
-                        <h4 className="improvement-equipment-name">{candidate.equipmentName}</h4>
+                        <h4 className="improvement-equipment-name">
+                          {candidate.equipmentName}
+                          {candidate.isAchieved && (
+                            <span className="achievement-badge">✨達成</span>
+                          )}
+                        </h4>
                         
                         <div className="improvement-progress-display">
                           <div className="improvement-status">
@@ -2732,15 +2922,55 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                             <span className="improvement-value target">★{candidate.targetLevel}</span>
                           </div>
                         </div>
+
+                        {/* ベースライン式の進捗表示 */}
+                        {candidate.baselineLevels && (
+                          <div className="improvement-achievement-progress">
+                            <span className="improvement-progress-text">
+                              達成進捗: {candidate.achievedCount || 0}/{candidate.requiredCount || 1}本
+                            </span>
+                          </div>
+                        )}
                         
                         <div className="improvement-progress-bar">
                           <div 
                             className="improvement-progress-fill"
                             style={{ 
-                              width: `${(candidate.currentLevel / candidate.targetLevel) * 100}%`
+                              width: candidate.baselineLevels 
+                                ? `${Math.min(((candidate.achievedCount || 0) / (candidate.requiredCount || 1)) * 100, 100)}%`
+                                : `${(candidate.currentLevel / candidate.targetLevel) * 100}%`
                             }}
                           />
                         </div>
+                        
+                        {/* 改修完了ボタン - 手動完了 or 自動達成完了 */}
+                        {(candidate.isAchieved || candidate.currentLevel >= candidate.targetLevel) && (
+                          <div className="improvement-complete-section">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // 達成バッジを個別減算（育成リストと同様）
+                                if (candidate.isAchieved || candidate.currentLevel >= candidate.targetLevel) {
+                                  const newImprovementAchievedCount = Math.max(0, improvementAchievedCount - 1)
+                                  setImprovementAchievedCount(newImprovementAchievedCount)
+                                  
+                                  // すべて完了した場合のみ通知をクリア
+                                  if (newImprovementAchievedCount === 0) {
+                                    setHasNewImprovementAchievements(false)
+                                  }
+                                }
+                                removeFromImprovementCandidates(candidate.id)
+                              }}
+                              className={`complete-improvement-btn ${candidate.isAchieved ? 'achieved' : ''}`}
+                              title={candidate.isAchieved ? "目標達成 - 完了" : "改修完了"}
+                            >
+                              <span className="material-symbols-outlined">
+                                {candidate.isAchieved ? 'celebration' : 'build_circle'}
+                              </span>
+                              <span>{candidate.isAchieved ? '目標達成完了' : '改修完了'}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
