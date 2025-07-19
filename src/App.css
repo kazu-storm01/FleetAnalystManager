@@ -246,7 +246,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* 見切れを防ぐため */
 }
 
 .overview-clickable::before {
@@ -267,13 +267,13 @@
 }
 
 .overview-clickable:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px); /* 移動量を減らす */
   box-shadow: 0 8px 25px rgba(100, 181, 246, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15);
   border-color: rgba(100, 181, 246, 0.4);
 }
 
 .overview-clickable:active {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   transition: transform 0.1s ease;
 }
 
@@ -320,7 +320,7 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
   border-color: rgba(255, 255, 255, 0.6);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transform: translateY(-3px);
+  transform: none; /* 重複を防ぐため削除 */
 }
 
 .overview-button:hover .overview-icon {
@@ -10008,10 +10008,11 @@ h4 .material-icons {
   justify-content: space-around;
   gap: 10px;
   margin-bottom: 12px;
-  padding: 10px;
+  padding: 15px 10px 10px; /* 上部に余裕を追加 */
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: visible; /* ホバー時の見切れを防ぐ */
 }
 
 .overview-item {
@@ -10020,6 +10021,7 @@ h4 .material-icons {
   gap: 8px;
   flex: 1;
   justify-content: center;
+  overflow: visible; /* ホバー時の見切れを防ぐ */
 }
 
 .overview-icon {
@@ -10284,11 +10286,11 @@ h4 .material-icons {
 .overview-item {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: visible; /* ホバー時の見切れを防ぐ */
 }
 
 
@@ -11983,6 +11985,40 @@ h4 .material-icons {
   background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
   border-radius: 4px;
   transition: width 0.3s ease;
+}
+
+/* 改修完了セクション */
+.improvement-complete-section {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.complete-improvement-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.complete-improvement-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.complete-improvement-btn:active {
+  transform: translateY(0);
+}
+
+.complete-improvement-btn .material-symbols-outlined {
+  font-size: 16px;
 }
 
 .modal-footer-hint {

@@ -529,12 +529,18 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
   }, [admiralName])
 
-  // localStorageの変更を監視して育成リストを自動更新
+  // localStorageの変更を監視して育成リスト・改修リストを自動更新
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'fleetComposer_trainingCandidates' && e.newValue) {
         console.log('📋 育成リストの変更を検知')
         loadTrainingCandidates()
+      }
+      
+      // 改修リストの監視を追加
+      if (e.key === `${admiralName}_improvementCandidates` && e.newValue) {
+        console.log('🔧 改修リストの変更を検知')
+        loadImprovementCandidates()
       }
     }
 
@@ -544,14 +550,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       loadTrainingCandidates()
     }
 
+    // 改修リスト用のカスタムイベント追加
+    const handleImprovementCandidatesUpdate = () => {
+      console.log('🔧 改修リストの更新イベントを受信')
+      loadImprovementCandidates()
+    }
+
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('trainingCandidatesUpdated', handleTrainingCandidatesUpdate)
+    window.addEventListener('improvementCandidatesUpdated', handleImprovementCandidatesUpdate)
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('trainingCandidatesUpdated', handleTrainingCandidatesUpdate)
+      window.removeEventListener('improvementCandidatesUpdated', handleImprovementCandidatesUpdate)
     }
-  }, [])
+  }, [admiralName])
 
   // プライバシーモードの永続化
   useEffect(() => {
@@ -1013,12 +1027,17 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   //   showToast(`${equipment.api_name}を改修リストに追加しました`, 'success')
   // }
 
-  // 改修リストから削除（将来の拡張用）
-  // const removeFromImprovementCandidates = (candidateId: number) => {
-  //   const updatedCandidates = improvementCandidates.filter(c => c.id !== candidateId)
-  //   setImprovementCandidates(updatedCandidates)
-  //   localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
-  // }
+  // 改修リストから削除
+  const removeFromImprovementCandidates = (candidateId: number) => {
+    const updatedCandidates = improvementCandidates.filter(c => c.id !== candidateId)
+    setImprovementCandidates(updatedCandidates)
+    localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
+    
+    const candidate = improvementCandidates.find(c => c.id === candidateId)
+    if (candidate) {
+      showToast(`${candidate.equipmentName}★${candidate.currentLevel}の改修を完了しました！`, 'success')
+    }
+  }
 
   // 改修リストの目標値更新（将来の拡張用）
   // const updateImprovementTargetLevel = (candidateId: number, targetLevel: number) => {
@@ -2741,6 +2760,23 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                             }}
                           />
                         </div>
+                        
+                        {/* 改修完了ボタン */}
+                        {candidate.currentLevel >= candidate.targetLevel && (
+                          <div className="improvement-complete-section">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeFromImprovementCandidates(candidate.id)
+                              }}
+                              className="complete-improvement-btn"
+                              title="改修完了"
+                            >
+                              <span className="material-symbols-outlined">build_circle</span>
+                              <span>改修完了</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

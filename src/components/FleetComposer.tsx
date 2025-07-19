@@ -97,8 +97,9 @@ const EQUIPMENT_TYPES = {
 // 改修リストアイテムの型定義
 interface ImprovementItem {
   id: number
-  equipmentId: number
-  equipmentName: string
+  equipmentId?: number
+  equipmentName?: string
+  name?: string  // 両方のプロパティ名に対応
   currentLevel: number
   targetLevel: number
   materials: {
@@ -206,6 +207,7 @@ interface FleetSlot {
 
 interface FleetComposerProps {
   fleetData?: string // JSONデータを受け取る
+  admiralName?: string // 提督名を受け取る
 }
 
 // JSONデータをShip配列に変換する関数
@@ -335,7 +337,7 @@ const parseFleetData = (jsonData: string, getShipDataFn: (shipId: number) => any
 const FLEET_DATA_STORAGE_KEY = 'fleetComposer_fleetData'
 const FLEET_COMPOSITION_STORAGE_KEY = 'fleetComposer_composition'
 const SAVED_FORMATIONS_STORAGE_KEY = 'fleetComposer_savedFormations'
-const IMPROVEMENT_ITEMS_STORAGE_KEY = 'fleetComposer_improvementItems'
+const getImprovementItemsStorageKey = (admiralName: string) => `improvementItems_${admiralName}`
 const TRAINING_CANDIDATES_STORAGE_KEY = 'fleetComposer_trainingCandidates'
 
 // 保存された編成の型定義
@@ -531,9 +533,25 @@ const deleteFormationFromStorage = (formationId: string) => {
 }
 
 // 改修リスト用LocalStorage関数
-const saveImprovementItemsToStorage = (items: ImprovementItem[]) => {
+const saveImprovementItemsToStorage = (items: ImprovementItem[], admiralName: string) => {
   try {
-    localStorage.setItem(IMPROVEMENT_ITEMS_STORAGE_KEY, JSON.stringify(items))
+    // FleetComposer用のキーに保存
+    localStorage.setItem(getImprovementItemsStorageKey(admiralName), JSON.stringify(items))
+    
+    // FleetAnalysisManager用のキーにも同期保存
+    const analysisManagerItems = items.map(item => ({
+      id: item.id,
+      equipmentId: item.equipmentId,
+      equipmentName: item.equipmentName,
+      currentLevel: item.currentLevel,
+      targetLevel: item.targetLevel,
+      addedAt: item.createdAt
+    }))
+    localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(analysisManagerItems))
+    
+    // リアルタイム更新イベントを発火
+    window.dispatchEvent(new CustomEvent('improvementCandidatesUpdated'))
+    
     console.log('改修リストを保存しました')
   } catch (error) {
     console.error('改修リストの保存に失敗:', error)
@@ -551,7 +569,7 @@ const saveImprovementItemsToStorage = (items: ImprovementItem[]) => {
 //   }
 // }
 
-const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
+const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 'テスト提督' }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<string>('all')
   const [sortType, setSortType] = useState<'level' | 'id' | 'shipId'>('level')
@@ -631,13 +649,23 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     
     const handleStorageChange = (e: StorageEvent) => {
       const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
-      if (e.key === `${admiralName}_improvementCandidates`) {
+      if (e.key === `${admiralName}_improvementCandidates` || e.key === 'fleetAnalysisAdmiralName') {
         loadImprovementCandidates()
       }
     }
     
     window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
+    
+    // 定期的にチェック（フォーカス時）
+    const handleFocus = () => {
+      loadImprovementCandidates()
+    }
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [])
   const [isDragOverImprovementList, setIsDragOverImprovementList] = useState(false)
   
@@ -801,10 +829,27 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
     }
   }, [toast])
 
+  // 改修リストの初期読み込み
+  useEffect(() => {
+    if (admiralName) {
+      try {
+        const stored = localStorage.getItem(getImprovementItemsStorageKey(admiralName))
+        if (stored) {
+          const items = JSON.parse(stored) as ImprovementItem[]
+          setImprovementItems(items)
+        }
+      } catch (error) {
+        console.error('改修リストの読み込みに失敗:', error)
+      }
+    }
+  }, [admiralName])
+
   // 改修リストの自動保存
   useEffect(() => {
-    saveImprovementItemsToStorage(improvementItems)
-  }, [improvementItems])
+    if (admiralName) {
+      saveImprovementItemsToStorage(improvementItems, admiralName)
+    }
+  }, [improvementItems, admiralName])
   
   useEffect(() => {
     if (ships.length > 0 && !hasRestoredComposition) {
@@ -834,11 +879,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
       return () => clearTimeout(saveTimer)
     }
   }, [fleetSlots, fleetName, hasRestoredComposition]) // shipsを除去して無限ループを防止
-
-  // 改修リストの自動保存
-  useEffect(() => {
-    saveImprovementItemsToStorage(improvementItems)
-  }, [improvementItems])
 
   // ソート関数
   const sortShips = (ships: Ship[], sortType: string): Ship[] => {
@@ -1974,8 +2014,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                     createdAt: new Date().toISOString()
                   }
                   
-                  // 改修リストに追加
+                  // 改修リストに追加（useEffectで自動的に同期される）
                   setImprovementItems(prev => [...prev, newItem])
+                  
                   showToast(`${equipment.api_name} ★${equipment.improvement_level || 0} を改修リストに追加しました`, 'success')
                 }
               }
@@ -2439,7 +2480,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                     
                     // FleetComposer内の改修リストも更新（旧形式互換）
                     const newItem: ImprovementItem = {
-                      id: Date.now(),
+                      id: newCandidate.id, // 同じIDを使用して同期を保つ
                       equipmentId: draggedEquipment.original_id || draggedEquipment.api_id,
                       equipmentName: draggedEquipment.api_name,
                       currentLevel: draggedEquipment.improvement_level || 0,
@@ -2471,7 +2512,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                   improvementItems.map(item => (
                     <div key={item.id} className="improvement-item">
                       <div className="improvement-item-header">
-                        <div className="improvement-equipment-name">{item.equipmentName}</div>
+                        <div className="improvement-equipment-name">{item.equipmentName || item.name}</div>
                         <div className="improvement-levels-container">
                           <div className="level-input-group">
                             <span className="level-prefix">現在★</span>
@@ -2524,13 +2565,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData }) => {
                         <button 
                           className="remove-button-fleet"
                           onClick={() => {
-                            const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
-                            const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
-                            if (stored) {
-                              const candidates = JSON.parse(stored)
-                              const updatedCandidates = candidates.filter((c: any) => c.id !== item.id)
-                              localStorage.setItem(`${admiralName}_improvementCandidates`, JSON.stringify(updatedCandidates))
-                            }
+                            // useEffectで自動的に同期されるため、状態更新のみ実行
                             setImprovementItems(prev => prev.filter(i => i.id !== item.id))
                           }}
                           title="改修予定を削除"
