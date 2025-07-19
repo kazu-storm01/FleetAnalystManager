@@ -9,7 +9,6 @@ type CurrentView = 'analysis-manager' | 'analyst' | 'fleet-composer'
 function App() {
   const [currentView, setCurrentView] = useState<CurrentView | null>(null)
   const [sharedFleetData, setSharedFleetData] = useState<string>('')
-  const [sharedAdmiralName, setSharedAdmiralName] = useState<string>('テスト提督')
 
   // ビューの初期化
   useEffect(() => {
@@ -88,7 +87,6 @@ function App() {
         <FleetAnalysisManager 
           onFleetDataChange={setSharedFleetData}
           onSwitchToAnalyst={switchToAnalyst}
-          onAdmiralNameChange={setSharedAdmiralName}
         />
       ) : currentView === 'analyst' ? (
         <FleetAnalystApp 
@@ -97,7 +95,6 @@ function App() {
       ) : (
         <FleetComposer 
           fleetData={sharedFleetData}
-          admiralName={sharedAdmiralName}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   SHIP_TYPES, 
   getShipTypeByShipType,
@@ -100,6 +100,7 @@ interface ImprovementItem {
   equipmentId?: number
   equipmentName?: string
   name?: string  // 両方のプロパティ名に対応
+  equipmentIcon?: number  // 装備アイコンID
   currentLevel: number
   targetLevel: number
   materials: {
@@ -543,6 +544,7 @@ const saveImprovementItemsToStorage = (items: ImprovementItem[], admiralName: st
       id: item.id,
       equipmentId: item.equipmentId,
       equipmentName: item.equipmentName,
+      equipmentIcon: item.equipmentIcon, // 装備アイコンIDを追加
       currentLevel: item.currentLevel,
       targetLevel: item.targetLevel,
       addedAt: item.createdAt
@@ -597,30 +599,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
   // 改修リスト関連の状態
   const [improvementItems, setImprovementItems] = useState<ImprovementItem[]>([])
   
-  // 改修リストを読み込む（分析管理画面と同期）
-  const loadImprovementCandidates = () => {
-    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
-    const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
-    if (stored) {
-      try {
-        const candidates = JSON.parse(stored)
-        // 分析管理画面の形式をFleetComposerの形式に変換し、targetLevelを含める
-        const items = candidates.map((c: any) => ({
-          id: c.id,
-          equipmentId: c.equipmentId,
-          equipmentName: c.equipmentName,
-          currentLevel: c.currentLevel,
-          targetLevel: c.targetLevel || 10, // 目標レベルを追加
-          materials: {},
-          createdAt: c.addedAt
-        }))
-        setImprovementItems(items)
-      } catch (error) {
-        console.error('改修リスト読み込みエラー:', error)
-      }
-    }
-  }
-  
   // 改修リストの目標値を更新
   const updateImprovementTargetLevel = (itemId: number, targetLevel: number) => {
     const actualAdmiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
@@ -643,30 +621,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
     }
   }
   
-  // 初回読み込みとLocalStorage変更監視
-  useEffect(() => {
-    loadImprovementCandidates()
-    
-    const handleStorageChange = (e: StorageEvent) => {
-      const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
-      if (e.key === `${admiralName}_improvementCandidates` || e.key === 'fleetAnalysisAdmiralName') {
-        loadImprovementCandidates()
-      }
-    }
-    
-    window.addEventListener('storage', handleStorageChange)
-    
-    // 定期的にチェック（フォーカス時）
-    const handleFocus = () => {
-      loadImprovementCandidates()
-    }
-    window.addEventListener('focus', handleFocus)
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [])
   const [isDragOverImprovementList, setIsDragOverImprovementList] = useState(false)
   
   // 装備関連の状態
@@ -749,6 +703,130 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
     setEquipmentList(combinedEquipment)
   }, [equipmentMasterList, ownedEquipmentList])
+
+  // 改修リストを読み込む（分析管理画面と同期）
+  const loadImprovementCandidates = useCallback(() => {
+    const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+    const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
+    if (stored) {
+      try {
+        const candidates = JSON.parse(stored)
+        // 分析管理画面の形式をFleetComposerの形式に変換し、targetLevelとequipmentIconを含める
+        const items = candidates.map((c: any, index: number) => {
+          // equipmentIconがない既存データの場合は、装備データから取得を試みる
+          let equipmentIcon = c.equipmentIcon;
+          
+          // デバッグログ：元データの確認
+          console.log(`🔧 DEBUG: 改修リスト読み込み ${index + 1}/${candidates.length}:`, {
+            equipmentName: c.equipmentName,
+            equipmentId: c.equipmentId,
+            originalIcon: c.equipmentIcon,
+            equipmentDataAvailable: ownedEquipmentList.length
+          });
+          
+          // 装備データが利用可能な場合のみアイコン検索を実行
+          if (!equipmentIcon && c.equipmentId && ownedEquipmentList.length > 0) {
+            // より幅広い検索条件で装備を探す
+            const equipment = ownedEquipmentList.find((eq: any) => {
+              return (eq.original_id || eq.api_id || eq.api_slotitem_id) === c.equipmentId ||
+                     eq.api_slotitem_id === c.equipmentId ||
+                     (eq.original_id && eq.original_id === c.equipmentId)
+            });
+            
+            console.log(`🔧 DEBUG: 装備検索結果:`, {
+              found: !!equipment,
+              equipmentName: (equipment as any)?.api_name,
+              api_type: (equipment as any)?.api_type,
+              iconId: (equipment as any)?.api_type?.[3]
+            });
+            
+            if (equipment && (equipment as any).api_type) {
+              equipmentIcon = (equipment as any).api_type[3];
+            }
+          }
+          
+          console.log(`🔧 DEBUG: 最終アイコンID:`, equipmentIcon);
+          
+          return {
+            id: c.id,
+            equipmentId: c.equipmentId,
+            equipmentName: c.equipmentName,
+            equipmentIcon: equipmentIcon, // undefinedの場合は後でuseEffectで補完される
+            currentLevel: c.currentLevel,
+            targetLevel: c.targetLevel || 10, // 目標レベルを追加
+            materials: {},
+            createdAt: c.addedAt
+          };
+        })
+        setImprovementItems(items)
+      } catch (error) {
+        console.error('改修リスト読み込みエラー:', error)
+      }
+    }
+  }, [ownedEquipmentList])
+
+  // 初回読み込みとLocalStorage変更監視（装備データ読み込み後に再実行）
+  useEffect(() => {
+    loadImprovementCandidates()
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
+      if (e.key === `${admiralName}_improvementCandidates` || e.key === 'fleetAnalysisAdmiralName') {
+        loadImprovementCandidates()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    // 定期的にチェック（フォーカス時）
+    const handleFocus = () => {
+      loadImprovementCandidates()
+    }
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [loadImprovementCandidates]) // loadImprovementCandidatesの依存関係によって装備データ変更時に再実行
+
+  // 装備データ読み込み完了後、改修アイテムの欠損アイコンを補完
+  useEffect(() => {
+    if (ownedEquipmentList.length > 0) {
+      setImprovementItems(currentItems => {
+        if (currentItems.length === 0) return currentItems
+        
+        let needsUpdate = false
+        const updatedItems = currentItems.map(item => {
+          if (!item.equipmentIcon && item.equipmentId) {
+            // より幅広い検索条件で装備を探す
+            const equipment = ownedEquipmentList.find((eq: any) => {
+              // 複数のID条件で検索
+              return (eq.original_id || eq.api_id || eq.api_slotitem_id) === item.equipmentId ||
+                     eq.api_slotitem_id === item.equipmentId ||
+                     (eq.original_id && eq.original_id === item.equipmentId)
+            });
+            
+            if (equipment && (equipment as any).api_type) {
+              console.log(`🔧 装備アイコン補完: ${item.equipmentName} ID:${item.equipmentId} → アイコン:${(equipment as any).api_type[3]}`)
+              needsUpdate = true
+              return {
+                ...item,
+                equipmentIcon: (equipment as any).api_type[3]
+              }
+            }
+          }
+          return item
+        })
+        
+        if (needsUpdate) {
+          console.log('🔧 改修アイテムのアイコンを補完しました')
+          return updatedItems
+        }
+        return currentItems
+      })
+    }
+  }, [ownedEquipmentList])
 
   // サイドバーが閉じられた時の処理
   useEffect(() => {
@@ -2029,6 +2107,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     id: Date.now(),
                     equipmentId: equipment.original_id || equipment.api_id,
                     equipmentName: equipment.api_name,
+                    equipmentIcon: equipment.api_type[3], // 装備アイコンIDを追加
                     currentLevel: equipment.improvement_level || 0,
                     targetLevel: 10,
                     materials: {},
@@ -2495,6 +2574,21 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     }
                   }
                   
+                  // 装備選択パネルと完全に同じアイコンIDを使用
+                  const equipmentIconId = draggedEquipment.api_type[3]
+                  
+                  // 詳細デバッグログ
+                  console.log('🔧 装備データ詳細:', {
+                    name: draggedEquipment.api_name,
+                    api_type: draggedEquipment.api_type,
+                    'api_type[0]': draggedEquipment.api_type[0],
+                    'api_type[1]': draggedEquipment.api_type[1], 
+                    'api_type[2]': draggedEquipment.api_type[2],
+                    'api_type[3]': draggedEquipment.api_type[3],
+                    'api_type[4]': draggedEquipment.api_type[4],
+                    equipmentIconId
+                  })
+                  
                   const newCandidate = {
                     id: Date.now(),
                     equipmentId: draggedEquipment.original_id || draggedEquipment.api_id,
@@ -2503,7 +2597,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     targetLevel: 10,
                     addedAt: new Date().toISOString(),
                     equipmentType: draggedEquipment.api_type[2],
-                    equipmentIcon: draggedEquipment.api_type[3],
+                    equipmentIcon: equipmentIconId,
                     // ベースライン記録を追加
                     baselineLevels: getBaselineLevels(),
                     requiredCount: 1,
@@ -2562,9 +2656,31 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     </div>
                   </div>
                 ) : (
-                  improvementItems.map(item => (
+                  improvementItems.map((item, index) => {
+                    // 表示時のデバッグログ
+                    console.log(`🔧 DEBUG: 改修リスト表示 ${index + 1}:`, {
+                      equipmentName: item.equipmentName,
+                      equipmentIcon: item.equipmentIcon,
+                      fallbackIcon: item.equipmentIcon || 1,
+                      imagePath: `/FleetAnalystManager/images/type/icon${item.equipmentIcon || 1}.png`
+                    });
+                    
+                    return (
                     <div key={item.id} className="improvement-item">
                       <div className="improvement-item-header">
+                        <div className="improvement-equipment-icon">
+                          <img 
+                            src={`/FleetAnalystManager/images/type/icon${item.equipmentIcon || 1}.png`}
+                            alt={item.equipmentName}
+                            className="equipment-type-icon"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling;
+                              if (fallback) fallback.classList.remove('hidden');
+                            }}
+                          />
+                          <span className="equipment-icon-fallback hidden">🔧</span>
+                        </div>
                         <div className="improvement-equipment-name">{item.equipmentName || item.name}</div>
                         <div className="improvement-levels-container">
                           <div className="level-input-group">
@@ -2665,7 +2781,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                       )}
 
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
               </div>

@@ -2887,7 +2887,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                       <div className="improvement-card-header">
                         <div className="improvement-equipment-icon">
                           <img 
-                            src={`/FleetAnalystManager/images/type/icon${candidate.equipmentIcon}.png`}
+                            src={`/FleetAnalystManager/images/type/icon${candidate.equipmentIcon || 1}.png`}
                             alt={candidate.equipmentName}
                             className="equipment-type-icon"
                             onError={(e) => {
