@@ -706,6 +706,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
   // 改修リストを読み込む（分析管理画面と同期）
   const loadImprovementCandidates = useCallback(() => {
+    console.log(`🔧 DEBUG: loadImprovementCandidates実行:`, {
+      equipmentListLength: equipmentList.length,
+      ownedEquipmentLength: ownedEquipmentList.length,
+      masterDataLength: equipmentMasterList.length
+    });
+    
     const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
     const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
     if (stored) {
@@ -721,20 +727,53 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
             equipmentName: c.equipmentName,
             equipmentId: c.equipmentId,
             originalIcon: c.equipmentIcon,
-            equipmentDataAvailable: ownedEquipmentList.length
+            iconType: typeof c.equipmentIcon,
+            iconTruthy: !!c.equipmentIcon,
+            ownedEquipmentCount: ownedEquipmentList.length,
+            equipmentListCount: equipmentList.length,
+            masterDataCount: equipmentMasterList.length
           });
           
           // 装備データが利用可能な場合のみアイコン検索を実行
-          if (!equipmentIcon && c.equipmentId && ownedEquipmentList.length > 0) {
-            // より幅広い検索条件で装備を探す
-            const equipment = ownedEquipmentList.find((eq: any) => {
-              return (eq.original_id || eq.api_id || eq.api_slotitem_id) === c.equipmentId ||
-                     eq.api_slotitem_id === c.equipmentId ||
-                     (eq.original_id && eq.original_id === c.equipmentId)
+          if ((equipmentIcon === null || equipmentIcon === undefined) && c.equipmentId && equipmentList.length > 0) {
+            // equipmentListの最初のアイテムの構造を確認
+            if (index === 0 && equipmentList.length > 0) {
+              console.log(`🔧 DEBUG: equipmentList構造確認:`, {
+                firstItem: equipmentList[0],
+                firstItemKeys: Object.keys(equipmentList[0]),
+                totalCount: equipmentList.length
+              });
+            }
+            // より幅広い検索条件で装備を探す（equipmentListから検索）
+            console.log(`🔧 DEBUG: ID検索開始 ${index + 1}:`, {
+              searchingFor: c.equipmentId,
+              equipmentListLength: equipmentList.length
+            });
+            
+            const equipment = equipmentList.find((eq: any, eqIndex) => {
+              const match1 = (eq.original_id || eq.api_id || eq.api_slotitem_id) === c.equipmentId;
+              const match2 = eq.api_slotitem_id === c.equipmentId;
+              const match3 = (eq.original_id && eq.original_id === c.equipmentId);
+              const isMatch = match1 || match2 || match3;
+              
+              if (index === 0 && eqIndex < 3) { // 1番目のアイテム検索時に最初の3個の装備をログ出力
+                console.log(`🔧 DEBUG: 装備${eqIndex + 1}との照合:`, {
+                  equipmentData: eq,
+                  original_id: eq.original_id,
+                  api_id: eq.api_id,
+                  api_slotitem_id: eq.api_slotitem_id,
+                  searchId: c.equipmentId,
+                  match1, match2, match3, isMatch
+                });
+              }
+              
+              return isMatch;
             });
             
             console.log(`🔧 DEBUG: 装備検索結果:`, {
               found: !!equipment,
+              equipmentObject: equipment,
+              equipmentKeys: equipment ? Object.keys(equipment) : [],
               equipmentName: (equipment as any)?.api_name,
               api_type: (equipment as any)?.api_type,
               iconId: (equipment as any)?.api_type?.[3]
@@ -763,7 +802,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         console.error('改修リスト読み込みエラー:', error)
       }
     }
-  }, [ownedEquipmentList])
+  }, [equipmentList])
 
   // 初回読み込みとLocalStorage変更監視（装備データ読み込み後に再実行）
   useEffect(() => {
@@ -792,19 +831,55 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
   // 装備データ読み込み完了後、改修アイテムの欠損アイコンを補完
   useEffect(() => {
-    if (ownedEquipmentList.length > 0) {
+    if (equipmentList.length > 0) {
       setImprovementItems(currentItems => {
         if (currentItems.length === 0) return currentItems
         
         let needsUpdate = false
-        const updatedItems = currentItems.map(item => {
-          if (!item.equipmentIcon && item.equipmentId) {
-            // より幅広い検索条件で装備を探す
-            const equipment = ownedEquipmentList.find((eq: any) => {
-              // 複数のID条件で検索
-              return (eq.original_id || eq.api_id || eq.api_slotitem_id) === item.equipmentId ||
-                     eq.api_slotitem_id === item.equipmentId ||
-                     (eq.original_id && eq.original_id === item.equipmentId)
+        const updatedItems = currentItems.map((item, index) => {
+          console.log(`🔧 DEBUG: アイコン補完チェック ${index + 1}:`, {
+            equipmentName: item.equipmentName,
+            equipmentId: item.equipmentId,
+            equipmentIcon: item.equipmentIcon,
+            hasIcon: !!item.equipmentIcon,
+            shouldSearch: !item.equipmentIcon && item.equipmentId
+          });
+          
+          if ((item.equipmentIcon === null || item.equipmentIcon === undefined) && item.equipmentId) {
+            // より幅広い検索条件で装備を探す（equipmentListから検索）
+            console.log(`🔧 DEBUG: useEffect ID検索開始 ${index + 1}:`, {
+              searchingFor: item.equipmentId,
+              equipmentListLength: equipmentList.length
+            });
+            
+            const equipment = equipmentList.find((eq: any, eqIndex) => {
+              const match1 = (eq.original_id || eq.api_id || eq.api_slotitem_id) === item.equipmentId;
+              const match2 = eq.api_slotitem_id === item.equipmentId;
+              const match3 = (eq.original_id && eq.original_id === item.equipmentId);
+              const isMatch = match1 || match2 || match3;
+              
+              if (index === 0 && eqIndex < 3) { // 1番目のアイテム検索時に最初の3個の装備をログ出力
+                console.log(`🔧 DEBUG: useEffect 装備${eqIndex + 1}との照合:`, {
+                  equipmentData: eq,
+                  original_id: eq.original_id,
+                  api_id: eq.api_id,
+                  api_slotitem_id: eq.api_slotitem_id,
+                  searchId: item.equipmentId,
+                  match1, match2, match3, isMatch
+                });
+              }
+              
+              return isMatch;
+            });
+            
+            console.log(`🔧 DEBUG: 装備検索 ${index + 1}:`, {
+              searchId: item.equipmentId,
+              found: !!equipment,
+              equipmentObject: equipment,
+              equipmentKeys: equipment ? Object.keys(equipment) : [],
+              equipmentName: equipment?.api_name,
+              equipmentApiType: equipment?.api_type,
+              iconId: equipment?.api_type?.[3]
             });
             
             if (equipment && (equipment as any).api_type) {
@@ -814,6 +889,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                 ...item,
                 equipmentIcon: (equipment as any).api_type[3]
               }
+            } else {
+              console.log(`🔧 WARNING: 装備が見つからない ${index + 1}:`, {
+                equipmentName: item.equipmentName,
+                equipmentId: item.equipmentId,
+                totalEquipment: ownedEquipmentList.length
+              });
             }
           }
           return item
@@ -826,7 +907,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         return currentItems
       })
     }
-  }, [ownedEquipmentList])
+  }, [equipmentList])
 
   // サイドバーが閉じられた時の処理
   useEffect(() => {
@@ -2103,6 +2184,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                   const equipment = dropData.equipment
                   
                   // 装備から改修リストアイテムを作成
+                  console.log(`🔧 DEBUG: ドロップ時アイテム作成1:`, {
+                    equipmentName: equipment.api_name,
+                    equipmentIconId: equipment.api_type[3],
+                    api_type: equipment.api_type
+                  });
+                  
                   const newItem: ImprovementItem = {
                     id: Date.now(),
                     equipmentId: equipment.original_id || equipment.api_id,
@@ -2626,10 +2713,17 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     showToast(`${draggedEquipment.api_name}を改修リストに追加しました`, 'success')
                     
                     // FleetComposer内の改修リストも更新（旧形式互換）
+                    console.log(`🔧 DEBUG: ドロップ時アイテム作成2:`, {
+                      equipmentName: draggedEquipment.api_name,
+                      equipmentIconId: equipmentIconId,
+                      api_type: draggedEquipment.api_type
+                    });
+                    
                     const newItem: ImprovementItem = {
                       id: newCandidate.id, // 同じIDを使用して同期を保つ
                       equipmentId: draggedEquipment.original_id || draggedEquipment.api_id,
                       equipmentName: draggedEquipment.api_name,
+                      equipmentIcon: equipmentIconId, // アイコンIDを追加
                       currentLevel: draggedEquipment.improvement_level || 0,
                       targetLevel: 10,
                       materials: {},
@@ -2661,8 +2755,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     console.log(`🔧 DEBUG: 改修リスト表示 ${index + 1}:`, {
                       equipmentName: item.equipmentName,
                       equipmentIcon: item.equipmentIcon,
-                      fallbackIcon: item.equipmentIcon || 1,
-                      imagePath: `/FleetAnalystManager/images/type/icon${item.equipmentIcon || 1}.png`
+                      iconType: typeof item.equipmentIcon,
+                      isNull: item.equipmentIcon === null,
+                      isUndefined: item.equipmentIcon === undefined,
+                      finalIcon: item.equipmentIcon !== null && item.equipmentIcon !== undefined ? item.equipmentIcon : 1,
+                      imagePath: `/FleetAnalystManager/images/type/icon${item.equipmentIcon !== null && item.equipmentIcon !== undefined ? item.equipmentIcon : 1}.png`
                     });
                     
                     return (
@@ -2670,7 +2767,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                       <div className="improvement-item-header">
                         <div className="improvement-equipment-icon">
                           <img 
-                            src={`/FleetAnalystManager/images/type/icon${item.equipmentIcon || 1}.png`}
+                            src={`/FleetAnalystManager/images/type/icon${item.equipmentIcon !== null && item.equipmentIcon !== undefined ? item.equipmentIcon : 1}.png`}
                             alt={item.equipmentName}
                             className="equipment-type-icon"
                             onError={(e) => {
