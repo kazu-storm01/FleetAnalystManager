@@ -19,8 +19,7 @@ const loadFullShipData = async (): Promise<{ [key: number]: ShipMasterData }> =>
     fullDataPromise = import('../data/shipMasterDataFull').then(module => {
       fullDataCache = module.SHIP_MASTER_DATA
       return fullDataCache!
-    }).catch(error => {
-      console.error('Failed to load full ship data:', error)
+    }).catch(() => {
       fullDataPromise = null
       return {}
     })
@@ -46,9 +45,7 @@ export const useShipData = () => {
         setLoadingProgress(100)
         setIsFullDataLoaded(true)
         
-        console.log('Full ship data loaded in background')
-      } catch (error) {
-        console.error('Background loading failed:', error)
+      } catch {
         setIsFullDataLoaded(false)
       }
     }

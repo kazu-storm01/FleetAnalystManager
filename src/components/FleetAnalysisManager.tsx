@@ -142,31 +142,25 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     const originalClear = localStorage.clear
 
     localStorage.removeItem = function(key) {
-      console.log('🚨 LocalStorage削除:', key, new Error().stack)
       return originalRemoveItem.call(this, key)
     }
 
     localStorage.setItem = function(key, value) {
-      console.log('💾 LocalStorage保存:', key, value.length, '文字')
       return originalSetItem.call(this, key, value)
     }
 
     localStorage.clear = function() {
-      console.log('🧹 LocalStorage全削除:', new Error().stack)
       return originalClear.call(this)
     }
 
     // ページの可視性変更を監視
     const handleVisibilityChange = () => {
-      console.log('👁️ ページ可視性:', document.visibilityState)
       if (document.visibilityState === 'hidden') {
-        console.log('🔍 ページが非表示になりました')
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('beforeunload', () => {
-      console.log('🚪 ページアンロード')
     })
 
     return () => {
@@ -287,13 +281,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     
     // gear_api.json形式: [{"api_slotitem_id":103,"api_level":10}, ...]
     if (firstItem && typeof firstItem === 'object' && 'api_slotitem_id' in firstItem && 'api_level' in firstItem) {
-      console.log('✅ gear_api.json形式の装備データを検出しました')
       return data as GearApiItem[]
     }
     
     // 新しいフォーマット: [{"id":23,"lv":4}, {"id":16,"lv":0}, ...]
     if (firstItem && typeof firstItem === 'object' && 'id' in firstItem && 'lv' in firstItem) {
-      console.log('✅ 新しい装備データフォーマットを検出しました')
       return data.map((item: any) => ({
         api_slotitem_id: item.id,  // FleetComposerで期待される形式
         api_level: item.lv
@@ -302,7 +294,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     
     // 従来のフォーマット: [{"api_id":1,"api_name":"12cm単装砲",...}, ...]
     if (firstItem && typeof firstItem === 'object' && 'api_id' in firstItem) {
-      console.log('✅ 従来の装備データフォーマットを検出しました')
       return data
     }
     
@@ -322,7 +313,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       localStorage.setItem(`${admiralName}_equipmentData`, JSON.stringify(normalizedData))
       
       showToast('装備データを保存しました', 'success')
-      console.log('✅ 装備データ保存完了:', normalizedData.length, '個')
       
     } catch (error) {
       console.error('❌ 装備データ解析エラー:', error)
@@ -380,17 +370,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       }
       
       // 達成チェック後に新しいエントリーを作成
-      console.log('📝 新しいエントリー作成開始')
       const stats = calculateFleetStats(fleetData)
       
       // LocalStorageから最新の状態を取得（Reactの状態更新は非同期のため）
       const latestEntries = JSON.parse(localStorage.getItem(`${admiralName}_fleetEntries`) || '[]')
       const currentLatest = latestEntries.find((entry: any) => entry.isLatest)
-      console.log('📊 最新エントリーの取得:', {
-        sourceReactState: fleetEntries.find(entry => entry.isLatest)?.id,
-        sourceLocalStorage: currentLatest?.id,
-        tasksInLatest: currentLatest?.tasks?.length || 0
-      })
       
       // 育成タスクは未完了のみ引き継ぎ、その他も未達成のみ引き継ぐ
       const allTasks = currentLatest?.tasks || []
@@ -398,14 +382,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       const nonTrainingIncompleteTasks = allTasks.filter((task: Task) => !isTrainingTask(task.text) && !task.completed)
       const tasksToInherit = [...trainingTasks, ...nonTrainingIncompleteTasks]
       
-      console.log('📋 タスク継承デバッグ:', {
-        totalTasks: allTasks.length,
-        incompleteTrainingTasks: trainingTasks.length,
-        nonTrainingIncompleteTasks: nonTrainingIncompleteTasks.length,
-        tasksToInherit: tasksToInherit.length,
-        incompleteTrainingTasksList: trainingTasks.map((t: Task) => ({ id: t.id, text: t.text, completed: t.completed })),
-        nonTrainingIncompleteList: nonTrainingIncompleteTasks.map((t: Task) => ({ id: t.id, text: t.text, completed: t.completed }))
-      })
       
       const inheritedTasks = tasksToInherit.map(task => ({
         ...task,
@@ -439,10 +415,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       
       // 実際の保存
       const jsonData = JSON.stringify(newFleetEntries)
-      console.log('💾 保存開始 - キー:', key, 'サイズ:', jsonData.length, '文字')
       
       // 保存前にLocalStorageの状態を確認
-      console.log('📊 保存前のLocalStorage使用量:', Object.keys(localStorage).length, '項目')
       
       // ブラウザストレージ容量の確認
       try {
@@ -450,9 +424,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         const testData = 'x'.repeat(1000000) // 1MB
         localStorage.setItem(testKey, testData)
         localStorage.removeItem(testKey)
-        console.log('💾 ストレージ容量: 十分')
       } catch (e) {
-        console.log('⚠️ ストレージ容量不足の可能性:', e)
       }
       
       localStorage.setItem(key, jsonData)
@@ -460,33 +432,7 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       // 最新の艦隊データも保存（達成チェック用）
       localStorage.setItem(`${admiralName}_latestFleetData`, fleetData)
       setPersistedFleetData(fleetData)  // 内部保持用にも保存
-      console.log('💾 最新艦隊データも保存:', fleetData.length, '文字')
       
-      // 保存直後の確認
-      const savedCheck = localStorage.getItem(key)
-      console.log('✅ 保存確認:', savedCheck ? JSON.parse(savedCheck).length : 'なし', '件')
-      
-      // 段階的な検証
-      const verifyData = () => {
-        const current = localStorage.getItem(key)
-        return current ? JSON.parse(current).length : 0
-      }
-      
-      setTimeout(() => {
-        console.log('🔍 100ms後:', verifyData(), '件')
-      }, 100)
-      
-      setTimeout(() => {
-        console.log('🔍 500ms後:', verifyData(), '件')
-      }, 500)
-      
-      setTimeout(() => {
-        console.log('🔍 1000ms後:', verifyData(), '件')
-      }, 1000)
-      
-      setTimeout(() => {
-        console.log('🔍 2000ms後:', verifyData(), '件')
-      }, 2000)
       
       // 初回セットアップ状態を確実に解除
       if (isFirstSetup) {
@@ -560,7 +506,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       const savedFleetData = localStorage.getItem(`${savedAdmiralName}_latestFleetData`)
       if (savedFleetData) {
         setPersistedFleetData(savedFleetData)
-        console.log('📊 最新艦隊データを復元（内部保持）')
       }
     } else {
       setIsFirstSetup(true)
@@ -582,26 +527,22 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'fleetComposer_trainingCandidates' && e.newValue) {
-        console.log('📋 育成リストの変更を検知')
         loadTrainingCandidates()
       }
       
       // 改修リストの監視を追加
       if (e.key === `${admiralName}_improvementCandidates` && e.newValue) {
-        console.log('🔧 改修リストの変更を検知')
         loadImprovementCandidates()
       }
     }
 
     // 同じウィンドウ内での変更も監視するためのカスタムイベント
     const handleTrainingCandidatesUpdate = () => {
-      console.log('📋 育成リストの更新イベントを受信')
       loadTrainingCandidates()
     }
 
     // 改修リスト用のカスタムイベント追加
     const handleImprovementCandidatesUpdate = () => {
-      console.log('🔧 改修リストの更新イベントを受信')
       loadImprovementCandidates()
     }
 
@@ -654,7 +595,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       if (currentAchievedCount !== achievedCount) {
         setAchievedCount(currentAchievedCount)
         setHasNewAchievements(currentAchievedCount > 0)
-        console.log('🔄 達成状態同期:', currentAchievedCount, '件')
       }
     }
     // 育成リストがない場合のみ通知をクリア（fleetDataが空でも通知は保持）
@@ -684,7 +624,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         if (totalAchievableCount !== improvementAchievedCount) {
           setImprovementAchievedCount(totalAchievableCount)
           setHasNewImprovementAchievements(totalAchievableCount > 0)
-          console.log('🔧 改修達成状態同期:', totalAchievableCount, '件')
         }
         
         // 状態は更新しない（無限ループ防止）
@@ -714,7 +653,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       // 前回の監視結果と比較
       const prevCount = (window as any).lastStorageCount || 0
       if (count !== prevCount) {
-        console.log('🔄 LS変更検出:', prevCount, '→', count, '件')
         ;(window as any).lastStorageCount = count
       }
     }
@@ -723,9 +661,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
     // FleetComposerからのカスタムイベントを監視（即座の同期）
     const handleFleetEntriesUpdated = (event: CustomEvent) => {
-      console.log('📨 FleetAnalysisManagerでカスタムイベントを受信:', event.detail)
       try {
-        const { updatedEntries, updatedTaskId } = event.detail
+        const { updatedEntries } = event.detail
         if (updatedEntries) {
           const processedEntries = updatedEntries.map((entry: FleetEntry) => ({
             ...entry,
@@ -734,7 +671,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
             aswModTotal: entry.aswModTotal ?? 0
           }))
           setFleetEntries(processedEntries)
-          console.log('🔄 艦隊エントリーがカスタムイベントで即座に更新されました, taskId:', updatedTaskId)
         }
       } catch (error) {
         console.error('カスタムイベント処理に失敗:', error)
@@ -742,7 +678,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     }
 
 
-    console.log('🎧 FleetAnalysisManagerでイベントリスナーを登録, admiral:', admiralName)
     window.addEventListener('fleetEntriesUpdated', handleFleetEntriesUpdated as EventListener)
 
     return () => {
@@ -757,23 +692,17 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     // if (fleetEntries.length > 0 && admiralName) {
     //   syncTrainingListAndTasks()
     // }
-    console.log('🔄 useEffect実行 - 育成リスト同期は一時的に無効化')
   }, [fleetEntries, admiralName])
 
   // 艦隊エントリーの読み込み
   const loadFleetEntries = (admiral: string) => {
-    console.log('📥 loadFleetEntries呼び出し, admiral:', admiral)
     const saved = localStorage.getItem(`${admiral}_fleetEntries`)
-    console.log('📥 LocalStorageから読み込み:', saved ? `${saved.length}文字` : 'なし')
-    console.log('📥 LocalStorageの実際の内容:', saved)
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        console.log('📥 パースしたエントリー数:', parsed.length)
         
         // 空の配列の場合は読み込みをスキップ
         if (parsed.length === 0) {
-          console.log('📥 空データのため読み込みスキップ')
           return
         }
         
@@ -784,18 +713,13 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           hpModTotal: entry.hpModTotal ?? 0,
           aswModTotal: entry.aswModTotal ?? 0
         }))
-        console.log('📥 setFleetEntriesで設定:', updatedEntries.length, '件')
         setFleetEntries(updatedEntries)
       } catch (error) {
         console.error('Failed to load fleet entries:', error)
-        console.log('📥 破損データを削除します')
-        console.log('🗑️ loadFleetEntries: LocalStorage削除実行:', `${admiral}_fleetEntries`)
         localStorage.removeItem(`${admiral}_fleetEntries`)
-        console.log('📥 エラーのため空配列を設定')
         setFleetEntries([])
       }
     } else {
-      console.log('📥 保存データなし')
     }
   }
 
@@ -826,7 +750,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const changeAdmiral = () => {
     if (confirm('提督名を変更すると、すべてのデータが削除されます。続行しますか？')) {
       if (admiralName) {
-        console.log('🗑️ changeAdmiral: LocalStorage削除実行:', `${admiralName}_fleetEntries`)
         localStorage.removeItem(`${admiralName}_fleetEntries`)
       }
       localStorage.removeItem('fleetAnalysisAdmiralName')
@@ -988,7 +911,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
   // 統計情報計算
   const getTotalEntries = () => {
-    console.log('📊 getTotalEntries呼び出し:', fleetEntries.length, 'entries:', fleetEntries.map(e => e.id))
     return fleetEntries.length
   }
   const getTotalTasks = () => {
@@ -1021,11 +943,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     if (!showTrainingTasksOnly) return tasks
     
     const trainingTaskIds = getTrainingCandidatesMainTaskIds()
-    console.log('🔍 フィルタリング開始:', {
-      totalTasks: tasks.length,
-      trainingTaskIds: trainingTaskIds,
-      showTrainingTasksOnly
-    })
     
     return tasks.filter(task => {
       // 現在の育成リストにあるタスク（継承されたタスクを含む）
@@ -1035,29 +952,15 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           (task.originalTaskId && trainingTaskIds.includes(task.originalTaskId))
       
       if (isInCurrentTrainingList) {
-        console.log('✅ 現在の育成リストのタスク:', task.text, 'ID:', task.id)
         return true
       }
       
       // 達成済み育成タスクは育成リストの状態に関係なく表示
       const isCompletedTrainingTask = task.completed && isTrainingTask(task.text)
       if (isCompletedTrainingTask) {
-        console.log('🏆 達成済み育成タスク判定:', {
-          taskText: task.text,
-          completed: task.completed,
-          achievedInEntry: task.achievedInEntry,
-          isTrainingTask: isTrainingTask(task.text),
-          taskId: task.id
-        })
         return true
       }
       
-      console.log('❌ フィルタリング除外:', task.text, {
-        id: task.id,
-        completed: task.completed,
-        isTrainingTask: isTrainingTask(task.text),
-        achievedInEntry: task.achievedInEntry
-      })
       return false
     })
   }
@@ -1074,7 +977,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       if (stored) {
         const candidates = JSON.parse(stored) as TrainingCandidate[]
         setTrainingCandidates(candidates)
-        console.log('📋 育成リスト読み込み:', candidates.length, '件')
       } else {
         setTrainingCandidates([])
       }
@@ -1091,7 +993,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       if (stored) {
         const candidates = JSON.parse(stored) as ImprovementCandidate[]
         setImprovementCandidates(candidates)
-        console.log('🔧 改修リスト読み込み:', candidates.length, '件')
       } else {
         setImprovementCandidates([])
       }
@@ -1207,13 +1108,11 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         const savedFleetData = localStorage.getItem(`${admiralName}_latestFleetData`)
         if (savedFleetData) {
           currentFleetData = savedFleetData
-          console.log('🔍 LocalStorageから艦隊データを復元:', candidate.name)
         }
       }
     }
     
     if (!currentFleetData) {
-      console.log('🔍 fleetDataがない:', candidate.name)
       return false
     }
     
@@ -1221,24 +1120,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       const data = JSON.parse(currentFleetData)
       const ships = Array.isArray(data) ? data : (data.ships || data.api_data?.api_ship || [])
       
-      console.log('🔍 達成チェック開始:', {
-        candidateName: candidate.name,
-        candidateInstanceId: candidate.instanceId,
-        candidateShipId: candidate.shipId,
-        candidateLevel: candidate.level,
-        targets: {
-          level: candidate.targetLevel,
-          hp: candidate.targetHp,
-          asw: candidate.targetAsw,
-          luck: candidate.targetLuck
-        },
-        shipsCount: ships.length,
-        availableShips: ships.slice(0, 3).map((ship: any) => ({
-          instanceId: ship.api_id || ship.id,
-          shipId: ship.ship_id || ship.api_ship_id,
-          level: ship.lv || ship.api_lv
-        }))
-      })
       
       // instanceIdで艦船を探す（より正確）
       const matchingShip = ships.find((ship: any) => {
@@ -1255,39 +1136,14 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       
       const targetShip = matchingShip || fallbackShip
 
-      console.log('🔍 艦船検索結果:', {
-        candidateName: candidate.name,
-        candidateInstanceId: candidate.instanceId,
-        candidateShipId: candidate.shipId,
-        foundByInstanceId: !!matchingShip,
-        foundByShipId: !!fallbackShip,
-        finalFound: !!targetShip,
-        targetShipData: targetShip ? {
-          instanceId: targetShip.api_id || targetShip.id,
-          shipId: targetShip.ship_id || targetShip.api_ship_id,
-          level: targetShip.lv || targetShip.api_lv
-        } : null
-      })
 
       if (!targetShip) {
-        console.log('❌ 一致する艦船が見つからない:', {
-          candidateName: candidate.name,
-          candidateInstanceId: candidate.instanceId,
-          candidateShipId: candidate.shipId
-        })
         return false
       }
 
       const level = targetShip.lv || targetShip.api_lv
       const shipId = targetShip.ship_id || targetShip.api_ship_id
       
-      console.log('🔍 マスターデータ検索:', {
-        candidateName: candidate.name,
-        candidateShipId: candidate.shipId,
-        apiShipId: shipId,
-        ship_id: targetShip.ship_id,
-        api_ship_id: targetShip.api_ship_id
-      })
       
       // マスターデータを取得（FleetComposerと同じ関数を使用）
       const masterData = getShipData(shipId)
@@ -1300,12 +1156,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         return false
       }
       
-      console.log('🔍 マスターデータ取得成功:', {
-        shipId,
-        masterName: masterData.name,
-        masterHp: masterData.initialStats.hp,
-        masterHpMarried: masterData.initialStats.hpMarried
-      })
 
       // 改修値を解析（艦隊編成と同じ処理）
       const improvements = parseImprovements(targetShip.api_kyouka || targetShip.st || [])
@@ -1326,7 +1176,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       // FleetComposerのaswMax計算ロジックを適用
       if (masterData.name === '吹雪改二') {
         aswMax = 94  // FleetComposerで実際に使用されている値
-        console.log('🔧 吹雪改二の aswMax をFleetComposer準拠の94に設定')
       }
       // const evasionMax = masterData.initialStats.evasionMax || (
       //   masterData.initialStats.evasion > 0 ? masterData.initialStats.evasion + 30 : masterData.initialStats.evasion
@@ -1352,25 +1201,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       const asw = levelBasedAsw + (improvements.asw || 0)
       const luck = apiLuck + (improvements.luck || 0)
 
-      console.log('🔍 現在のステータス:', {
-        name: candidate.name,
-        current: { level, hp, asw, luck },
-        targets: { 
-          level: candidate.targetLevel, 
-          hp: candidate.targetHp, 
-          asw: candidate.targetAsw, 
-          luck: candidate.targetLuck 
-        },
-        debug: {
-          levelBasedAsw: levelBasedAsw,
-          aswImprovement: improvements.asw || 0,
-          finalAsw: asw,
-          aswCalculation: `${levelBasedAsw} + ${improvements.asw || 0} = ${asw}`,
-          aswMax: aswMax,
-          masterAsw: masterData.initialStats.asw,
-          level: level
-        }
-      })
 
       // 目標達成チェック（目標が0の場合も未設定と同じ扱い）
       const isLevelAchieved = !candidate.targetLevel || candidate.targetLevel <= 0 || level >= candidate.targetLevel
@@ -1380,14 +1210,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
       const allAchieved = isLevelAchieved && isHpAchieved && isAswAchieved && isLuckAchieved
 
-      console.log('🔍 達成状況:', {
-        name: candidate.name,
-        level: isLevelAchieved,
-        hp: isHpAchieved,
-        asw: isAswAchieved,
-        luck: isLuckAchieved,
-        allAchieved
-      })
 
       return allAchieved
     } catch (error) {
@@ -1426,7 +1248,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         showToast(`${completedCandidate.name}の育成を完了しました！`, 'success')
       }
       
-      console.log('✅ 育成リスト完了:', candidateId)
     } catch (error) {
       console.error('育成リスト完了エラー:', error)
       showToast('育成完了処理に失敗しました', 'error')
@@ -1506,7 +1327,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
           const isLuckAchieved = !candidate.targetLuck || luck >= candidate.targetLuck
 
           if (isLevelAchieved && isHpAchieved && isAswAchieved && isLuckAchieved) {
-            console.log('🎯 育成目標達成:', candidate.name)
             achievedCandidates.push(candidate)
           }
         }
@@ -1768,7 +1588,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
 
   // メイン画面
   const latestEntry = fleetEntries.find(entry => entry.isLatest)
-  console.log('🎯 レンダリング時状態:', { isFirstSetup, admiralName, fleetEntriesLength: fleetEntries.length, latestEntry: !!latestEntry })
 
   return (
     <div className="fleet-analysis-manager shipgirl">
@@ -2068,7 +1887,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
             />
             <button
               onClick={() => {
-                console.log('🖱️ 読み込みボタンクリック:', { fleetDataLength: fleetData.length, admiralName })
                 handleFleetDataUpdate()
                 // データ処理後にテキストフィールドをクリア
                 setFleetData('')
@@ -2091,7 +1909,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
             />
             <button
               onClick={() => {
-                console.log('🖱️ 装備読み込みボタンクリック:', { equipmentDataLength: equipmentData.length })
                 handleEquipmentDataUpdate()
                 // データ処理後にテキストフィールドをクリア
                 setEquipmentData('')
@@ -2190,7 +2007,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
                       const savedFleetData = localStorage.getItem(`${admiralName}_latestFleetData`)
                       if (savedFleetData) {
                         setPersistedFleetData(savedFleetData)
-                        console.log('🔍 モーダル開放時に艦隊データを復元（内部保持）')
                       }
                     }
                     

@@ -432,12 +432,10 @@ const updateTaskText = (taskId: number, newText: string) => {
       if (!task.completed && (task.id === taskId || task.originalTaskId === taskId)) {
         task.text = newText
         updatedCount++
-        console.log('🔧 最新エントリーの未達成タスクを更新:', task.id, '(originalTaskId:', task.originalTaskId, ') →', newText)
       }
     })
   }
   
-  console.log('🔧 更新されたタスク数:', updatedCount, '(最新エントリーの未達成タスクのみ)')
   saveFleetEntriesToStorage(entries)
   
   // FleetAnalysisManagerの状態も即座に同期
@@ -450,7 +448,6 @@ const updateTaskText = (taskId: number, newText: string) => {
 const saveFleetDataToStorage = (data: any) => {
   try {
     localStorage.setItem(FLEET_DATA_STORAGE_KEY, JSON.stringify(data))
-    console.log('艦隊データをLocalStorageに保存しました')
   } catch (error) {
     console.error('艦隊データの保存に失敗:', error)
   }
@@ -506,7 +503,6 @@ const saveFormationToStorage = (formation: SavedFormation) => {
     }
     
     localStorage.setItem(SAVED_FORMATIONS_STORAGE_KEY, JSON.stringify(saved))
-    console.log('編成を保存しました:', formation.name)
   } catch (error) {
     console.error('編成の保存に失敗:', error)
   }
@@ -527,7 +523,6 @@ const deleteFormationFromStorage = (formationId: string) => {
     const saved = getSavedFormationsFromStorage()
     const filtered = saved.filter(f => f.id !== formationId)
     localStorage.setItem(SAVED_FORMATIONS_STORAGE_KEY, JSON.stringify(filtered))
-    console.log('編成を削除しました:', formationId)
   } catch (error) {
     console.error('編成の削除に失敗:', error)
   }
@@ -554,7 +549,6 @@ const saveImprovementItemsToStorage = (items: ImprovementItem[], admiralName: st
     // リアルタイム更新イベントを発火
     window.dispatchEvent(new CustomEvent('improvementCandidatesUpdated'))
     
-    console.log('改修リストを保存しました')
   } catch (error) {
     console.error('改修リストの保存に失敗:', error)
   }
@@ -659,7 +653,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         if (saved) {
           const parsedData = JSON.parse(saved)
           setOwnedEquipmentList(parsedData)
-          console.log('✅ 装備データ読み込み完了:', parsedData.length, '個')
         }
       } catch (error) {
         console.error('❌ 装備データ読み込みエラー:', error)
@@ -706,11 +699,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
   // 改修リストを読み込む（分析管理画面と同期）
   const loadImprovementCandidates = useCallback(() => {
-    console.log(`🔧 DEBUG: loadImprovementCandidates実行:`, {
-      equipmentListLength: equipmentList.length,
-      ownedEquipmentLength: ownedEquipmentList.length,
-      masterDataLength: equipmentMasterList.length
-    });
     
     const admiralName = localStorage.getItem('fleetAnalysisAdmiralName') || '提督'
     const stored = localStorage.getItem(`${admiralName}_improvementCandidates`)
@@ -723,32 +711,13 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
           let equipmentIcon = c.equipmentIcon;
           
           // デバッグログ：元データの確認
-          console.log(`🔧 DEBUG: 改修リスト読み込み ${index + 1}/${candidates.length}:`, {
-            equipmentName: c.equipmentName,
-            equipmentId: c.equipmentId,
-            originalIcon: c.equipmentIcon,
-            iconType: typeof c.equipmentIcon,
-            iconTruthy: !!c.equipmentIcon,
-            ownedEquipmentCount: ownedEquipmentList.length,
-            equipmentListCount: equipmentList.length,
-            masterDataCount: equipmentMasterList.length
-          });
           
           // 装備データが利用可能な場合のみアイコン検索を実行
           if ((equipmentIcon === null || equipmentIcon === undefined) && c.equipmentId && equipmentList.length > 0) {
             // equipmentListの最初のアイテムの構造を確認
             if (index === 0 && equipmentList.length > 0) {
-              console.log(`🔧 DEBUG: equipmentList構造確認:`, {
-                firstItem: equipmentList[0],
-                firstItemKeys: Object.keys(equipmentList[0]),
-                totalCount: equipmentList.length
-              });
             }
             // より幅広い検索条件で装備を探す（equipmentListから検索）
-            console.log(`🔧 DEBUG: ID検索開始 ${index + 1}:`, {
-              searchingFor: c.equipmentId,
-              equipmentListLength: equipmentList.length
-            });
             
             const equipment = equipmentList.find((eq: any, eqIndex) => {
               const match1 = (eq.original_id || eq.api_id || eq.api_slotitem_id) === c.equipmentId;
@@ -757,34 +726,17 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
               const isMatch = match1 || match2 || match3;
               
               if (index === 0 && eqIndex < 3) { // 1番目のアイテム検索時に最初の3個の装備をログ出力
-                console.log(`🔧 DEBUG: 装備${eqIndex + 1}との照合:`, {
-                  equipmentData: eq,
-                  original_id: eq.original_id,
-                  api_id: eq.api_id,
-                  api_slotitem_id: eq.api_slotitem_id,
-                  searchId: c.equipmentId,
-                  match1, match2, match3, isMatch
-                });
               }
               
               return isMatch;
             });
             
-            console.log(`🔧 DEBUG: 装備検索結果:`, {
-              found: !!equipment,
-              equipmentObject: equipment,
-              equipmentKeys: equipment ? Object.keys(equipment) : [],
-              equipmentName: (equipment as any)?.api_name,
-              api_type: (equipment as any)?.api_type,
-              iconId: (equipment as any)?.api_type?.[3]
-            });
             
             if (equipment && (equipment as any).api_type) {
               equipmentIcon = (equipment as any).api_type[3];
             }
           }
           
-          console.log(`🔧 DEBUG: 最終アイコンID:`, equipmentIcon);
           
           return {
             id: c.id,
@@ -837,20 +789,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         
         let needsUpdate = false
         const updatedItems = currentItems.map((item, index) => {
-          console.log(`🔧 DEBUG: アイコン補完チェック ${index + 1}:`, {
-            equipmentName: item.equipmentName,
-            equipmentId: item.equipmentId,
-            equipmentIcon: item.equipmentIcon,
-            hasIcon: !!item.equipmentIcon,
-            shouldSearch: !item.equipmentIcon && item.equipmentId
-          });
           
           if ((item.equipmentIcon === null || item.equipmentIcon === undefined) && item.equipmentId) {
             // より幅広い検索条件で装備を探す（equipmentListから検索）
-            console.log(`🔧 DEBUG: useEffect ID検索開始 ${index + 1}:`, {
-              searchingFor: item.equipmentId,
-              equipmentListLength: equipmentList.length
-            });
             
             const equipment = equipmentList.find((eq: any, eqIndex) => {
               const match1 = (eq.original_id || eq.api_id || eq.api_slotitem_id) === item.equipmentId;
@@ -859,49 +800,25 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
               const isMatch = match1 || match2 || match3;
               
               if (index === 0 && eqIndex < 3) { // 1番目のアイテム検索時に最初の3個の装備をログ出力
-                console.log(`🔧 DEBUG: useEffect 装備${eqIndex + 1}との照合:`, {
-                  equipmentData: eq,
-                  original_id: eq.original_id,
-                  api_id: eq.api_id,
-                  api_slotitem_id: eq.api_slotitem_id,
-                  searchId: item.equipmentId,
-                  match1, match2, match3, isMatch
-                });
               }
               
               return isMatch;
             });
             
-            console.log(`🔧 DEBUG: 装備検索 ${index + 1}:`, {
-              searchId: item.equipmentId,
-              found: !!equipment,
-              equipmentObject: equipment,
-              equipmentKeys: equipment ? Object.keys(equipment) : [],
-              equipmentName: equipment?.api_name,
-              equipmentApiType: equipment?.api_type,
-              iconId: equipment?.api_type?.[3]
-            });
             
             if (equipment && (equipment as any).api_type) {
-              console.log(`🔧 装備アイコン補完: ${item.equipmentName} ID:${item.equipmentId} → アイコン:${(equipment as any).api_type[3]}`)
               needsUpdate = true
               return {
                 ...item,
                 equipmentIcon: (equipment as any).api_type[3]
               }
             } else {
-              console.log(`🔧 WARNING: 装備が見つからない ${index + 1}:`, {
-                equipmentName: item.equipmentName,
-                equipmentId: item.equipmentId,
-                totalEquipment: ownedEquipmentList.length
-              });
             }
           }
           return item
         })
         
         if (needsUpdate) {
-          console.log('🔧 改修アイテムのアイコンを補完しました')
           return updatedItems
         }
         return currentItems
@@ -1045,7 +962,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         })
         setFleetSlots(restoredSlots)
         setHasRestoredComposition(true)
-        console.log('編成を復元しました')
       }
     }
   }, [ships, hasRestoredComposition])
@@ -1245,7 +1161,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
   // ドラッグ開始
   const handleDragStart = (e: React.DragEvent, ship: Ship, fromSlot?: number) => {
-    console.log('🔧 DEBUG: Drag start for ship:', ship.name, 'from slot:', fromSlot)
     setDraggedShip(ship)
     setDraggedFromSlot(fromSlot ?? null)
     setIsDraggingShip(true)
@@ -1267,7 +1182,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
     // グローバルなドラッグ終了イベントを追加（画面外でドラッグが終了した場合の対策）
     const handleGlobalDragEnd = () => {
-      console.log('🔧 DEBUG: Global drag end detected')
       setIsDraggingShip(false)
       setDraggedShip(null)
       setDraggedFromSlot(null)
@@ -1314,8 +1228,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
     setDragOverSlot(null)
     setIsDraggingFormation(false)
 
-    console.log('🔧 DEBUG: Drop on slot', position)
-    console.log('🔧 DEBUG: Available data types:', e.dataTransfer.types)
 
     // データの取得を試みる
     let dropData: any = null
@@ -1325,7 +1237,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
       const jsonData = e.dataTransfer.getData('application/json')
       if (jsonData) {
         dropData = JSON.parse(jsonData)
-        console.log('🔧 DEBUG: Parsed drop data:', dropData)
         
         // 編成データかどうかを判定
         if (dropData.ships && dropData.name && Array.isArray(dropData.ships)) {
@@ -1333,12 +1244,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         }
       }
     } catch (error) {
-      console.log('🔧 DEBUG: Error parsing JSON data:', error)
     }
 
     // 編成データのドロップ処理
     if (isFormationData && dropData) {
-      console.log('🔧 DEBUG: Loading formation via slot drop:', dropData.name)
       handleLoadFormation(dropData)
       showToast(`編成「${dropData.name}」を読み込みました！`)
       return
@@ -1351,18 +1260,15 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
     
     // draggedShipがない場合は、dataTransferから艦娘データを取得
     if (!shipToDrop && dropData && dropData.id && dropData.name && dropData.shipId) {
-      console.log('🔧 DEBUG: Using ship data from dataTransfer')
       shipToDrop = dropData as Ship
       
       // dataTransferからfromSlot情報も取得
       if ((dropData as any).__fromSlot !== undefined) {
         fromSlot = (dropData as any).__fromSlot
-        console.log('🔧 DEBUG: Found fromSlot in dataTransfer:', fromSlot)
       }
     }
 
     if (shipToDrop) {
-      console.log('🔧 DEBUG: Dropping ship:', shipToDrop.name, 'to slot:', position, 'from slot:', fromSlot)
       
       // __fromSlotプロパティを削除（艦娘データに含めない）
       const cleanShipData: Ship = { ...shipToDrop } as Ship
@@ -1375,7 +1281,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
       
       if (fromSlot !== null && fromSlot !== undefined) {
         // スロット間の入れ替え（既存の編成済み艦娘の移動）
-        console.log('🔧 DEBUG: Swapping ships between slots:', fromSlot, 'and', position)
         setFleetSlots(prev => {
           const targetShip = prev[position].ship
           return prev.map(slot => {
@@ -1389,7 +1294,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         })
       } else {
         // 下部ドロワーからの新規配置
-        console.log('🔧 DEBUG: Placing ship from drawer in slot:', position)
         setFleetSlots(prev => prev.map(slot => 
           slot.position === position 
             ? { ...slot, ship: cleanShipData }
@@ -1397,7 +1301,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
         ))
       }
     } else {
-      console.log('🔧 DEBUG: No ship data available for drop')
     }
     
     // 状態をリセット
@@ -1409,10 +1312,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
   // 画面外ドロップ処理（自動編成）
   const handleDropOutside = (dropData?: any) => {
-    console.log('🔧 DEBUG: handleDropOutside called, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
     
     if (isDroppedOnTrainingCandidates) {
-      console.log('🔧 DEBUG: Skipping auto-placement because dropped on training candidates')
       return
     }
     
@@ -1422,20 +1323,17 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
     if (shipToPlace && shipToPlace.id && shipToPlace.name && shipToPlace.shipId) {
       // 既に編成済みの艦娘（draggedFromSlotがある）の場合は自動配置しない
       if (draggedFromSlot !== null) {
-        console.log('🔧 DEBUG: Skipping auto-placement for ship from fleet slot:', draggedFromSlot)
         // 元のスロットに戻す処理は不要（ドラッグ中なので元の位置にそのまま残る）
       } else {
         // 下部ドロワーからの新規配置のみ実行
         const emptySlot = fleetSlots.find(slot => slot.ship === null)
         if (emptySlot) {
-          console.log('🔧 DEBUG: Auto-placing ship from drawer:', shipToPlace.name)
           setFleetSlots(prev => prev.map(slot => 
             slot.position === emptySlot.position 
               ? { ...slot, ship: shipToPlace }
               : slot
           ))
         } else {
-          console.log('🔧 DEBUG: No empty slot found for auto-placement')
         }
       }
     }
@@ -1450,7 +1348,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
 
   // 育成リストへの追加
   const handleAddToTrainingCandidates = (ship: Ship) => {
-    console.log('🔧 DEBUG: handleAddToTrainingCandidates called for:', ship.name)
     
     const existing = trainingCandidates.find(c => c.instanceId === ship.id)
     if (existing) {
@@ -1482,7 +1379,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
     // ドロップ成功を明示的にマーク
     setIsDroppedOnTrainingCandidates(true)
     
-    console.log('✅ 育成リストに追加:', ship.name)
     showToast(`${ship.name} を育成リストに追加しました！`)
     
     // 新しい候補が見えるように自動スクロール
@@ -1641,10 +1537,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
     
     if (existingFormation) {
       showToast(`編成「${formation.name}」を更新しました！`)
-      console.log('編成を更新しました:', formation.name)
     } else {
       showToast(`編成「${formation.name}」を保存しました！`)
-      console.log('新しい編成を保存しました:', formation.name)
     }
   }
 
@@ -1657,7 +1551,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
     })
     setFleetSlots(newSlots)
     setFleetName(formation.name)
-    console.log('編成を読み込みました:', formation.name)
   }
 
   // 編成削除
@@ -1680,7 +1573,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
       setFleetSlots(prev => prev.map(slot => ({ ...slot, ship: null })))
       setFleetName('')
       showToast('編成を全解散しました')
-      console.log('編成を全解散しました')
     }
   }
 
@@ -1711,8 +1603,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
              e.preventDefault()
              e.stopPropagation()
              
-             console.log('🔧 DEBUG: Drop on fleet-composition-area')
-             console.log('🔧 DEBUG: Available data types:', e.dataTransfer.types)
              
              // データの取得を試みる
              let dropData: any = null
@@ -1722,7 +1612,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                const jsonData = e.dataTransfer.getData('application/json')
                if (jsonData) {
                  dropData = JSON.parse(jsonData)
-                 console.log('🔧 DEBUG: Parsed drop data:', dropData)
                  
                  // 編成データかどうかを判定
                  if (dropData.ships && dropData.name && Array.isArray(dropData.ships)) {
@@ -1730,12 +1619,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                  }
                }
              } catch (error) {
-               console.log('🔧 DEBUG: Error parsing JSON data:', error)
              }
              
              // 編成データのドロップ処理
              if (isFormationData && dropData) {
-               console.log('🔧 DEBUG: Loading formation via drag:', dropData.name)
                handleLoadFormation(dropData)
                showToast(`編成「${dropData.name}」を読み込みました！`)
                return
@@ -1743,14 +1630,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
              
              // 育成リストへの追加処理
              if (isDroppedOnTrainingCandidates) {
-               console.log('🔧 DEBUG: Skipping fleet area drop because already dropped on training candidates')
                return
              }
              
              // 艦娘の自動配置処理
              const isSidebarArea = (e.target as Element).closest('.formation-sidebar, .training-candidates-content, .drop-zone-tab, .candidates-list, .candidate-item')
              if (!isSidebarArea && (!e.target || !(e.target as Element).closest('.fleet-slot'))) {
-               console.log('🔧 DEBUG: Calling handleDropOutside from fleet-composition-area')
                handleDropOutside()
              }
            }}>
@@ -1819,7 +1704,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                      draggable
                      onDragStart={(e) => {
                        if (slot.ship) {
-                         console.log('🔧 DEBUG: Starting drag from fleet slot:', slot.position, 'ship:', slot.ship.name)
                          handleDragStart(e, slot.ship, slot.position)
                          
                          // 育成タブが開いている場合のヒント
@@ -1829,7 +1713,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                        }
                      }}
                      onDragEnd={() => {
-                       console.log('🔧 DEBUG: Fleet slot drag end')
                        setDraggedShip(null)
                        setDraggedFromSlot(null)
                        setDragOverSlot(null)
@@ -2069,10 +1952,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                       onDragStart={handleDragStart}
                   onDragEnd={() => {
                     // ドラッグ終了処理（引数なしバージョン）
-                    console.log('🔧 DEBUG: Drag end started (no event), isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
                     
                     setTimeout(() => {
-                      console.log('🔧 DEBUG: Drag end timeout, isDroppedOnTrainingCandidates:', isDroppedOnTrainingCandidates)
                       
                       // 状態リセット
                       setDraggedShip(null)
@@ -2123,13 +2004,11 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
             e.stopPropagation()
             e.dataTransfer.dropEffect = 'copy'
             setIsDraggingOverTrainingArea(true)
-            console.log('🔧 DEBUG: Drag over formation-sidebar (training mode)')
           } else if (sidebarActiveTab === 'improvements') {
             e.preventDefault()
             e.stopPropagation()
             e.dataTransfer.dropEffect = 'copy'
             setIsDragOverImprovementList(true)
-            console.log('🔧 DEBUG: Drag over formation-sidebar (improvements mode)')
           }
         }}
         onDragLeave={(e) => {
@@ -2150,7 +2029,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
             e.preventDefault()
             e.stopPropagation()
             
-            console.log('🔧 DEBUG: Drop on formation-sidebar (training tab)');
             setIsDroppedOnTrainingCandidates(true)
             
             let shipToAdd = draggedShip
@@ -2162,7 +2040,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                   shipToAdd = JSON.parse(shipData)
                 }
               } catch (error) {
-                console.log('❌ dataTransferからの艦娘データ取得に失敗:', error)
               }
             }
             
@@ -2172,23 +2049,16 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
           } else if (sidebarActiveTab === 'improvements') {
             e.preventDefault()
             e.stopPropagation()
-            console.log('🔧 DEBUG: Drop on formation-sidebar (improvements tab)')
             
             try {
               const jsonData = e.dataTransfer.getData('application/json')
               if (jsonData) {
                 const dropData = JSON.parse(jsonData)
-                console.log('🔧 DEBUG: Drop data:', dropData)
                 
                 if (dropData.type === 'equipment-for-improvement' && dropData.equipment) {
                   const equipment = dropData.equipment
                   
                   // 装備から改修リストアイテムを作成
-                  console.log(`🔧 DEBUG: ドロップ時アイテム作成1:`, {
-                    equipmentName: equipment.api_name,
-                    equipmentIconId: equipment.api_type[3],
-                    api_type: equipment.api_type
-                  });
                   
                   const newItem: ImprovementItem = {
                     id: Date.now(),
@@ -2283,12 +2153,9 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                       e.dataTransfer.setData('text/plain', `formation:${formation.name}`)
                       e.dataTransfer.effectAllowed = 'copy'
                       e.currentTarget.style.opacity = '0.5'
-                      console.log('🔧 DEBUG: Dragging formation:', formation.name)
-                      console.log('🔧 DEBUG: Formation data set:', formationData)
                     }}
                     onDragEnd={(e) => {
                       e.currentTarget.style.opacity = '1'
-                      console.log('🔧 DEBUG: Formation drag ended')
                     }}
                   >
                     <div className="formation-info">
@@ -2324,25 +2191,21 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                 e.stopPropagation()
                 e.dataTransfer.dropEffect = 'copy'
                 setIsDraggingOverTrainingArea(true)
-                console.log('🔧 DEBUG: Drag over training-candidates-content')
               }}
               onDragEnter={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
                 setIsDraggingOverTrainingArea(true)
-                console.log('🔧 DEBUG: Drag enter training-candidates-content')
               }}
               onDragLeave={(e) => {
                 const relatedTarget = e.relatedTarget as Element
                 if (!relatedTarget || !relatedTarget.closest('.formation-sidebar')) {
-                  console.log('🔧 DEBUG: Drag leave training-candidates-content')
                   setIsDroppedOnTrainingCandidates(false)
                 }
               }}
               onDrop={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('🔧 DEBUG: Drop event on training-candidates-content')
                 
                 // ドロップされたデータを確認
                 let dropData: any = null
@@ -2350,15 +2213,12 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                   const jsonData = e.dataTransfer.getData('application/json')
                   if (jsonData) {
                     dropData = JSON.parse(jsonData)
-                    console.log('🔧 DEBUG: Drop data parsed:', dropData)
                   }
                 } catch (error) {
-                  console.log('❌ Failed to parse drop data:', error)
                 }
                 
                 // 装備のドロップは拒否
                 if (dropData && dropData.type === 'equipment-for-improvement') {
-                  console.log('🔧 DEBUG: Rejecting equipment drop on training candidates')
                   showToast('装備は育成リストに追加できません', 'error')
                   return
                 }
@@ -2665,16 +2525,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                   const equipmentIconId = draggedEquipment.api_type[3]
                   
                   // 詳細デバッグログ
-                  console.log('🔧 装備データ詳細:', {
-                    name: draggedEquipment.api_name,
-                    api_type: draggedEquipment.api_type,
-                    'api_type[0]': draggedEquipment.api_type[0],
-                    'api_type[1]': draggedEquipment.api_type[1], 
-                    'api_type[2]': draggedEquipment.api_type[2],
-                    'api_type[3]': draggedEquipment.api_type[3],
-                    'api_type[4]': draggedEquipment.api_type[4],
-                    equipmentIconId
-                  })
                   
                   const newCandidate = {
                     id: Date.now(),
@@ -2713,11 +2563,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     showToast(`${draggedEquipment.api_name}を改修リストに追加しました`, 'success')
                     
                     // FleetComposer内の改修リストも更新（旧形式互換）
-                    console.log(`🔧 DEBUG: ドロップ時アイテム作成2:`, {
-                      equipmentName: draggedEquipment.api_name,
-                      equipmentIconId: equipmentIconId,
-                      api_type: draggedEquipment.api_type
-                    });
                     
                     const newItem: ImprovementItem = {
                       id: newCandidate.id, // 同じIDを使用して同期を保つ
@@ -2750,18 +2595,7 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                     </div>
                   </div>
                 ) : (
-                  improvementItems.map((item, index) => {
-                    // 表示時のデバッグログ
-                    console.log(`🔧 DEBUG: 改修リスト表示 ${index + 1}:`, {
-                      equipmentName: item.equipmentName,
-                      equipmentIcon: item.equipmentIcon,
-                      iconType: typeof item.equipmentIcon,
-                      isNull: item.equipmentIcon === null,
-                      isUndefined: item.equipmentIcon === undefined,
-                      finalIcon: item.equipmentIcon !== null && item.equipmentIcon !== undefined ? item.equipmentIcon : 1,
-                      imagePath: `/FleetAnalystManager/images/type/icon${item.equipmentIcon !== null && item.equipmentIcon !== undefined ? item.equipmentIcon : 1}.png`
-                    });
-                    
+                  improvementItems.map((item) => {
                     return (
                     <div key={item.id} className="improvement-item">
                       <div className="improvement-item-header">
@@ -3053,7 +2887,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
               
               // デバッグログ（問題の原因確認用）
               if (equipmentCategoryTab === 'gun' && !tabFilter) {
-                console.log('Gun filter failed for:', eq.api_name, 'type:', eq.api_type[2])
               }
               
               return tabFilter && typeFilter
@@ -3117,7 +2950,6 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                   e.dataTransfer.setData('application/json', JSON.stringify(equipmentForImprovement))
                   e.dataTransfer.setData('text/plain', `equipment:${group.equipment.api_name}`)
                   
-                  console.log('🔧 DEBUG: Dragging equipment for improvement:', group.equipment.api_name)
                 }}
                 onDragEnd={() => setDraggedEquipment(null)}
                 onClick={() => {

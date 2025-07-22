@@ -73,17 +73,6 @@ const StatIcon: React.FC<StatIconProps> = ({ icon, className }) => {
   
   const [imageError, setImageError] = React.useState(false);
   
-  // デバッグログを無効化
-  // React.useEffect(() => {
-  //   if (import.meta.env.DEV) {
-  //     console.log(`StatIcon DEBUG: ${icon} -> ${displayName} -> ${imagePath}`);
-  //     console.log(`BASE_URL: ${import.meta.env.BASE_URL}`);
-  //     if (icon === 'speed' || icon === 'range' || icon === 'torpedo') {
-  //       console.log(`CRITICAL ICON: ${icon} mapped to ${displayName}`);
-  //       console.log(`Generated path: ${imagePath}`);
-  //     }
-  //   }
-  // }, [icon, displayName, imagePath]);
   
   // 画像が読み込めない場合のフォールバック
   if (imageError) {
@@ -116,9 +105,6 @@ const StatIcon: React.FC<StatIconProps> = ({ icon, className }) => {
       alt={icon}
       onError={() => {
         setImageError(true);
-      }}
-      onLoad={() => {
-        // ロード成功時は特に何もしない
       }}
     />
   );
