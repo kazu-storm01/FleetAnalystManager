@@ -1,5 +1,6 @@
 import React from 'react';
 import './KPICard.css';
+import { StatIcon } from './ShipStatusDisplay';
 
 interface KPICardProps {
   title: string;
@@ -7,6 +8,7 @@ interface KPICardProps {
   previousValue?: string | number;
   unit?: string;
   icon: string;
+  iconType?: 'material' | 'stat'; // Material IconsかStatIconかを指定
   trend?: 'up' | 'down' | 'neutral';
   percentage?: number;
   color?: 'primary' | 'success' | 'warning' | 'info';
@@ -20,6 +22,7 @@ const KPICard: React.FC<KPICardProps> = ({
   previousValue,
   unit = '',
   icon,
+  iconType = 'material',
   trend = 'neutral',
   percentage,
   color = 'primary',
@@ -67,7 +70,11 @@ const KPICard: React.FC<KPICardProps> = ({
     >
       <div className="kpi-card__header">
         <div className="kpi-card__icon">
-          <span className="material-icons">{icon}</span>
+          {iconType === 'stat' ? (
+            <StatIcon icon={icon as any} className="kpi-card__stat-icon" />
+          ) : (
+            <span className="material-icons">{icon}</span>
+          )}
         </div>
         <div className="kpi-card__trend">
           <span 

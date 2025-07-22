@@ -2042,7 +2042,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               title="運改修"
               value={privacyMode === true ? '*'.repeat(3) : kpiData.luckMods.current}
               previousValue={kpiData.luckMods.previous}
-              icon="star"
+              icon="luck"
+              iconType="stat"
               trend={kpiData.luckMods.trend as 'up' | 'down' | 'neutral'}
               color="success"
               onClick={() => setShowFleetRecordsModal(true)}
@@ -2051,7 +2052,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               title="耐久改修"
               value={privacyMode === true ? '*'.repeat(3) : kpiData.hpMods.current}
               previousValue={kpiData.hpMods.previous}
-              icon="shield"
+              icon="hp"
+              iconType="stat"
               trend={kpiData.hpMods.trend as 'up' | 'down' | 'neutral'}
               color="info"
               onClick={() => setShowFleetRecordsModal(true)}
@@ -2060,7 +2062,8 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
               title="対潜改修"
               value={privacyMode === true ? '*'.repeat(3) : kpiData.aswMods.current}
               previousValue={kpiData.aswMods.previous}
-              icon="radar"
+              icon="asw"
+              iconType="stat"
               trend={kpiData.aswMods.trend as 'up' | 'down' | 'neutral'}
               color="primary"
               onClick={() => setShowFleetRecordsModal(true)}
