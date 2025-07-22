@@ -1,0 +1,358 @@
+/* KPICard CSS Variables */
+:root {
+  --kpi-card-bg: rgba(255, 255, 255, 0.08);
+  --kpi-card-border: rgba(255, 255, 255, 0.12);
+  --kpi-card-hover-bg: rgba(255, 255, 255, 0.12);
+  --kpi-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --kpi-card-shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.25);
+  
+  --primary-color: #64b5f6;
+  --success-color: #81c784;
+  --warning-color: #ffb74d;
+  --info-color: #4fc3f7;
+  --neutral-color: #90a4ae;
+  
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+}
+
+/* Base KPI Card Styles */
+.kpi-card {
+  position: relative;
+  background: var(--kpi-card-bg);
+  border: 1px solid var(--kpi-card-border);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--kpi-card-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.kpi-card:hover::before {
+  opacity: 1;
+}
+
+.kpi-card:hover {
+  background: var(--kpi-card-hover-bg);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--kpi-card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.kpi-card--clickable {
+  cursor: pointer;
+}
+
+.kpi-card--clickable:active {
+  transform: translateY(0);
+  box-shadow: var(--kpi-card-shadow);
+}
+
+/* Size Variants */
+.kpi-card--small {
+  padding: 16px;
+  min-height: 100px;
+}
+
+.kpi-card--large {
+  padding: 32px;
+  min-height: 180px;
+}
+
+/* Color Variants */
+.kpi-card--primary::before {
+  background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+}
+
+.kpi-card--success::before {
+  background: linear-gradient(90deg, transparent, var(--success-color), transparent);
+}
+
+.kpi-card--warning::before {
+  background: linear-gradient(90deg, transparent, var(--warning-color), transparent);
+}
+
+.kpi-card--info::before {
+  background: linear-gradient(90deg, transparent, var(--info-color), transparent);
+}
+
+/* Header */
+.kpi-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.kpi-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.kpi-card__icon .material-icons {
+  font-size: 24px;
+  color: var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+.kpi-card:hover .kpi-card__icon {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.kpi-card:hover .kpi-card__icon .material-icons {
+  transform: scale(1.1);
+}
+
+.kpi-card__trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kpi-card__trend-icon {
+  font-size: 20px !important;
+  transition: all 0.3s ease;
+}
+
+.kpi-card:hover .kpi-card__trend-icon {
+  transform: scale(1.1);
+}
+
+/* Content */
+.kpi-card__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpi-card__value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.kpi-card__number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition: all 0.3s ease;
+}
+
+.kpi-card--small .kpi-card__number {
+  font-size: 2rem;
+}
+
+.kpi-card--large .kpi-card__number {
+  font-size: 3rem;
+}
+
+.kpi-card__unit {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.kpi-card__title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+/* Change Indicators */
+.kpi-card__change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  margin-top: auto;
+}
+
+.kpi-card__change-value {
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.kpi-card__change-value--positive {
+  color: var(--success-color);
+}
+
+.kpi-card__change-value--negative {
+  color: var(--warning-color);
+}
+
+.kpi-card__change-value--neutral {
+  color: var(--neutral-color);
+}
+
+.kpi-card__change-percent {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+/* Progress Bar */
+.kpi-card__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.kpi-card__progress-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.kpi-card__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), #42a5f5);
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.kpi-card__progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.kpi-card__progress-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Overlay for advanced effects */
+.kpi-card__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.02) 100%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.kpi-card:hover .kpi-card__overlay {
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kpi-card {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.kpi-card:nth-child(1) { animation-delay: 0.1s; }
+.kpi-card:nth-child(2) { animation-delay: 0.2s; }
+.kpi-card:nth-child(3) { animation-delay: 0.3s; }
+.kpi-card:nth-child(4) { animation-delay: 0.4s; }
+.kpi-card:nth-child(5) { animation-delay: 0.5s; }
+.kpi-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .kpi-card {
+    padding: 20px;
+    min-height: 120px;
+  }
+  
+  .kpi-card__number {
+    font-size: 2rem;
+  }
+  
+  .kpi-card__icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .kpi-card__icon .material-icons {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-card {
+    padding: 16px;
+    min-height: 100px;
+  }
+  
+  .kpi-card__number {
+    font-size: 1.75rem;
+  }
+  
+  .kpi-card__progress {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  
+  .kpi-card__progress-text {
+    text-align: left;
+  }
+}

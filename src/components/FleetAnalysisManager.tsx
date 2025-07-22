@@ -3,6 +3,7 @@ import { StatIcon } from './ShipStatusDisplay'
 import { getShipBannerPath } from '../utils/imagePaths'
 import { parseImprovements } from '../utils/shipStatsCalculator'
 import { useShipData } from '../hooks/useShipData'
+import KPICard from './KPICard'
 
 // 型定義
 interface Task {
@@ -121,7 +122,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   const [activeGraphTab, setActiveGraphTab] = useState<'exp' | 'ships' | 'married' | 'luck' | 'hp' | 'asw'>('exp')
   const [privacyMode, setPrivacyMode] = useState<boolean | null>(null)
   const [showTrainingTasksOnly, setShowTrainingTasksOnly] = useState<boolean>(false)
-  const [forceUpdate, setForceUpdate] = useState<number>(0)
   const [showTaskHistoryModal, setShowTaskHistoryModal] = useState<boolean>(false)
   const [showFleetRecordsModal, setShowFleetRecordsModal] = useState<boolean>(false)
   const [showTrainingCandidatesModal, setShowTrainingCandidatesModal] = useState<boolean>(false)
@@ -443,8 +443,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
       // フィールドをクリア
       setFleetData('')
       
-      // 強制更新
-      setForceUpdate(prev => prev + 1)
       
       // 成功メッセージを表示
       setToast({
@@ -910,9 +908,6 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
   }
 
   // 統計情報計算
-  const getTotalEntries = () => {
-    return fleetEntries.length
-  }
   const getTotalTasks = () => {
     return fleetEntries.reduce((total, entry) => {
       const filteredTasks = filterTasksForDisplay(entry.tasks)
@@ -1586,8 +1581,54 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
     )
   }
 
+  // KPIカードデータの計算
+  const calculateKPIData = () => {
+    if (!latestEntry) return null;
+
+    const previousEntry = fleetEntries
+      .filter(entry => !entry.isLatest && entry.createdAt)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+    const current = latestEntry;
+    const previous = previousEntry;
+
+    return {
+      totalExp: {
+        current: current.totalExp,
+        previous: previous?.totalExp,
+        trend: previous ? (current.totalExp > previous.totalExp ? 'up' : current.totalExp < previous.totalExp ? 'down' : 'neutral') : 'neutral'
+      },
+      shipCount: {
+        current: current.shipCount,
+        previous: previous?.shipCount,
+        trend: previous ? (current.shipCount > previous.shipCount ? 'up' : current.shipCount < previous.shipCount ? 'down' : 'neutral') : 'neutral'
+      },
+      marriedCount: {
+        current: current.marriedCount,
+        previous: previous?.marriedCount,
+        trend: previous ? (current.marriedCount > previous.marriedCount ? 'up' : current.marriedCount < previous.marriedCount ? 'down' : 'neutral') : 'neutral'
+      },
+      luckMods: {
+        current: current.luckModTotal,
+        previous: previous?.luckModTotal,
+        trend: previous ? (current.luckModTotal > previous.luckModTotal ? 'up' : current.luckModTotal < previous.luckModTotal ? 'down' : 'neutral') : 'neutral'
+      },
+      hpMods: {
+        current: current.hpModTotal,
+        previous: previous?.hpModTotal,
+        trend: previous ? (current.hpModTotal > previous.hpModTotal ? 'up' : current.hpModTotal < previous.hpModTotal ? 'down' : 'neutral') : 'neutral'
+      },
+      aswMods: {
+        current: current.aswModTotal,
+        previous: previous?.aswModTotal,
+        trend: previous ? (current.aswModTotal > previous.aswModTotal ? 'up' : current.aswModTotal < previous.aswModTotal ? 'down' : 'neutral') : 'neutral'
+      }
+    };
+  };
+
   // メイン画面
   const latestEntry = fleetEntries.find(entry => entry.isLatest)
+  const kpiData = calculateKPIData();
 
   return (
     <div className="fleet-analysis-manager shipgirl">
@@ -1966,105 +2007,130 @@ const FleetAnalysisManager: React.FC<FleetAnalysisManagerProps> = ({ onFleetData
         </div>
       )}
       
-      {/* 統計概要カード */}
-      {latestEntry && (
-        <div className="stats-overview">
-              <div className="overview-item overview-clickable">
-                <button
-                  onClick={() => setShowFleetRecordsModal(true)}
-                  className="overview-button"
-                  title="艦隊記録を表示"
-                >
-                  <span className="material-icons overview-icon">sailing</span>
-                  <div className="overview-text">
-                    <span className="overview-label">{'総記録数'}</span>
-                    <span className="overview-value" key={`${fleetEntries.length}-${forceUpdate}`}>{privacyMode === true ? '*'.repeat(getTotalEntries().toString().length) : getTotalEntries()}</span>
-                  </div>
-                </button>
-              </div>
-              <div className="overview-item overview-clickable">
-                <button
-                  onClick={() => setShowTaskHistoryModal(true)}
-                  className="overview-button"
-                  title="タスク履歴を表示"
-                >
-                  <span className="material-icons overview-icon">history</span>
-                  <div className="overview-text">
-                    <span className="overview-label">{'タスク履歴'}</span>
-                    <span className="overview-value">{privacyMode === true ? '*'.repeat(Math.min(getTotalTasks().toString().length, 6)) : getTotalTasks()}</span>
-                  </div>
-                </button>
-              </div>
+      {/* KPIカードダッシュボード */}
+      {latestEntry && kpiData && (
+        <div className="kpi-dashboard">
+          <div className="kpi-grid">
+            <KPICard
+              title="総経験値"
+              value={privacyMode === true ? '*'.repeat(4) : kpiData.totalExp.current}
+              previousValue={kpiData.totalExp.previous}
+              icon="trending_up"
+              trend={kpiData.totalExp.trend as 'up' | 'down' | 'neutral'}
+              color="primary"
+              onClick={() => setShowFleetRecordsModal(true)}
+            />
+            <KPICard
+              title="艦数"
+              value={privacyMode === true ? '*'.repeat(3) : kpiData.shipCount.current}
+              previousValue={kpiData.shipCount.previous}
+              icon="directions_boat"
+              trend={kpiData.shipCount.trend as 'up' | 'down' | 'neutral'}
+              color="info"
+              onClick={() => setShowFleetRecordsModal(true)}
+            />
+            <KPICard
+              title="ケッコン艦"
+              value={privacyMode === true ? '*'.repeat(2) : kpiData.marriedCount.current}
+              previousValue={kpiData.marriedCount.previous}
+              icon="favorite"
+              trend={kpiData.marriedCount.trend as 'up' | 'down' | 'neutral'}
+              color="warning"
+              onClick={() => setShowFleetRecordsModal(true)}
+            />
+            <KPICard
+              title="運改修"
+              value={privacyMode === true ? '*'.repeat(3) : kpiData.luckMods.current}
+              previousValue={kpiData.luckMods.previous}
+              icon="star"
+              trend={kpiData.luckMods.trend as 'up' | 'down' | 'neutral'}
+              color="success"
+              onClick={() => setShowFleetRecordsModal(true)}
+            />
+            <KPICard
+              title="耐久改修"
+              value={privacyMode === true ? '*'.repeat(3) : kpiData.hpMods.current}
+              previousValue={kpiData.hpMods.previous}
+              icon="shield"
+              trend={kpiData.hpMods.trend as 'up' | 'down' | 'neutral'}
+              color="info"
+              onClick={() => setShowFleetRecordsModal(true)}
+            />
+            <KPICard
+              title="対潜改修"
+              value={privacyMode === true ? '*'.repeat(3) : kpiData.aswMods.current}
+              previousValue={kpiData.aswMods.previous}
+              icon="radar"
+              trend={kpiData.aswMods.trend as 'up' | 'down' | 'neutral'}
+              color="primary"
+              onClick={() => setShowFleetRecordsModal(true)}
+            />
+          </div>
 
-              {/* 育成リスト */}
-              <div className="overview-item overview-clickable">
-                <button 
-                  onClick={() => {
-                    loadTrainingCandidates()
-                    
-                    // fleetDataがない場合はLocalStorageから復元を試みる（内部保持用）
-                    if (!fleetData && !persistedFleetData && admiralName) {
-                      const savedFleetData = localStorage.getItem(`${admiralName}_latestFleetData`)
-                      if (savedFleetData) {
-                        setPersistedFleetData(savedFleetData)
-                      }
+          {/* クイックアクション */}
+          <div className="quick-actions">
+            <div className="quick-action-card">
+              <button
+                onClick={() => {
+                  loadTrainingCandidates()
+                  setShowTrainingCandidatesModal(true)
+                  setHasNewAchievements(false)
+                }}
+                className="quick-action-button"
+                title="育成リストを表示"
+              >
+                <span className="material-symbols-outlined">psychology</span>
+                <div className="quick-action-content">
+                  <span className="quick-action-title">育成リスト</span>
+                  <span className="quick-action-count">{trainingCandidates.length}</span>
+                </div>
+                {hasNewAchievements && (
+                  <span className="notification-badge">{achievedCount}</span>
+                )}
+              </button>
+            </div>
+            <div className="quick-action-card">
+              <button
+                onClick={async () => {
+                  loadImprovementCandidates()
+                  try {
+                    const candidates = JSON.parse(localStorage.getItem(`${admiralName}_improvementCandidates`) || '[]')
+                    if (candidates.length > 0) {
+                      const updatedCandidates = await checkImprovementAchievements(candidates)
+                      setImprovementCandidates(updatedCandidates)
                     }
+                  } catch (error) {
                     
-                    setShowTrainingCandidatesModal(true)
-                    // 通知クリアは育成完了ボタンを押した時のみ
-                  }} 
-                  className="overview-button"
-                  title="育成リストを表示"
-                >
-                  <span className="overview-icon material-symbols-outlined">school</span>
-                  {hasNewAchievements && (
-                    <span className="notification-badge">
-                      {achievedCount}
-                    </span>
-                  )}
-                  <div className="overview-text">
-                    <span className="overview-label">育成リスト</span>
-                    <span className="overview-value">{trainingCandidates.length}</span>
-                  </div>
-                </button>
-              </div>
-
-              {/* 改修リスト */}
-              <div className="overview-item overview-clickable">
-                <button 
-                  onClick={async () => {
-                    loadImprovementCandidates()
-                    
-                    // モーダル表示時に達成状態を更新（安全に）
-                    try {
-                      const candidates = JSON.parse(localStorage.getItem(`${admiralName}_improvementCandidates`) || '[]')
-                      if (candidates.length > 0) {
-                        const updatedCandidates = await checkImprovementAchievements(candidates)
-                        setImprovementCandidates(updatedCandidates)
-                      }
-                    } catch (error) {
-                      console.error('モーダル表示時の達成状態更新エラー:', error)
-                    }
-                    
-                    setShowImprovementCandidatesModal(true)
-                    // 通知クリアは改修完了ボタンを押した時のみ
-                  }} 
-                  className="overview-button"
-                  title="改修リストを表示"
-                >
-                  <span className="overview-icon material-symbols-outlined">build</span>
-                  {hasNewImprovementAchievements && (
-                    <span className="notification-badge">
-                      {improvementAchievedCount}
-                    </span>
-                  )}
-                  <div className="overview-text">
-                    <span className="overview-label">改修リスト</span>
-                    <span className="overview-value">{improvementCandidates.length}</span>
-                  </div>
-                </button>
-              </div>
-
+                  }
+                  setShowImprovementCandidatesModal(true)
+                }}
+                className="quick-action-button"
+                title="改修リストを表示"
+              >
+                <span className="material-symbols-outlined">build</span>
+                <div className="quick-action-content">
+                  <span className="quick-action-title">改修リスト</span>
+                  <span className="quick-action-count">{improvementCandidates.length}</span>
+                </div>
+                {hasNewImprovementAchievements && (
+                  <span className="notification-badge">{improvementAchievedCount}</span>
+                )}
+              </button>
+            </div>
+            <div className="quick-action-card">
+              <button
+                onClick={() => setShowTaskHistoryModal(true)}
+                className="quick-action-button"
+                title="タスク履歴を表示"
+              >
+                <span className="material-symbols-outlined">history</span>
+                <div className="quick-action-content">
+                  <span className="quick-action-title">タスク履歴</span>
+                  <span className="quick-action-count">{privacyMode === true ? '*' : getTotalTasks()}</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
