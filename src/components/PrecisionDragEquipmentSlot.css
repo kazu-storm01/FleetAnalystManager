@@ -1,0 +1,193 @@
+/* 高精度ドラッグシステム専用スタイル */
+
+/* ドラッグプレビュー */
+.precision-drag-preview {
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3));
+  transition: none !important;
+  animation: none !important;
+}
+
+/* ドラッグ中のスロット */
+.precision-drag-over {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(34, 197, 94, 0.2) 100%) !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 
+    0 0 0 4px rgba(16, 185, 129, 0.4),
+    0 0 20px rgba(16, 185, 129, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  transform: scale(1.05) !important;
+  z-index: 10 !important;
+  animation: precision-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes precision-pulse {
+  from {
+    box-shadow: 
+      0 0 0 4px rgba(16, 185, 129, 0.4),
+      0 0 20px rgba(16, 185, 129, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  to {
+    box-shadow: 
+      0 0 0 6px rgba(16, 185, 129, 0.6),
+      0 0 30px rgba(16, 185, 129, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* 高精度ターゲット表示 */
+.precision-drag-over::before {
+  content: '⚡ 装備配置';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(16, 185, 129, 0.95);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  z-index: 15;
+  white-space: nowrap;
+  animation: precision-text-glow 0.8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes precision-text-glow {
+  from {
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+    opacity: 0.9;
+  }
+  to {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 1);
+    opacity: 1;
+  }
+}
+
+/* ドラッグ可能アイテム */
+.precision-draggable {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.precision-draggable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.precision-draggable:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+/* ドラッグ開始時のエフェクト */
+.precision-drag-starting {
+  transform: scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+  z-index: 1000 !important;
+}
+
+/* スナップエリア表示 */
+.precision-snap-area {
+  position: absolute;
+  border: 2px dashed rgba(16, 185, 129, 0.6);
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  pointer-events: none;
+  z-index: 5;
+  animation: precision-snap-hint 1s ease-in-out infinite;
+}
+
+@keyframes precision-snap-hint {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+/* 装備スロットの基本強化 */
+.equipment-slot-field.precision-enhanced {
+  position: relative !important;
+  overflow: visible !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.equipment-slot-field.precision-enhanced:hover {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* 精密ドラッグ中の全体状態 */
+.precision-drag-active {
+  cursor: grabbing !important;
+}
+
+.precision-drag-active .equipment-slot-field.precision-enhanced:not(.precision-drag-over) {
+  opacity: 0.7;
+  filter: grayscale(0.3);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* マルチタッチデバイス対応 */
+@media (hover: none) and (pointer: coarse) {
+  .precision-draggable {
+    cursor: default;
+  }
+  
+  .precision-drag-over::before {
+    content: '📱 ここに配置';
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+  
+  .precision-drag-over {
+    transform: scale(1.08) !important;
+  }
+}
+
+/* 高DPIディスプレイ対応 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .precision-drag-preview {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
+  }
+  
+  .precision-drag-over {
+    border-width: 1px !important;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .precision-drag-over {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(34, 197, 94, 0.25) 100%) !important;
+    box-shadow: 
+      0 0 0 4px rgba(16, 185, 129, 0.5),
+      0 0 20px rgba(16, 185, 129, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  }
+  
+  .precision-drag-over::before {
+    background: rgba(16, 185, 129, 0.9);
+    color: #f0f9ff;
+  }
+}
+
+/* アニメーション無効化設定対応 */
+@media (prefers-reduced-motion: reduce) {
+  .precision-drag-over,
+  .precision-snap-area,
+  .precision-drag-over::before {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .precision-draggable {
+    transition: none !important;
+  }
+}

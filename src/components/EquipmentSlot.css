@@ -1,0 +1,246 @@
+/* 装備スロット専用スタイル - 既存スタイルを上書き */
+
+.equipment-slot-field {
+  position: relative !important;
+  min-height: 50px !important;
+  max-height: none !important;
+  height: auto !important;
+  border: 1px solid rgba(100, 181, 246, 0.4) !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  cursor: pointer !important;
+  overflow: visible !important;
+  padding: 6px 8px !important;
+  box-sizing: border-box !important;
+}
+
+.equipment-slot-field:hover {
+  background: rgba(100, 181, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.equipment-slot-field.clickable {
+  cursor: pointer !important;
+}
+
+/* ドラッグオーバー時の強力な視覚効果 */
+.equipment-slot-field.equipment-slot-drag-over {
+  border-color: #10b981 !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(34, 197, 94, 0.15) 100%) !important;
+  box-shadow: 
+    0 0 0 3px rgba(16, 185, 129, 0.4),
+    0 8px 25px rgba(16, 185, 129, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-3px) scale(1.02);
+  animation: equipment-slot-pulse 0.6s ease-in-out infinite alternate;
+}
+
+/* パルスアニメーション */
+@keyframes equipment-slot-pulse {
+  from {
+    box-shadow: 
+      0 0 0 3px rgba(16, 185, 129, 0.4),
+      0 8px 25px rgba(16, 185, 129, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  to {
+    box-shadow: 
+      0 0 0 5px rgba(16, 185, 129, 0.6),
+      0 12px 35px rgba(16, 185, 129, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* ドラッグオーバー時のスロット番号ハイライト */
+.equipment-slot-field.equipment-slot-drag-over::before {
+  content: '装備配置';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(16, 185, 129, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 10;
+  animation: equipment-slot-text-fade 0.3s ease-in-out;
+}
+
+@keyframes equipment-slot-text-fade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* 装備スロット内容 - 既存の高さ制限を解除 */
+.equipment-slot-content {
+  position: relative !important;
+  padding: 4px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-height: 36px !important;
+  height: auto !important;
+  width: 100% !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+/* 装備済みアイコン - 既存スタイルを上書き */
+.equipment-icon.equipped {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 4px !important;
+  background: rgba(76, 175, 80, 0.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid rgba(76, 175, 80, 0.3) !important;
+  flex-shrink: 0 !important;
+  color: #4CAF50 !important;
+}
+
+.equipment-slot-icon {
+  width: 20px !important;
+  height: 20px !important;
+  object-fit: contain !important;
+}
+
+/* 空装備スロット */
+.equipment-icon:not(.equipped) {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 4px !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: rgba(144, 202, 249, 0.7) !important;
+  font-size: 14px !important;
+  flex-shrink: 0 !important;
+}
+
+/* 装備名 - 既存スタイルを調整 */
+.equipment-name {
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  color: #90CAF9 !important;
+  flex: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
+  max-width: calc(100% - 30px) !important;
+  min-width: 0 !important;
+}
+
+.equipment-text {
+  font-size: 0.75rem !important;
+  color: #90caf9 !important;
+  font-weight: 500 !important;
+  flex: 1 !important;
+}
+
+/* 改修レベル - 既存スタイルを上書き */
+.improvement-level {
+  color: #FFD700 !important;
+  font-weight: bold !important;
+  font-size: 0.7rem !important;
+  margin-left: 4px !important;
+  background: rgba(255, 215, 0, 0.2) !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(255, 215, 0, 0.4) !important;
+  flex-shrink: 0 !important;
+}
+
+/* 搭載数 - 既存スタイルを上書き */
+.aircraft-count {
+  color: #ffb74d !important;
+  font-weight: 600 !important;
+  font-size: 0.65rem !important;
+  background: rgba(255, 183, 77, 0.3) !important;
+  border-radius: 3px !important;
+  padding: 2px 4px !important;
+  border: 1px solid rgba(255, 183, 77, 0.5) !important;
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* 削除ボタン - 既存スタイルを上書き */
+.equipment-remove {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  opacity: 0 !important;
+  z-index: 10 !important;
+}
+
+.equipment-slot-field:hover .equipment-remove {
+  opacity: 1 !important;
+}
+
+.equipment-remove:hover {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
+  text-shadow: 0 0 6px rgba(244, 67, 54, 0.8) !important;
+  transform: translate(-50%, -50%) scale(1.1) !important;
+}
+
+/* 縦型装備スロット配置 - 既存スタイルを上書き */
+.equipment-slots-vertical {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  margin: 6px 0 !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .equipment-slot-field {
+    min-height: 50px;
+  }
+  
+  .equipment-slot-content {
+    padding: 6px;
+    min-height: 38px;
+  }
+  
+  .equipment-icon.equipped,
+  .equipment-icon:not(.equipped) {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .equipment-slot-icon {
+    width: 20px;
+    height: 20px;
+  }
+}

@@ -7,6 +7,10 @@ import {
 import { useShipData } from '../hooks/useShipData'
 import { parseImprovements } from '../utils/shipStatsCalculator'
 import ShipStatusDisplay from './ShipStatusDisplay'
+import AirPowerDisplay from './AirPowerDisplay'
+import './EquipmentSlot.css'
+import './PrecisionDragEquipmentSlot.css'
+import { usePrecisionDrag } from '../hooks/usePrecisionDrag'
 
 // 装備マスターデータの型定義
 interface EquipmentMaster {
@@ -574,6 +578,28 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
   )
   const [draggedShip, setDraggedShip] = useState<Ship | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
+  const [dragOverEquipmentSlot, setDragOverEquipmentSlot] = useState<{position: number, slotIndex: number} | null>(null)
+  
+  // 高精度ドラッグシステム
+  const precisionDrag = usePrecisionDrag({
+    onDragStart: (item) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Precision drag start:', item.api_name)
+      }
+      setDraggedEquipment(item)
+      document.body.classList.add('precision-drag-active')
+    },
+    onDragEnd: (item, success) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Precision drag end:', item.api_name, 'Success:', success)
+      }
+      setDraggedEquipment(null)
+      setDragOverEquipmentSlot(null)
+      document.body.classList.remove('precision-drag-active')
+    },
+    dragThreshold: 8, // より高い閾値で誤ドラッグを防止
+    snapDistance: 30 // より大きなスナップ距離
+  })
   const [isDraggingFormation, setIsDraggingFormation] = useState(false)
   const [draggedFromSlot, setDraggedFromSlot] = useState<number | null>(null)
   const [fleetName, setFleetName] = useState<string>('')
@@ -1676,6 +1702,10 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
             </div>
             <div className="fleet-count-indicator">
               <span className="fleet-count-text">{stats.shipCount}/6隻</span>
+              <AirPowerDisplay 
+                ships={fleetSlots.map(slot => slot.ship).filter((ship): ship is Ship => ship !== null)}
+                className="ml-3"
+              />
             </div>
           </div>
         </div>
@@ -1764,22 +1794,38 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
                         return (
                           <div 
                             key={slotIndex} 
-                            className="equipment-slot-field clickable"
+                            ref={(el) => {
+                              if (el) {
+                                // ドロップゾーン登録
+                                const cleanup = precisionDrag.registerDropZone({
+                                  id: `slot-${slot.position}-${slotIndex}`,
+                                  element: el,
+                                  bounds: el.getBoundingClientRect(),
+                                  onDrop: (equipment) => {
+                                    if (process.env.NODE_ENV === 'development') {
+                                      console.log('🎯 Precision drop:', equipment.api_name, 'to slot', slotIndex)
+                                    }
+                                    setSelectedShipSlot({ position: slot.position, slotIndex })
+                                    handleEquipmentSelect(equipment)
+                                  },
+                                  onDragOver: () => {
+                                    setDragOverEquipmentSlot({ position: slot.position, slotIndex })
+                                  },
+                                  onDragLeave: () => {
+                                    setDragOverEquipmentSlot(null)
+                                  }
+                                })
+                                
+                                // クリーンアップを設定
+                                return cleanup
+                              }
+                            }}
+                            className={`equipment-slot-field precision-enhanced clickable ${
+                              dragOverEquipmentSlot?.position === slot.position && 
+                              dragOverEquipmentSlot?.slotIndex === slotIndex 
+                                ? 'precision-drag-over' : ''
+                            }`}
                             onClick={(e) => handleEquipmentSlotClick(e, slot.position, slotIndex)}
-                            onDragOver={(e) => {
-                              if (draggedEquipment) {
-                                e.preventDefault()
-                                e.dataTransfer.dropEffect = 'copy'
-                              }
-                            }}
-                            onDrop={(e) => {
-                              e.preventDefault()
-                              if (draggedEquipment) {
-                                handleEquipmentSelect(draggedEquipment)
-                                setSelectedShipSlot({ position: slot.position, slotIndex })
-                                setDraggedEquipment(null)
-                              }
-                            }}
                           >
                             <div className="equipment-slot-content">
                               {equipment ? (
@@ -2936,22 +2982,8 @@ const FleetComposer: React.FC<FleetComposerProps> = ({ fleetData, admiralName = 
             return Object.values(availableGroupedEquipment).map(group => (
               <div 
                 key={`${group.equipment.original_id || group.equipment.api_id}_${group.equipment.improvement_level || 0}`}
-                className="equipment-item"
-                draggable
-                onDragStart={(e) => {
-                  setDraggedEquipment(group.equipment)
-                  e.dataTransfer.effectAllowed = 'copy'
-                  
-                  // 改修リスト用のデータも設定
-                  const equipmentForImprovement = {
-                    type: 'equipment-for-improvement',
-                    equipment: group.equipment
-                  }
-                  e.dataTransfer.setData('application/json', JSON.stringify(equipmentForImprovement))
-                  e.dataTransfer.setData('text/plain', `equipment:${group.equipment.api_name}`)
-                  
-                }}
-                onDragEnd={() => setDraggedEquipment(null)}
+                className="equipment-item precision-draggable"
+                {...precisionDrag.createDragHandlers(group.equipment)}
                 onClick={() => {
                   if (group.count > 0) {
                     handleEquipmentSelect(group.equipment)
